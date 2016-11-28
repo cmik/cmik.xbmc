@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="repository.cmik.xbmc.addons" name="Cmik Repo" version="0.0.1" provider-name="cmik">
+    <extension point="xbmc.addon.repository" name="Cmik Repo">
+        <info compressed="false">http://github.com/cmik/cmik.xbmc/addons.xml</info>
+        <checksum>http://github.com/cmik/cmik.xbmc/addons.xml.md5</checksum>
+        <datadir zip="true">http://github.com/cmik/cmik.xbmc/downloads</datadir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Cmik XBMC Kodi Plugins</summary>
+        <description lang="en">Install XBMC Kodi Plugins</description>
+        <disclaimer lang="en">No warranty here</disclaimer>
+        <language>en</language>
+        <platform>all</platform>
+        <licence>GNU</licence>
+    </extension>
+</addon>

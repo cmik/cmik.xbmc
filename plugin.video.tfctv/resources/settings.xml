@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <category label="50100">
+        <setting id="emailAddress" type="text" label="50201" default=""/>
+        <setting label="50202" type="text" id="password" option="hidden" enable="!eq(-1,)" default=""/>
+        <setting id="loginRetries" type="labelenum" label="50203" default="1" values="1|2|3" visible="false"/>
+        <setting type="sep" />
+        <setting id="itemsPerPage" type="labelenum" label="50101" default="10" values="10|20|30|40|50"/>
+        <setting id="listSubscribedFirst" type="bool" label="50103" default="true" visible="false"/>
+        <setting id="italiciseUnsubscribed" type="bool" label="50104" default="true" visible="false"/>
+        <setting id="showSubscribedShowsThumbnails" type="bool" label="50105" default="false" visible="false"/>
+        <setting id="announcement" type="text" label="50106" default="" visible="false"/>
+    </category>
+</settings>

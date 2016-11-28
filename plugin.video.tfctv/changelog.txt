@@ -1,0 +1,108 @@
+0.0.44
+    Added information on shows
+    Added fanarts
+0.0.43
+    Compatibility with TFC website new beta
+0.0.42
+    Added episodes description
+0.0.41
+    Video play updates
+0.0.40
+    Sorted titles
+0.0.39
+    Fixed wrong episode date
+0.0.38
+    Fix for TFC.tv changes (login, episode list, etc)
+    Disabled menu items
+0.0.37
+    Changed startup account check
+    Better error handling
+0.0.36
+    Fixed missing menu contents
+0.0.35
+    Adjustments for TFC.tv changes
+0.0.34
+    Adjustments for TFC.tv changes
+    Categories are back
+0.0.33
+    Adjustments for TFC.tv changes
+0.0.32
+    Fixed "Subscription is already expired" issue
+0.0.31
+    Fixed error when subscribed to an a la carte show
+0.0.30
+    Adjusted for new TFC.tv changes
+0.0.29
+    Now compatible with Gotham
+0.0.28
+    Plot information (instead of plot outline)
+0.0.27
+    Improvement
+    Thumbnails for subscribed shows now follow the cache expiration instead of having it's own
+0.0.26
+    New and better way of getting the list of episodes. (Most recent episodes show up faster)
+    Fix for subscribed shows thumbnails issue
+    Plot outline for skins that support it
+0.0.25
+    Display Subscription Information
+0.0.24
+    Display "Next" at the end of the list
+    Better Error notification
+0.0.23
+    Fixed some thumbnails not showing up
+0.0.22
+    Thumbnails are now available in subscribed shows
+0.0.21
+    Caching improvement
+    Added mechanism to clear cache
+    XBMC now marks watched episodes
+0.0.20
+    Fixed categories not grouping properly
+0.0.19
+    Removed live channels (stream format is unsupported by XBMC)
+    Fixed error when displaying the sports channel in subscribed shows
+    Grouped similar categories from different subscriptions
+0.0.18
+    Fixed: "Online Premier Movies" not showing up
+0.0.17
+    Plugin can be used without tfc.tv account (Free Videos only)
+0.0.16
+    Bugfix
+0.0.15
+    Bugfix
+0.0.14
+    Bug fix
+0.0.13
+    Added caching (Disabled by default)
+0.0.12
+    Bug fix
+    Browsing through the categories is working again
+0.0.11
+    Re-login on Email or Password change
+0.0.10
+    Bug fix
+0.0.9
+    View subscribed shows
+    Watch subscribed shows through the "Subscribed Shows" menu; browsing through the normal categories is still broken
+0.0.8
+    Improved performance
+0.0.7
+    Separate settings for showing subscribed shows first and showing them in Italics
+    Fixed thumbnail when showing episodes and playing the episode
+    Updated User-Agent
+0.0.6
+    Removed invalid login dialog
+    Updated temporary message for non-playable items
+
+0.0.5
+    Fixed missing thumbnail
+    Option to show subscribed shows first
+    
+0.0.4
+    Improved loading of episodes
+    Fixed unicode error when displaying title
+    Added Free TV
+    
+0.0.3
+    Added features
+    Bug fixes
