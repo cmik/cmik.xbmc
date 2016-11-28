@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-    <addon id="plugin.video.tfctv" name="TFC.tv" version="0.0.44" provider-name="cmik">
-        <requires>
-            <import addon="xbmc.python" version="2.1.0"/>
-            <import addon="script.module.parsedom" version="0.9.1"/>
-        </requires>
-        <extension point="xbmc.python.pluginsource" library="default.py">
-            <provides>video</provides>
-        </extension>
-      <extension point="xbmc.addon.metadata">
-        <summary lang="en">TFC.tv</summary>
-        <description lang="en">Enjoy Pinoy TFC's shows, movies and news! This is a non official TFC.tv addon. A subscription to TFC.tv website (http://tfc.tv) is required to enjoy TFC's catalog.</description>
-        <disclaimer lang="en">No warranty here</disclaimer>
-        <language>en</language>
-        <platform>all</platform>
-        <licence>GNU</licence>
-      </extension>
-    </addon>
+<addon id="plugin.video.tfctv" name="TFC.tv" version="0.0.44" provider-name="cmik">
+    <requires>
+        <import addon="xbmc.python" version="2.1.0"/>
+        <import addon="script.module.parsedom" version="0.9.1"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">TFC.tv</summary>
+    <description lang="en">Enjoy Pinoy TFC's shows, movies and news! This is a non official TFC.tv addon. A subscription to TFC.tv website (http://tfc.tv) is required to enjoy TFC's catalog.</description>
+    <disclaimer lang="en">No warranty here</disclaimer>
+    <language>en</language>
+    <platform>all</platform>
+    <licence>GNU</licence>
+  </extension>
+</addon>
