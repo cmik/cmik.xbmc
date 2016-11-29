@@ -19,7 +19,7 @@ def showCategories():
     addDir('Most loved shows', '/Synapse/GetMostLovedShows', 5, 'icon.png')
     for c in categories:
         addDir(c['name'], url % c['id'], 1, 'icon.png')
-    # addDir('Live', '/category/live', 8, 'icon.png')
+    addDir('Live', '/category/live', 8, 'icon.png')
     addDir('Celebrities', '/Synapse/GetAllCelebrities', 6, 'icon.png')
     addDir('My account', '', 12, 'icon.png')
     xbmcplugin.endOfDirectory(thisPlugin)
@@ -74,6 +74,32 @@ def extractMostLovedShowListData(data):
         showID = d['categoryId']
         showListData[showID] = (title.encode('utf8'), thumbnail, showData)			
     return showListData
+    
+def showLiveStreams(url):
+    data = getLiveStreamData(url)
+    for d in data:
+        kwargs = { 'listArts' : { 'fanart' : d['fanart'], 'banner' : d['fanart'] }, 'listProperties' : { 'IsPlayable' : 'true' } , 'listInfos' : { 'video' : { 'tvshowtitle' : d['name'] } } }
+        addDir(d['name'].encode('utf8'), d['id'], 4, d['image'], isFolder = False, **kwargs)
+    xbmcplugin.endOfDirectory(thisPlugin)
+    
+def getLiveStreamData(url):
+    import re
+    data = []
+    html = callServiceApi(url, base_url = 'http://beta.tfc.tv')
+    div = common.parseDOM(html, "div", attrs = { 'id' : 'featured-shows-thumbs' })
+    shows = common.parseDOM(div, "show-cover", attrs = { 'class' : 'hidden-sm hidden-xs hidden-md' })
+    for show in shows:
+        image = common.parseDOM(show, "img", ret = "src")[0]
+        name = common.parseDOM(show, "div", attrs = { 'class' : 'show-cover-thumb-title' })[0]
+        url = common.parseDOM(show, "a", attrs = { 'class' : 'show-cover-thumb-aired-watch' }, ret = 'href')[0]
+        episodeId = re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1)
+        data.append({'id' : episodeId, 'image' : image, 'name' : common.replaceHTMLCodes(name), 'url' : url, 'fanart' : image})
+    showsImages = common.parseDOM(div, "show-cover", attrs = { 'class' : 'hidden-sm hidden-xs hidden-md' }, ret = 'data-src')
+    i = 0
+    for image in showsImages:
+        data[i]['image'] = image
+        i += 1       
+    return data
     
 def showCategoryShows(url):
     data = getShowListData(url)
