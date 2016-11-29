@@ -7,6 +7,7 @@ common = CommonFunctions
 thisAddon = xbmcaddon.Addon()
 common.plugin = thisAddon.getAddonInfo('name')
 baseUrl = 'http://tfc.tv'
+websiteUrl = 'http://beta.tfc.tv'
 
 # common.dbg = True # Default
 # common.dbglevel = 3 # Default
@@ -15,19 +16,20 @@ def showCategories():
     checkAccountChange()
     categories = getCategories()
     url = '/Synapse/getsitemenu/%s'
+    addDir('Most loved shows', '/Synapse/GetMostLovedShows', 5, 'icon.png')
     for c in categories:
         addDir(c['name'], url % c['id'], 1, 'icon.png')
+    # addDir('Live', '/category/live', 8, 'icon.png')
     addDir('Celebrities', '/Synapse/GetAllCelebrities', 6, 'icon.png')
     addDir('My account', '', 12, 'icon.png')
     xbmcplugin.endOfDirectory(thisPlugin)
-
+    
 def getCategories():
     url = '/Synapse/getsitemenu'
     data = callJsonApi(url)
     return data
     
 def showSubCategories(url):
-    addDir('Most loved shows', '/Synapse/GetMostLovedShows', 5, 'icon.png')
     data = callJsonApi(url)
     subCatList = extractSubCategory(data, url)
     for s in subCatList:
@@ -188,7 +190,7 @@ def playEpisode(url):
     episodeDetails = {}
     episode = url.split('/')[0]
     for i in range(int(thisAddon.getSetting('loginRetries')) + 1):
-        episodeDetails = get_media_info(episode)
+        episodeDetails = getMediaInfo(episode)
         if episodeDetails and episodeDetails.has_key('errorCode') and episodeDetails['errorCode'] == 0:
             break
         else:
@@ -204,9 +206,35 @@ def playEpisode(url):
             xbmc.executebuiltin('Notification(%s, %s)' % (xbmcaddon.Addon().getLocalizedString(57000), xbmcaddon.Addon().getLocalizedString(57001)))
     return False
     
-def get_media_info(episode):
-    media_info = callJsonApi('/Synapse/GetVideo/%s' % episode)
-    return media_info
+def getMediaInfo(episode):
+    mediaInfo = callJsonApi('/Synapse/GetVideo/%s' % episode)
+    # If media info can't be retrieve from JSON webservices, then we try from website HTML page
+    if mediaInfo and mediaInfo.has_key('errorCode') and mediaInfo['errorCode'] == -703:
+        mediaInfo = getMediaInfoFromWebsite(episode)
+    return mediaInfo
+    
+def getMediaInfoFromWebsite(episode):
+    import re
+    mediaInfo = {}
+    url = '/episode/details/%s' % episode
+    html = callServiceApi(url, base_url = websiteUrl)
+    body = common.parseDOM(html, "body")
+    scripts = common.parseDOM(body, "script", attrs = { 'type' : 'text/javascript' })
+    mediaToken = None
+    for script in scripts:
+        line = script.strip();
+        match = re.compile('/media/get.+', re.IGNORECASE).search(line)
+        if match:
+            match = re.compile('mediaToken\': \'(.+)\'', re.IGNORECASE).search(line)
+            mediaToken = match.group(1).encode("ascii")
+            break
+    if mediaToken:
+        episodeDetails = callJsonApi('/media/get', params = {'id': episode, 'pv': 'false'}, headers = [('X-Requested-With', 'XMLHttpRequest'), ('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8'), ('mediaToken', mediaToken), ('Host', 'tfc.tv'), ('Origin', 'http://tfc.tv'), ('Referer', 'http://tfc.tv/')])
+        if episodeDetails and episodeDetails.has_key('StatusCode'):
+            mediaInfo['errorCode'] = episodeDetails['StatusCode']
+            if episodeDetails and episodeDetails.has_key('StatusCode') and episodeDetails['StatusCode'] == 0:
+                mediaInfo['data'] = { 'Url' : episodeDetails['uri'] }
+    return mediaInfo
     
 def showCelebrities(url):
     data = callJsonApi(url)
@@ -519,6 +547,8 @@ elif mode == 6:
     showCelebrities(url)
 elif mode == 7:
     showCelebrityInfo(url)
+elif mode == 8:
+    showLiveStreams(url)
 elif mode == 10:
     showSubscribedCategories(url)
 elif mode == 11:
