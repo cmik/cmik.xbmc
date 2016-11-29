@@ -12,16 +12,61 @@ websiteUrl = 'http://beta.tfc.tv'
 # common.dbg = True # Default
 # common.dbglevel = 3 # Default
 
-def showCategories():
+def showMainMenu():
     checkAccountChange()
+    sections = getWebsiteHomeSections()
+    for s in sections:
+        addDir(s['name'].title(), s['id'], 11, 'icon.png')
+    addDir('Most Loved Shows', '/Synapse/GetMostLovedShows', 5, 'icon.png')
+    addDir('By Category', '/', 10, 'icon.png')
+    addDir('Celebrities', '/Synapse/GetAllCelebrities', 6, 'icon.png')
+    addDir('My Account', '', 12, 'icon.png')
+    xbmcplugin.endOfDirectory(thisPlugin)
+
+def getWebsiteHomeSections():
+    data = []
+    html = callServiceApi('', base_url = websiteUrl)
+    sections = common.parseDOM(html, "div", attrs = { 'class' : 'main-container-xl' })
+    i = 1
+    for section in sections:
+        shows = common.parseDOM(section, "div", attrs = { 'class' : 'horizontal' })
+        if len(shows) > 0:
+            header = common.parseDOM(section, "div")[0]
+            data.append({'id' : '#%s' % i, 'name' : common.replaceHTMLCodes(header)}) #, 'url' : '/', 'fanart' : ''})
+        i += 1
+    return data
+    
+def showWebsiteSectionShows(section):
+    html = callServiceApi('', base_url = websiteUrl)
+    data = getWebsiteSectionShows(section.replace('#', ''), html)
+    for d in data:
+        kwargs = { 'listArts' : { 'fanart' : d['fanart'], 'banner' : d['fanart'] }, 'listProperties' : { 'IsPlayable' : 'true' } , 'listInfos' : { 'video' : { 'tvshowtitle' : d['show'] } } }
+        addDir(d['name'].encode('utf8'), d['id'], 4, d['image'], isFolder = False, **kwargs)
+    xbmcplugin.endOfDirectory(thisPlugin)
+    
+def getWebsiteSectionShows(sectionId, html):
+    import re
+    data = []
+    sections = common.parseDOM(html, "div", attrs = { 'class' : 'main-container-xl' })
+    section = sections[int(sectionId) - 1]
+    shows = common.parseDOM(section, "div", attrs = { 'class' : 'horizontal' })
+    for show in shows:
+        showName = common.parseDOM(show, "div", attrs = { 'class' : 'show-cover-thumb-title-mobile' })[0]
+        episodeName = common.parseDOM(show, "div", attrs = { 'class' : 'show-cover-thumb-aired-mobile' })[0]
+        fanart = common.parseDOM(show, "show-cover", ret = 'data-src')[0]
+        images = common.parseDOM(show, "img", attrs = { 'class' : 'lazy' }, ret = 'data-src')
+        image = fanart if len(images) == 0 else images[0]
+        url = common.parseDOM(show, "a", attrs = { 'class' : 'show-cover-thumb-aired-watch' }, ret = 'href')[0]
+        episodeId = re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1)
+        data.append({'id' : episodeId, 'image' : image, 'name' : common.replaceHTMLCodes('%s - %s' % (showName, episodeName)), 'show' : common.replaceHTMLCodes(showName), 'url' : url, 'fanart' : fanart})
+    return data
+    
+def showCategories():
     categories = getCategories()
     url = '/Synapse/getsitemenu/%s'
-    addDir('Most loved shows', '/Synapse/GetMostLovedShows', 5, 'icon.png')
     for c in categories:
         addDir(c['name'], url % c['id'], 1, 'icon.png')
     addDir('Live', '/category/live', 8, 'icon.png')
-    addDir('Celebrities', '/Synapse/GetAllCelebrities', 6, 'icon.png')
-    addDir('My account', '', 12, 'icon.png')
     xbmcplugin.endOfDirectory(thisPlugin)
     
 def getCategories():
@@ -85,7 +130,7 @@ def showLiveStreams(url):
 def getLiveStreamData(url):
     import re
     data = []
-    html = callServiceApi(url, base_url = 'http://beta.tfc.tv')
+    html = callServiceApi(url, base_url = websiteUrl)
     div = common.parseDOM(html, "div", attrs = { 'id' : 'featured-shows-thumbs' })
     shows = common.parseDOM(div, "show-cover", attrs = { 'class' : 'hidden-sm hidden-xs hidden-md' })
     for show in shows:
@@ -532,7 +577,6 @@ name=None
 mode=None
 page=0
 thumbnail = ''
-onlinePremierUrl = '/Category/List/1962'
 UID=None
 
 
@@ -557,8 +601,8 @@ try:
 except:
     pass
     
-if (mode != 12) and ((mode == None) or (url == None) or (len(url) < 1)):
-    showCategories()
+if (mode not in [10, 12]) and ((mode == None) or (url == None) or (len(url) < 1)):
+    showMainMenu()
 elif mode == 1:
     showSubCategories(url)
 elif mode == 2:
@@ -576,9 +620,9 @@ elif mode == 7:
 elif mode == 8:
     showLiveStreams(url)
 elif mode == 10:
-    showSubscribedCategories(url)
+    showCategories()
 elif mode == 11:
-    showSubscribedShows(url)
+    showWebsiteSectionShows(url)
 elif mode == 12:
     showMyAccount()
 elif mode == 13:
@@ -587,6 +631,10 @@ elif mode == 14:
     showMyEntitlements(url)
 elif mode == 15:
     showMyTransactions(url)
+# elif mode == xx:
+    # showSubscribedCategories(url)
+# elif mode == xx:
+    # showSubscribedShows(url)
     
 if cookieJarType == 'LWPCookieJar':
     cookieJar.save()

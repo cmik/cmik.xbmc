@@ -1,5 +1,8 @@
+0.0.49
+    Moved Entertainment, Movies, News and Live into 'By Category' section
+    Added sections from TFC homepage website http://beta.tfc.tv/ to main menu
 0.0.48
-    Added TFC Live stream section (only featured shows from http://beta.tfc.tv/category/live)
+    Added TFC Live stream section (but only featured shows from website page http://beta.tfc.tv/category/live)
 0.0.47
     Fixed error on playing movies
     Added Live streams
