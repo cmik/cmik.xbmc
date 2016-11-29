@@ -14,6 +14,12 @@
     
     <string id="50203">Login Retries</string>
     <string id="56000">Login Failed</string>
-    <string id="56001">'TFC.tv Subscription Information'</string>
+    <string id="56001">TFC.tv My Account Information</string>
+    <string id="56002">TFC.tv My Subscriptions</string>
+    <string id="56003">TFC.tv My Transactions</string>
+    
+    <string id="57000">Media Error</string>
+    <string id="57001">Subscription is already expired or the item is not part of your subscription</string>
+    
 </strings>
 

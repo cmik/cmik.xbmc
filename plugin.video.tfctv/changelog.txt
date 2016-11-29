@@ -1,3 +1,8 @@
+0.0.45
+    Fixed missing thumbnails and fanarts
+    Added 'My Account' in main menu
+    Added view to account information, entitlements and transactions
+    Added TFC background for addon
 0.0.44
     Added information on shows
     Added fanarts

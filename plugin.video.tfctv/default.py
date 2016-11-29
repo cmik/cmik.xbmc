@@ -11,24 +11,20 @@ baseUrl = 'http://tfc.tv'
 # common.dbg = True # Default
 # common.dbglevel = 3 # Default
 
-def callJsonApi(url, params = {}, headers = [('X-Requested-With', 'XMLHttpRequest')], base_url = baseUrl):
-    res = callServiceApi(url, params = params, headers = headers, base_url = base_url)
-    data = json.loads(res)
-    return data
-
 def showCategories():
     checkAccountChange()
     categories = getCategories()
     url = '/Synapse/getsitemenu/%s'
     for c in categories:
         addDir(c['name'], url % c['id'], 1, 'icon.png')
+    addDir('My account', '', 12, 'icon.png')
     xbmcplugin.endOfDirectory(thisPlugin)
 
 def getCategories():
     url = '/Synapse/getsitemenu'
     data = callJsonApi(url)
     return data
-        
+    
 def showSubCategories(url):
     data = callJsonApi(url)
     subCatList = extractSubCategory(data, url)
@@ -37,7 +33,7 @@ def showSubCategories(url):
     xbmcplugin.endOfDirectory(thisPlugin)
         
 def extractSubCategory(categories, url):
-    subcat = []
+    subcat = {}
     for c in categories:
         if str(c['id']) in url:
            subcat = c['menu']
@@ -105,7 +101,7 @@ def getShowListData(url):
 def extractShowListData(data):
     showListData = {}
     for d in data:
-        thumbnail = d['image']
+        thumbnail = d['image'].replace(' ', '%20')
         title = d['name']
         showData = extractShowData(d)
         showID = d['id']
@@ -116,9 +112,9 @@ def extractShowData(data):
     description = data['blurb']
     dateAired = data['dateairedstr']
     # nbEpisodes = len(data['episodes']) if data['episodes'] is None else data['episodes']
-    banner = data['banner']
+    banner = data['banner'].replace(' ', '%20')
     # showData = { 'listArts' : { 'poster' : poster }, 'listInfos' : { 'video' : { 'plot' : description, 'aired' : dateAired, 'status' : nbEpisodes } } }
-    showData = { 'listArts' : { 'fanart' : banner }, 'listInfos' : { 'video' : { 'plot' : description, 'year' : dateAired } } }
+    showData = { 'listArts' : { 'fanart' : banner, 'banner' : banner }, 'listInfos' : { 'video' : { 'plot' : description, 'year' : dateAired } } }
     return showData
     
 def showEpisodes(showId):
@@ -136,28 +132,31 @@ def showEpisodes(showId):
         episodes_returned = episodes_returned + 1
         episode_hrefs = common.parseDOM(e, "a", ret = 'href') # there will be at least 2 hrefs but they are all duplicates
         episode_id = episode_hrefs[0].replace('/Episode/Details/', '').split('|')[0]
-        image_url = common.parseDOM(e, "img", ret = 'src')[0]
+        image_url = common.parseDOM(e, "img", ret = 'src')[0].replace(' ', '%20')
         title_div = common.parseDOM(e, "div", attrs = { 'class' : 'e-title' })[0]
-        desc_div = common.parseDOM(e, "div", attrs = { 'class' : 'e-desc' })[0]
+        shortDescription = common.parseDOM(e, "div", attrs = { 'class' : 'e-desc' })[0]
         title_tag = common.parseDOM(title_div, "a")[0]
         id = int(episode_id.split('/')[0])
-        eData = episodesData[id]
-        fanart = showData['banner']
-        dateAired = eData['dateaired']
-        episodeNumber = eData['episodenumber']
-        kwargs = { 'listArts' : { 'fanart' : fanart }, 'listProperties' : { 'IsPlayable' : 'true' } , 'listInfos' : { 'video' : { 'episode' : episodeNumber, 'plot' : desc_div, 'aired' : dateAired } } }
+        showTitle = showData['name']
+        fanart = showData['banner'].replace(' ', '%20')
+        dateAired = ''
+        description = ''
+        episodeNumber = 1
+        if id in episodesData:
+            eData = episodesData[id]
+            dateAired = eData['dateaired']
+            description = eData['synopsis']
+            episodeNumber = eData['episodenumber']
+        kwargs = { 'listArts' : { 'fanart' : fanart, 'banner' : fanart }, 'listProperties' : { 'IsPlayable' : 'true' } , 'listInfos' : { 'video' : { 'tvshowtitle' : showTitle, 'episode' : episodeNumber, 'tracknumber' : episodeNumber, 'plot' : description, 'aired' : dateAired, 'year' : dateAired } } }
         addDir(title_tag.split('-')[-1].strip().encode('utf8'), episode_id, 4, image_url, isFolder = False, **kwargs)
     if episodes_returned == itemsPerPage:
         addDir("Next >>",  showId, 3, '', page + 1)
     xbmcplugin.endOfDirectory(thisPlugin)
         
-def playEpisode(episode):
+def playEpisode(url):
     errorCode = -1
-    jsonData = ''
     episodeDetails = {}
-    notificationCall = ''
-    hasError = False
-    headers = [('X-Requested-With', 'XMLHttpRequest')]
+    episode = url.split('/')[0]
     for i in range(int(thisAddon.getSetting('loginRetries')) + 1):
         episodeDetails = get_media_info(episode)
         if episodeDetails and episodeDetails.has_key('errorCode') and episodeDetails['errorCode'] == 0:
@@ -172,14 +171,13 @@ def playEpisode(episode):
         return xbmcplugin.setResolvedUrl(thisPlugin, True, liz)
     else:
         if (not episodeDetails) or (episodeDetails and episodeDetails.has_key('errorCode') and episodeDetails['errorCode'] != 0):
-            xbmc.executebuiltin('Notification(%s, %s)' % ('Media Error', 'Subscription is already expired or the item is not part of your subscription.'))
+            xbmc.executebuiltin('Notification(%s, %s)' % (xbmcaddon.Addon().getLocalizedString(57000), xbmcaddon.Addon().getLocalizedString(57001)))
     return False
     
 def get_media_info(episode):
-    episode_id = episode.split('/')[0]
-    media_info = callJsonApi('/Synapse/GetVideo/%s' % episode_id)
+    media_info = callJsonApi('/Synapse/GetVideo/%s' % episode)
     return media_info
-
+    
 def getSubscribedShowIds():
     return getSubscribedShows()[0]
     
@@ -263,40 +261,64 @@ def showSubscribedShows(url):
         addDir(showTitle, str(showId), 3, thumbnail)
     xbmcplugin.endOfDirectory(thisPlugin)
     
-def getEntitlementsData():
-    entitlementsData = {}
-    params = { 'page' : 1, 'size' : 1000 }
-    headers = [('Content-type', 'application/x-www-form-urlencoded'),
-        ('X-Requested-With', 'XMLHttpRequest')]
-    jsonData = ''
-    urlUserEntitlements = "/User/_Entitlements"
-    for i in range(int(thisAddon.getSetting('loginRetries')) + 1):
-        jsonData = callServiceApi(urlUserEntitlements, params, headers)
-        entitlementsData = json.loads(jsonData)
-        if entitlementsData['total'] != 0:
-            break
-        else:
-            loginData = login()
-    if entitlementsData['total'] > 1000:
-        for i in range(int(thisAddon.getSetting('loginRetries')) + 1):
-            params = { 'page' : 1, 'size' : entitlementsData['total'] }
-            jsonData = callServiceApi(urlUserEntitlements, params, headers)
-            entitlementsData = json.loads(jsonData)
-            if entitlementsData['total'] != 0:
-                break
-            else:
-                login()
-    return entitlementsData
-
-def showSubcriptionInformation():
-    entitlementsData = getEntitlementsData()
-    message = ''
-    for entitlement in entitlementsData['data']:
-        expiryUnixTime = (int(entitlement['ExpiryDate'].replace('/Date(','').replace(')/', ''))) / 1000
-        entitlementEntry = 'Package Name: %s\n    EID: %s\n    Expiry Date: %s\n\n' % (entitlement['Content'], entitlement['EntitlementId'], time.strftime('%B %d, %Y %X %Z', time.localtime(expiryUnixTime)))
-        message += entitlementEntry
+def getEntitlementsData(url):
+    htmlData = callServiceApi(url)
+    data = extractEntitlementData(htmlData)
+    return data
+    
+def extractEntitlementData(htmlData):
+    data = {'data' : [], 'total': 0}
+    sectionTable = common.parseDOM(htmlData, "table", attrs = {'class' : 'table table-striped subscription_table'})
+    sectionTableBody = common.parseDOM(sectionTable, "tbody")
+    entitlements = common.parseDOM(sectionTableBody, "tr")
+    for tr in entitlements:
+        column = common.parseDOM(tr, "td")
+        entitlement = {}
+        entitlement['EntitlementId'] = column[0]
+        entitlement['Content'] = column[1]
+        entitlement['ExpiryDate'] = column[2]
+        data['data'].append(entitlement)
+        data['total'] += 1
+    return data
+    
+def showMyAccount():
+    categories = [
+        { 'name' : 'My info', 'url' : '/Synapse/GetUserData?uid=%s', 'mode' : 13 },
+        { 'name' : 'Entitlements', 'url' : '/User/Entitlements', 'mode' : 14 },
+        { 'name' : 'Transactions', 'url' : '/Synapse/MyTransactions', 'mode' : 15 }
+    ]
+    for c in categories:
+        addDir(c['name'], c['url'], c['mode'], 'icon.png')
+    xbmcplugin.endOfDirectory(thisPlugin)
+    
+def showMyInfo(url):
+    global UID
+    if UID is None:
+        login()
+    data = callJsonApi(url % UID)
+    d = data['data']
+    message = 'Email: %s\nFirst name: %s\nLast name: %s\nCountry: %s\nState: %s\nCity: %s\n\n' % (d['Email'].encode('utf8'), d['FirstName'].encode('utf8'), d['LastName'].encode('utf8'), d['CountryCode'].encode('utf8'), d['State'].encode('utf8'), d['City'].encode('utf8'))
     showMessage(message, xbmcaddon.Addon().getLocalizedString(56001))
 
+def showMyEntitlements(url):
+    data = getEntitlementsData(url)
+    message = ''
+    for entitlement in data['data']:
+        entitlementEntry = 'Package Name: %s\n    EID: %s\n    Expiry Date: %s\n\n' % (entitlement['Content'], entitlement['EntitlementId'], entitlement['ExpiryDate'])
+        message += entitlementEntry
+    showMessage(message, xbmcaddon.Addon().getLocalizedString(56002))
+    
+def showMyTransactions(url):
+    transactions = callJsonApi(url)
+    if len(transactions) > 0:
+        message = ''
+        for t in transactions:
+            expiryUnixTime = (int(t['TransactionDate'].replace('/Date(','').replace(')/', ''))) / 1000
+            message += 'TID: %s\nProduct: %s\nDate: %s\nAmount: %.2f\nCurrency: %s\nType: %s\nMode: %s\nReference: %s\n\n' % (t['TransactionId'], t['ProductName'].encode('utf8'), time.strftime('%B %d, %Y %X %Z', time.localtime(expiryUnixTime)), t['Amount'], t['Currency'].encode('utf8'), t['TransactionType'].encode('utf8'), t['Method'].encode('utf8'), t['Reference'].encode('utf8'))
+        showMessage(message, xbmcaddon.Addon().getLocalizedString(56003))
+    else:
+        login()
+    
 def callServiceApi(path, params = {}, headers = [], base_url = baseUrl):
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookieJar))
     headers.append(('User-Agent', userAgent))
@@ -309,12 +331,19 @@ def callServiceApi(path, params = {}, headers = [], base_url = baseUrl):
         response = opener.open(base_url + path)
     return response.read()
 
+def callJsonApi(url, params = {}, headers = [('X-Requested-With', 'XMLHttpRequest')], base_url = baseUrl):
+    res = callServiceApi(url, params = params, headers = headers, base_url = base_url)
+    data = json.loads(res)
+    return data
+    
 def login():
+    global UID
     cookieJar.clear()
     emailAddress = thisAddon.getSetting('emailAddress')
     password = thisAddon.getSetting('password')
     param = {'email' : emailAddress, 'pw' : password}
     jsonData = callJsonApi("/Synapse/Login", params = param, base_url = 'https://tfc.tv')
+    UID = jsonData['data']['uid']
     
 def checkAccountChange():
     emailAddress = thisAddon.getSetting('emailAddress')
@@ -377,6 +406,7 @@ def showMessage(message, title = xbmcaddon.Addon().getLocalizedString(50107)):
     win.getControl(5).setText(message)
 
 thisPlugin = int(sys.argv[1])
+xbmcplugin.setPluginFanart(thisPlugin, 'fanart.jpg')
 userAgent = 'Mozilla/5.0(iPad; U; CPU OS 4_3 like Mac OS X; en-us) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8F191 Safari/6533.18.5'
 cookieJar = cookielib.CookieJar()
 cookieFile = ''
@@ -398,6 +428,7 @@ mode=None
 page=0
 thumbnail = ''
 onlinePremierUrl = '/Category/List/1962'
+UID=None
 
 
 try:
@@ -421,7 +452,7 @@ try:
 except:
     pass
     
-if mode == None or url == None or len(url) < 1:
+if (mode != 12) and ((mode == None) or (url == None) or (len(url) < 1)):
     showCategories()
 elif mode == 1:
     showSubCategories(url)
@@ -436,10 +467,14 @@ elif mode == 10:
 elif mode == 11:
     showSubscribedShows(url)
 elif mode == 12:
-    showSubcriptionInformation()
+    showMyAccount()
 elif mode == 13:
-    showHome()
-
+    showMyInfo(url)
+elif mode == 14:
+    showMyEntitlements(url)
+elif mode == 15:
+    showMyTransactions(url)
+    
 if cookieJarType == 'LWPCookieJar':
     cookieJar.save()
 
