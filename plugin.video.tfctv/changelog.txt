@@ -1,5 +1,10 @@
+0.0.51
+    Fixed issue between Live and episodes shows playback (libcurl cookie conflict)
+    Now log into TFC website to bring new sections 'Continue Watching', 'My List'
+    Now display Live TV Channels (DZML TeleRadyo, ANC Live) in Live category instead of featured ones
+    Added 'Celebrities' and 'My Account' menus as options in the addon settings (activated by default)
 0.0.50
-    Implemented StorageServer for caching data for better experience
+    Implemented StorageServer for caching data and pages
     Refactoring of source code for better use of StorageServer functions
     Added TFC website sections display as an option in the addon settings (activated by default)
     Added Most loved shows display as an option in the addon settings (activated by default)

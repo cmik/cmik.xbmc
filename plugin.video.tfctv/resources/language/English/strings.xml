@@ -9,10 +9,13 @@
     <string id="50106">Announcement</string>
     <string id="50107">Display TFC.tv's website sections</string>
     <string id="50108">Display most loved shows</string>
-    <string id="50109">Display Live category</string>
+    <string id="50109">Display Live TV Channels</string>
     <string id="50110">Advanced</string>
     <string id="50111">Activate cache</string>    
-    <string id="50112">Update Catalog cache </string>
+    <string id="50112">Display Tools</string>
+    <string id="50113">Display Celebrities</string>
+    <string id="50114">Display My Account</string>
+    <string id="50115">Menu display settings</string>
     <string id="50200">TFC.tv Account</string>
     <string id="50201">Email Address</string>
     <string id="50202">Password</string>
@@ -27,6 +30,9 @@
     <string id="57001">Subscription is already expired or the item is not part of your subscription</string>
     <string id="57002">No available information</string>
     <string id="57003">Catalog cache loaded successfully</string>
+    <string id="57004">Cookies data has successfully been deleted</string>
+    <string id="57005">Can't delete cookies data file</string>
+    <string id="57006">Can't find cookies data file</string>
     
 </strings>
 
