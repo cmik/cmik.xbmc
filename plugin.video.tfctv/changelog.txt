@@ -1,3 +1,9 @@
+0.0.50
+    Implemented StorageServer for caching data for better experience
+    Refactoring of source code for better use of StorageServer functions
+    Added TFC website sections display as an option in the addon settings (activated by default)
+    Added Most loved shows display as an option in the addon settings (activated by default)
+    Added Live streams as an option in the addon settings (activated by default)
 0.0.49
     Moved Entertainment, Movies, News and Live into 'By Category' section
     Added sections from TFC homepage website http://beta.tfc.tv/ to main menu
