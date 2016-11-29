@@ -17,6 +17,7 @@ def showCategories():
     url = '/Synapse/getsitemenu/%s'
     for c in categories:
         addDir(c['name'], url % c['id'], 1, 'icon.png')
+    addDir('Celebrities', '/Synapse/GetAllCelebrities', 6, 'icon.png')
     addDir('My account', '', 12, 'icon.png')
     xbmcplugin.endOfDirectory(thisPlugin)
 
@@ -26,6 +27,7 @@ def getCategories():
     return data
     
 def showSubCategories(url):
+    addDir('Most loved shows', '/Synapse/GetMostLovedShows', 5, 'icon.png')
     data = callJsonApi(url)
     subCatList = extractSubCategory(data, url)
     for s in subCatList:
@@ -46,12 +48,39 @@ def extractSubCategory(categories, url):
         if title and url:
             subCategories.append((title, url))
     return subCategories
-		
-def showShows(categoryId):
-    showListData = getShowListData(categoryId)
-    if showListData is None:
+
+def showMostLovedShows(url):
+    data = getMostLovedShowsData(url)
+    if len(data) == 0:
         xbmcplugin.endOfDirectory(thisPlugin)
         return
+    showShows(data)
+
+def getMostLovedShowsData(url):
+    showListData = {}
+    data = callJsonApi(url)
+    if data and len(data) > 0:
+        showListData = extractMostLovedShowListData(data)
+    return showListData
+    
+def extractMostLovedShowListData(data):
+    showListData = {}
+    for d in data:
+        thumbnail = d['image'].replace(' ', '%20')
+        title = d['categoryName']
+        showData = extractShowData(d)
+        showID = d['categoryId']
+        showListData[showID] = (title.encode('utf8'), thumbnail, showData)			
+    return showListData
+    
+def showCategoryShows(url):
+    data = getShowListData(url)
+    if len(data) == 0:
+        xbmcplugin.endOfDirectory(thisPlugin)
+        return
+    showShows(data)
+
+def showShows(showListData):
     listSubscribedFirst = True if thisAddon.getSetting('listSubscribedFirst') == 'true' else False
     italiciseUnsubscribed = True if thisAddon.getSetting('italiciseUnsubscribed') == 'true' else False
     listSubscribedFirst = False
@@ -95,7 +124,8 @@ def showShows(categoryId):
 def getShowListData(url):
     showListData = {}
     data = callJsonApi(url)
-    showListData = extractShowListData(data['shows'])
+    if data and 'shows' in data:
+        showListData = extractShowListData(data['shows'])
     return showListData
 	
 def extractShowListData(data):
@@ -109,10 +139,10 @@ def extractShowListData(data):
     return showListData
 	
 def extractShowData(data):
-    description = data['blurb']
-    dateAired = data['dateairedstr']
+    description = data['blurb'] if 'blurb' in data else ''
+    dateAired = data['dateairedstr'] if 'dateairedstr' in data else ''
     # nbEpisodes = len(data['episodes']) if data['episodes'] is None else data['episodes']
-    banner = data['banner'].replace(' ', '%20')
+    banner = data['banner'].replace(' ', '%20') if 'banner' in data else ''
     # showData = { 'listArts' : { 'poster' : poster }, 'listInfos' : { 'video' : { 'plot' : description, 'aired' : dateAired, 'status' : nbEpisodes } } }
     showData = { 'listArts' : { 'fanart' : banner, 'banner' : banner }, 'listInfos' : { 'video' : { 'plot' : description, 'year' : dateAired } } }
     return showData
@@ -177,6 +207,27 @@ def playEpisode(url):
 def get_media_info(episode):
     media_info = callJsonApi('/Synapse/GetVideo/%s' % episode)
     return media_info
+    
+def showCelebrities(url):
+    data = callJsonApi(url)
+    for d in data:
+        image = d['ImageUrl'].encode('utf8').replace(' ', '%20')
+        lastName = d['LastName'].encode('utf8') if d['LastName'] else ''
+        firstName = d['FirstName'].encode('utf8') if d['FirstName'] else ''
+        addDir('%s %s' % (lastName, firstName), '/Synapse/GetCelebrityDetails/%s' % d['CelebrityId'], 7, image, isFolder = False)
+    xbmcplugin.endOfDirectory(thisPlugin)
+    
+def showCelebrityInfo(url):
+    d = callJsonApi(url)
+    name = d['name'].encode('utf8') if d['name'] else ''
+    if d['birthday'] or d['birthplace'] or d['description']:
+        birthday = d['birthday'].encode('utf8') if d['birthday'] else '-'
+        birthplace = d['birthplace'].encode('utf8') if d['birthplace'] else '-'
+        description = d['description'].encode('utf8') if d['description'] else ''
+        message = 'Birthday: %s\nBirth place: %s\n\n%s\n\n' % (birthday, birthplace, description)
+    else:
+        message = xbmcaddon.Addon().getLocalizedString(57002)
+    showMessage(message, name)
     
 def getSubscribedShowIds():
     return getSubscribedShows()[0]
@@ -457,11 +508,17 @@ if (mode != 12) and ((mode == None) or (url == None) or (len(url) < 1)):
 elif mode == 1:
     showSubCategories(url)
 elif mode == 2:
-    showShows(url)
+    showCategoryShows(url)
 elif mode == 3:
     showEpisodes(url)
 elif mode == 4:
     playEpisode(url)
+elif mode == 5:
+    showMostLovedShows(url)
+elif mode == 6:
+    showCelebrities(url)
+elif mode == 7:
+    showCelebrityInfo(url)
 elif mode == 10:
     showSubscribedCategories(url)
 elif mode == 11:

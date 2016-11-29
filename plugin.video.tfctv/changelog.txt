@@ -1,3 +1,6 @@
+0.0.46
+    Added most loved shows list
+    Added celebrity list
 0.0.45
     Fixed missing thumbnails and fanarts
     Added 'My Account' in main menu

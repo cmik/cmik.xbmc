@@ -20,6 +20,7 @@
     
     <string id="57000">Media Error</string>
     <string id="57001">Subscription is already expired or the item is not part of your subscription</string>
+    <string id="57002">No available information</string>
     
 </strings>
 
