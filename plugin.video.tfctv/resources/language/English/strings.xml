@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <strings>
     <string id="50001">Message</string>
+    <string id="50002">Information</string>
     <string id="50100">Settings</string>
     <string id="50101">Episodes Per Page</string>
     <string id="50103">List subscribed shows first</string>
@@ -22,6 +23,9 @@
     <string id="50202">Password</string>
     <string id="50203">Login Retries</string>
     <string id="50204">Login Failed</string>
+    <string id="50205">Can't login to TFC website</string>
+    <string id="50206">[Preview] %s</string>
+    <string id="50207">You are only allowed to watch a preview</string>
     <string id="56001">TFC.tv My Account Information</string>
     <string id="56002">TFC.tv My Subscriptions</string>
     <string id="56003">TFC.tv My Transactions</string>

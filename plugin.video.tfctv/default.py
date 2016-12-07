@@ -9,7 +9,7 @@ try:
 except:
    from ressources.lib.dummy import storageserverdummy as StorageServer
 # Short cache   
-shortCache = StorageServer.StorageServer("tfctv", 1) # 1 hour cache
+shortCache = StorageServer.StorageServer("tfctv", 1/2) # 30 minutes cache
 # Long cache
 longCache = StorageServer.StorageServer("tfctv_db", 24 * 7) # 1 week cache
 
@@ -49,11 +49,11 @@ if cacheActive == 'false':
    
 #---------------------- FUNCTIONS ----------------------------------------
 def showMainMenu():
-    checkAccountChange()
+    checkAccountChange(forceSignIn=False)
     cleanCookies(False)
     
     if setting('displayWebsiteSections') == 'true':
-        sections = sCacheFunction(getWebsiteHomeSections)
+        sections = getWebsiteHomeSections()
         for s in sections:
             addDir(s['name'].title(), str(s['id']), 11, 'icon.png')
             
@@ -76,8 +76,7 @@ def showMainMenu():
         
     xbmcplugin.endOfDirectory(thisPlugin)
     
-def showCategories():
-    cleanCookies(False)
+def showCategories():   
     categories = lCacheFunction(getCategories)
     for c in categories:
         addDir(c['name'], str(c['id']), 1, 'icon.png')
@@ -107,6 +106,7 @@ def showSubCategoryShows(subCategoryId):
     displayShows(shows)
     
 def showWebsiteSectionShowEpisodes(section, page=0):
+    # checkAccountChange()
     itemsPerPage = int(setting('itemsPerPage'))
     episodes = sCacheFunction(getWebsiteSectionShowEpisodes, section, page, itemsPerPage)
     for e in episodes:
@@ -181,31 +181,38 @@ def showEpisodes(showId, page=0):
     xbmcplugin.endOfDirectory(thisPlugin)
         
 def playEpisode(url):
+    cleanCookies(False)
     errorCode = -1
     episodeDetails = {}
     episode = url.split('/')[0]
     for i in range(int(setting('loginRetries')) + 1):
         episodeDetails = getMediaInfo(episode)
-        if episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] == 1:
+        if episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] == 0:
             break
         else:
-            loginToWebsite()
-    if episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] == 1:
-        url = episodeDetails['data']['Url']
+            login()
+    if episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] == 0:
+        if 'preview' in episodeDetails['data'] and episodeDetails['data']['preview'] == True:
+            showNotification(lang(50207), lang(50002))
+        url = episodeDetails['data']['uri']
         liz = xbmcgui.ListItem(name, iconImage = "DefaultVideo.png", thumbnailImage = thumbnail, path = url)
         liz.setInfo( type = "Video", infoLabels = { "Title": name } )
         liz.setProperty('IsPlayable', 'true')
         return xbmcplugin.setResolvedUrl(thisPlugin, True, liz)
     else:
-        if (not episodeDetails) or (episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] != 1):
-            xbmc.executebuiltin('Notification(%s, %s)' % (lang(57000), lang(57001)))
+        if (not episodeDetails) or (episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] != 0):
+            showNotification(lang(57000), lang(57001))
     return False
     
 def getMediaInfo(episodeId):
-    # mediaInfo = getEpisodeVideo(episodeId)
+    mediaInfo = getEpisodeVideo(episodeId)
     # If media info can't be retrieve from JSON webservices, then we try from website HTML page
-    # if mediaInfo and 'errorCode' in mediaInfo and mediaInfo['errorCode'] == -703:
-    mediaInfo = getMediaInfoFromWebsite(episodeId)
+    if 'errorCode' in mediaInfo and mediaInfo['errorCode'] != 0:
+        mediaInfo = getMediaInfoFromWebsite(episodeId)
+        if mediaInfo and 'errorCode' in mediaInfo and mediaInfo['errorCode'] == 1:
+            mediaInfo['errorCode'] = 0
+    if 'data' in mediaInfo and 'Url' in mediaInfo['data']:
+        mediaInfo['data']['uri'] = mediaInfo['data']['Url']
     return mediaInfo
     
 def getMediaInfoFromWebsite(episodeId):
@@ -229,9 +236,7 @@ def getMediaInfoFromWebsite(episodeId):
         if episodeDetails and 'StatusCode' in episodeDetails:
             mediaInfo['errorCode'] = episodeDetails['StatusCode']
             if 'MediaReturnObj' in episodeDetails and 'uri' in episodeDetails['MediaReturnObj']:
-                episodeDetails['uri'] = episodeDetails['MediaReturnObj']['uri']
-            if episodeDetails and 'StatusCode' in episodeDetails and episodeDetails['StatusCode'] == 1:
-                mediaInfo['data'] = { 'Url' : episodeDetails['uri'] }
+                mediaInfo['data'] = episodeDetails['MediaReturnObj']
     return mediaInfo
     
 def showCelebrities():
@@ -264,7 +269,7 @@ def showMyAccount():
     ]
     for c in categories:
         addDir(c['name'], c['url'], c['mode'], 'icon.png')
-    # addDir('Logout', '/logout', 99, 'icon.png', isFolder = False)    
+    addDir('Logout', '/', 16, 'icon.png', isFolder = False)    
     xbmcplugin.endOfDirectory(thisPlugin)
     
 def showMyInfo():
@@ -385,7 +390,7 @@ def showSubscribedShows(url):
 def reloadCatalogCache():
     res = updateCatalogCache()
     if res is True:
-        showMessage(lang(57003), lang(50001))
+        showNotification(lang(57003), lang(50001))
     
 def updateCatalogCache():
     # update sections cache
@@ -770,8 +775,11 @@ def getUserTransactions():
     
 def getUserSession():
     userSession = None
+    email = setting('emailAddress')
+    password = setting('password')
+    hash = hashlib.sha1(email + password).hexdigest()
     for i in range(int(setting('loginRetries')) + 1):
-        res = shortCache.get('userSession')
+        res = shortCache.get('userSession_' + hash)
         if res:
             userSession = json.loads(res)
             if userSession:
@@ -794,32 +802,39 @@ def getUserCookie():
         userSession['info']
     return cookie
     
-def checkAccountChange(website=True):
+def checkAccountChange(forceSignIn=False):
     email = setting('emailAddress')
     password = setting('password')
-    site = 'website' if website == True else 'webservice'    
-    hash = hashlib.sha1(email + password + site).hexdigest()
+    hash = hashlib.sha1(email + password).hexdigest()
     hashFile = os.path.join(xbmc.translatePath(addonInfo('profile')), 'a.tmp')
     savedHash = ''
     accountChanged = False
+    loginSuccess = False
     if os.path.exists(hashFile):
-        with open(hashFile) as f:
-            savedHash = f.read()
+        if forceSignIn == True: 
+            os.unlink(hashFile)
+        else: 
+            with open(hashFile) as f:
+                savedHash = f.read()
     if savedHash != hash:
-        if website == True:
-            logoutFromWebservice()
-            loginToWebsite()
-        else:
-            logoutFromWebsite()
-            loginToWebservice()
         accountChanged = True
-    if os.path.exists(xbmc.translatePath(addonInfo('profile'))):
-        with open(hashFile, 'w') as f:
-            f.write(hash)
-    return accountChanged
+        logout()
+        (signedIntoWebsite, signedIntoWebservice) = login()
+        if signedIntoWebsite == True and signedIntoWebservice == True:
+            loginSuccess = True                
+        if loginSuccess == True and os.path.exists(xbmc.translatePath(addonInfo('profile'))):
+            with open(hashFile, 'w') as f:
+                f.write(hash)
+        elif os.path.exists(hashFile)==True: 
+            os.unlink(hashFile)
+    return (accountChanged, loginSuccess)
     
-def loginToWebservice():
-    cookieJar.clear()
+def login():
+    signedIntoWebservice = loginToWebservice(True)
+    signedIntoWebsite = loginToWebsite(True)
+    return (signedIntoWebsite, signedIntoWebservice)
+    
+def loginToWebservice(quiet=False):
     email = setting('emailAddress')
     password = setting('password')
     param = {'email' : email, 'pw' : password}
@@ -827,30 +842,33 @@ def loginToWebservice():
     log(userSession)
     if userSession:
         if 'errorCode' in userSession and userSession['errorCode'] == 0:
-            shortCache.set('userSession', json.dumps(userSession))
+            hash = hashlib.sha1(email + password).hexdigest()
+            shortCache.set('userSession_' + hash, json.dumps(userSession))
             return True
-        elif 'errorMessage' in userSession:
-            showMessage(message, userSession['errorMessage'].encode('utf8'))
+        elif 'errorMessage' in userSession and quiet == False:
+            showNotification(userSession['errorMessage'].encode('utf8'), lang(50204))
     return False
     
-def loginToWebsite():
-    cookieJar.clear()
-    login_page = callServiceApi("/user/login", base_url = 'https://beta.tfc.tv')
+def loginToWebsite(quiet=False):
+    login_page = callServiceApi("/user/login", base_url = 'https://beta.tfc.tv', useCache=False)
     form_login = common.parseDOM(login_page, "form", attrs = {'id' : 'form1'})
-    request_verification_token = common.parseDOM(form_login[0], "input", attrs = {'name' : '__RequestVerificationToken'}, ret = 'value')
-    emailAddress = addon.getSetting('emailAddress')
-    password = addon.getSetting('password')
-    formdata = { "EMail" : emailAddress, "Password": password, '__RequestVerificationToken' : request_verification_token[0] }
-    callServiceApi("/user/login", formdata, headers = [('Referer', 'https://beta.tfc.tv/user/login')], base_url = 'https://beta.tfc.tv', useCache = False)
+    if len(form_login) > 0:
+        request_verification_token = common.parseDOM(form_login[0], "input", attrs = {'name' : '__RequestVerificationToken'}, ret = 'value')
+        emailAddress = addon.getSetting('emailAddress')
+        password = addon.getSetting('password')
+        formdata = { "EMail" : emailAddress, "Password": password, '__RequestVerificationToken' : request_verification_token[0] }
+        html = callServiceApi("/user/login", formdata, headers = [('Referer', 'https://beta.tfc.tv/user/login')], base_url = 'https://beta.tfc.tv', useCache = False)
+        signin = common.parseDOM(html, "header", attrs = { 'class' : 'signin' })
+        if len(signin) > 0 and quiet == False:
+            showNotification(lang(50205), lang(50204))
+            return False
+    return True
 
-def logoutFromWebservice():
+def logout():
     callServiceApi("/logout", headers = [('Referer', 'http://tfc.tv/')], base_url = 'https://tfc.tv', useCache = False)
-    
-def logoutFromWebsite():    
     callServiceApi("/logout", headers = [('Referer', 'http://beta.tfc.tv/')], base_url = 'https://beta.tfc.tv', useCache = False)
+    cookieJar.clear()
 
-    
-    
 def callServiceApi(path, params = {}, headers = [], base_url = baseUrl, useCache = True):
     import md5
     global cacheActive
@@ -862,7 +880,7 @@ def callServiceApi(path, params = {}, headers = [], base_url = baseUrl, useCache
     key = md5.new(base_url + path + urllib.urlencode(params)).hexdigest()
     log('Key %s : %s - %s' % (key, base_url + path, params))
     
-    if cacheActive == 'true' and useCache is True:
+    if cacheActive == 'true' and useCache == True:
         if shortCache.get(key):
             cached = True
             res = shortCache.get(key)
@@ -886,7 +904,7 @@ def callServiceApi(path, params = {}, headers = [], base_url = baseUrl, useCache
         res = response.read()
         log(res)
         
-        if toCache is True and res:
+        if toCache == True and res:
             log('Stored in cache (%s) : %s' % (key, res))
             shortCache.set(key, res) 
     
@@ -930,7 +948,7 @@ def addDir(name, url, mode, thumbnail, page = 0, isFolder = True, **kwargs):
                 liz.setArt(v)
     return xbmcplugin.addDirectoryItem(handle = thisPlugin, url = u,listitem = liz, isFolder = isFolder)
 
-def showMessage(message, title = lang(50107)):
+def showMessage(message, title = lang(50001)):
     if not message:
         return
     xbmc.executebuiltin("ActivateWindow(%d)" % 10147)
@@ -939,35 +957,36 @@ def showMessage(message, title = lang(50107)):
     win.getControl(1).setLabel(title)
     win.getControl(5).setText(message)
     
+def showNotification(message, title = lang(50001)):
+    xbmc.executebuiltin('Notification(%s, %s)' % (title, message))
+    
 def log(mixed, level=0):
     if common.dbg and common.dbglevel > level:
         common.log(mixed)
 
 # This function is a workaround to fix an issue on cookies conflict between live stream and shows episodes
-def cleanCookies(showMessage=True):
+def cleanCookies(notify=True):
     message = ''
-    if os.path.exists(os.path.join(xbmc.translatePath('special://home'), 'cache'))==True:  
-        if os.path.exists(os.path.join(xbmc.translatePath('special://home/cache'), 'cookies.dat'))==True:  
-            log('cookies file FOUND')
-            try: 
-                os.unlink(os.path.join(xbmc.translatePath('special://home/cache'), 'cookies.dat'))
-                message = lang(57004)
-            except: 
-                message = lang(57005)
+    if os.path.exists(os.path.join(xbmc.translatePath('special://home'), 'cache', 'cookies.dat'))==True:  
+        log('cookies file FOUND')
+        try: 
+            os.unlink(os.path.join(xbmc.translatePath('special://home'), 'cache', 'cookies.dat'))
+            message = lang(57004)
+        except: 
+            message = lang(57005)
                 
-    elif os.path.exists(os.path.join(xbmc.translatePath('special://home'), 'temp'))==True:  
-        if os.path.exists(os.path.join(xbmc.translatePath('special://home/temp'), 'cookies.dat'))==True:  
-            log('cookies file FOUND')
-            try: 
-                os.unlink(os.path.join(xbmc.translatePath('special://home/temp'), 'cookies.dat'))
-                message = lang(57004)
-            except: 
-                message = lang(57005)
+    elif os.path.exists(os.path.join(xbmc.translatePath('special://home'), 'temp', 'cookies.dat'))==True:  
+        log('cookies file FOUND')
+        try: 
+            os.unlink(os.path.join(xbmc.translatePath('special://home'), 'temp', 'cookies.dat'))
+            message = lang(57004)
+        except: 
+            message = lang(57005)
     else:
         message = lang(57006)
         
-    if showMessage == True:
-        showMessage(message)
+    if notify == True:
+        showNotification(message)
 
     
 #---------------------- MAIN ----------------------------------------
@@ -1049,6 +1068,8 @@ elif mode == 14:
     showMyEntitlements()
 elif mode == 15:
     showMyTransactions()
+elif mode == 16:
+    logout()
 elif mode == 50:
     showTools()
 elif mode == 51:
@@ -1056,7 +1077,8 @@ elif mode == 51:
 elif mode == 52:
     cleanCookies()
 elif mode == 99:
-    callServiceApi(url)
+    cookieJar.clear()
+    # callServiceApi(url)
 # elif mode == xx:
     # showSubscribedCategories(url)
 # elif mode == xx:
