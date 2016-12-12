@@ -49,7 +49,7 @@ if cacheActive == 'false':
    
 #---------------------- FUNCTIONS ----------------------------------------
 def showMainMenu():
-    checkAccountChange(forceSignIn=False)
+    checkAccountChange(forceSignIn=True)
     cleanCookies(False)
     
     if setting('displayWebsiteSections') == 'true':
@@ -187,11 +187,11 @@ def playEpisode(url):
     episode = url.split('/')[0]
     for i in range(int(setting('loginRetries')) + 1):
         episodeDetails = getMediaInfo(episode)
-        if episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] == 0:
+        if episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] == 0 and 'data' in episodeDetails:
             break
         else:
             login()
-    if episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] == 0:
+    if episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] == 0 and 'data' in episodeDetails:
         if 'preview' in episodeDetails['data'] and episodeDetails['data']['preview'] == True:
             showNotification(lang(50207), lang(50002))
         url = episodeDetails['data']['uri']
