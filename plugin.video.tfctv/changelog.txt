@@ -1,3 +1,6 @@
+0.0.54
+    Changed user agent to be compatible with beta.tfc.tv website
+    Set cache to false by default in settings (sometimes some episodes don't appear due to cache)
 0.0.53
     Force login to TFC at addon launch
     Bug fix on playback when not logged in

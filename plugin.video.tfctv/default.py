@@ -33,7 +33,7 @@ lCacheFunction = longCache.cacheFunction
 
 #---------------------- CONFIG ----------------------------------------
 # URLs
-baseUrl = 'http://tfc.tv'
+webserviceUrl = 'http://tfc.tv'
 websiteUrl = 'http://beta.tfc.tv'
 
 # Cache
@@ -869,7 +869,7 @@ def logout():
     callServiceApi("/logout", headers = [('Referer', 'http://beta.tfc.tv/')], base_url = 'https://beta.tfc.tv', useCache = False)
     cookieJar.clear()
 
-def callServiceApi(path, params = {}, headers = [], base_url = baseUrl, useCache = True):
+def callServiceApi(path, params = {}, headers = [], base_url = webserviceUrl, useCache = True):
     import md5
     global cacheActive
     
@@ -891,6 +891,7 @@ def callServiceApi(path, params = {}, headers = [], base_url = baseUrl, useCache
     
     if cached is False:
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookieJar))
+        userAgent = userAgents[base_url] if base_url in userAgents else userAgents['default']
         headers.append(('User-Agent', userAgent))
         opener.addheaders = headers
         log('%s - %s' % (base_url + path, params))
@@ -910,7 +911,7 @@ def callServiceApi(path, params = {}, headers = [], base_url = baseUrl, useCache
     
     return res
 
-def callJsonApi(path, params = {}, headers = [('X-Requested-With', 'XMLHttpRequest')], base_url = baseUrl, useCache = True):
+def callJsonApi(path, params = {}, headers = [('X-Requested-With', 'XMLHttpRequest')], base_url = webserviceUrl, useCache = True):
     res = callServiceApi(path, params = params, headers = headers, base_url = base_url, useCache = useCache)
     data = json.loads(res)
     return data
@@ -992,7 +993,11 @@ def cleanCookies(notify=True):
 #---------------------- MAIN ----------------------------------------
 thisPlugin = int(sys.argv[1])
 xbmcplugin.setPluginFanart(thisPlugin, 'fanart.jpg')
-userAgent = 'Mozilla/5.0(iPad; U; CPU OS 4_3 like Mac OS X; en-us) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8F191 Safari/6533.18.5'
+userAgents = { 
+    webserviceUrl : 'Mozilla/5.0 (iPad; CPU OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3',
+    websiteUrl : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2486.0 Safari/537.36 Edge/13.10586',
+    'default' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2486.0 Safari/537.36 Edge/13.10586'
+    }
 cookieJar = cookielib.CookieJar()
 cookieFile = ''
 cookieJarType = ''

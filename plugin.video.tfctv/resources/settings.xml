@@ -19,7 +19,7 @@
         <setting id="announcement" type="text" label="50106" default="" visible="false"/>
     </category>
     <category label="50110">
-        <setting id="cacheActive" type="bool" label="50111" default="true" visible="true"/>
+        <setting id="cacheActive" type="bool" label="50111" default="false" visible="true"/>
         <setting id="displayTools" type="bool" label="50112" default="false" visible="true"/>
     </category>
 </settings>
