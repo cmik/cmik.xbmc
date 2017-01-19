@@ -194,6 +194,9 @@ def playEpisode(url):
     if episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] == 0 and 'data' in episodeDetails:
         if 'preview' in episodeDetails['data'] and episodeDetails['data']['preview'] == True:
             showNotification(lang(50207), lang(50002))
+        else:
+            if 'StatusMessage' in episodeDetails and episodeDetails['StatusMessage'] != '':
+                showNotification(episodeDetails['StatusMessage'], lang(57000))
         url = episodeDetails['data']['uri']
         liz = xbmcgui.ListItem(name, iconImage = "DefaultVideo.png", thumbnailImage = thumbnail, path = url)
         liz.setInfo( type = "Video", infoLabels = { "Title": name } )
@@ -201,7 +204,7 @@ def playEpisode(url):
         return xbmcplugin.setResolvedUrl(thisPlugin, True, liz)
     else:
         if (not episodeDetails) or (episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] != 0):
-            showNotification(lang(57000), lang(57001))
+            showNotification(lang(57001), lang(57000))
     return False
     
 def getMediaInfo(episodeId):
@@ -237,6 +240,8 @@ def getMediaInfoFromWebsite(episodeId):
             mediaInfo['errorCode'] = episodeDetails['StatusCode']
             if 'MediaReturnObj' in episodeDetails and 'uri' in episodeDetails['MediaReturnObj']:
                 mediaInfo['data'] = episodeDetails['MediaReturnObj']
+            if 'StatusMessage' in episodeDetails and episodeDetails['StatusMessage'] != '' and episodeDetails['StatusMessage'] != 'OK':
+                mediaInfo['StatusMessage'] = episodeDetails['StatusMessage']
     return mediaInfo
     
 def showCelebrities():
@@ -664,6 +669,7 @@ def getEpisodesPerPage(showId, page=0, itemsPerPage=10):
         shortDescription = common.parseDOM(e, "div", attrs = { 'class' : 'e-desc' })[0]
         showTitle = showDetails['name']
         fanart = showDetails['banner'].replace(' ', '%20')
+        year = ''
         description = ''
         episodeNumber = 1
         

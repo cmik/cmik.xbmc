@@ -1,3 +1,6 @@
+0.0.55
+    Fixed error in movie section
+    Now show website error message on playback attempt
 0.0.54
     Changed user agent to be compatible with beta.tfc.tv website
     Set cache to false by default in settings (sometimes some episodes don't appear due to cache)
@@ -6,12 +9,12 @@
     Bug fix on playback when not logged in
 0.0.52
     Fixed issues with user session
-    Minor bug fixes
+    Minor bug fixess
 0.0.51
     Fixed issue between Live and episodes shows playback (libcurl cookie conflict)
     Now log into TFC website to bring new sections 'Continue Watching', 'My List'
     Now display Live TV Channels (DZML TeleRadyo, ANC Live) in Live category instead of featured ones
-    Added 'Celebrities' and 'My Account' menus as options in the addon settings (activated by default)
+    Added 'Celebrities' and 'My Account' menus as options in sthe addon settings (activated by default)
 0.0.50
     Implemented StorageServer for caching data and pages
     Refactoring of source code for better use of StorageServer functions
