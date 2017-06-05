@@ -1,3 +1,6 @@
+0.0.57
+    Fixed episode playback for Basic plan users
+    Changed deprecated md5 use to hashlib
 0.0.56
     Fixed category section and video playback after new TFC.tv updates
 0.0.55

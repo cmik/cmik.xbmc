@@ -189,6 +189,7 @@ def playEpisode(url):
     episode = url.split('/')[0]
     for i in range(int(setting('loginRetries')) + 1):
         episodeDetails = getMediaInfo(episode)
+        log(episodeDetails)
         if episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] == 0 and 'data' in episodeDetails:
             break
         else:
@@ -234,18 +235,18 @@ def getMediaInfoFromWebsite(episodeId):
     mediaToken = None
     for script in scripts:
         line = script.strip();
-        tokenmatch = re.compile('/Scripts/amp-full\.js\?token\=(.+)" type', re.IGNORECASE).search(line)
+        tokenmatch = re.compile('/Scripts/amp-.+\.js\?token\=(.+)" type', re.IGNORECASE).search(line)
         if tokenmatch:
             mediaToken = tokenmatch.group(1).encode("ascii")
             break
     if mediaToken:
-        import md5
+        import hashlib
         global cookieJar
         
         cookie = []
         for c in cookieJar:
             cookie.append('%s=%s' % (c.name, c.value))
-        cookie.append('cc_fingerprintid='+md5.new(setting('emailAddress')).hexdigest())
+        cookie.append('cc_fingerprintid='+hashlib.md5(setting('emailAddress')).hexdigest())
         
         callHeaders = [
             ('Accept', 'application/json, text/javascript, */*; q=0.01'), 
@@ -957,14 +958,14 @@ def logout():
     cookieJar.clear()
 
 def callServiceApi(path, params = {}, headers = [], base_url = websiteUrl, useCache = True):
-    import md5
+    import hashlib
     global cacheActive, cookieJar
     
     res = ''
     cached = False
     toCache = False
     
-    key = md5.new(base_url + path + urllib.urlencode(params)).hexdigest()
+    key = hashlib.md5(base_url + path + urllib.urlencode(params)).hexdigest()
     log('Key %s : %s - %s' % (key, base_url + path, params))
     
     if cacheActive == 'true' and useCache == True:
@@ -1184,7 +1185,7 @@ if cookieJarType == 'LWPCookieJar':
 
 if setting('announcement') != addonInfo('version'):
     messages = {
-        '0.0.38': 'Your TFC.tv plugin has been updated.\n\nTFC.tv has undergone a lot of changes and the plugin needs to be updated to adjust to those changes.\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv XBMC Forum thread (http://forum.xbmc.org/showthread.php?tid=155870) or to the plugin website (https://code.google.com/p/todits-xbmc/).'
+        '0.0.56': 'Your TFC.tv plugin has been updated.\n\nTFC.tv has undergone a lot of changes and the plugin needs to be updated to adjust to those changes.\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=155870) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).'
         }
     if addonInfo('version') in messages:
         showMessage(messages[addonInfo('version')], lang(50106))
