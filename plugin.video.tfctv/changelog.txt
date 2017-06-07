@@ -1,3 +1,7 @@
+0.0.58
+    Fixed image pixelation in video streams
+    Disabled Cache
+    Set urllib2 request timeout to 20 seconds to prevent errors because of TFC webservice latencies
 0.0.57
     Fixed episode playback for Basic plan users
     Changed deprecated md5 use to hashlib

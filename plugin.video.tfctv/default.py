@@ -1,4 +1,4 @@
-import sys, urllib, urllib2, json, cookielib, time, os.path, hashlib
+import sys, urllib, urllib2, ssl, json, cookielib, time, os.path, hashlib
 import xbmc, xbmcgui, xbmcplugin, xbmcaddon
 from operator import itemgetter
 
@@ -14,21 +14,14 @@ shortCache = StorageServer.StorageServer("tfctv", 1/2) # 30 minutes cache
 longCache = StorageServer.StorageServer("tfctv_db", 24 * 7) # 1 week cache
 
 
-
 common = CommonFunctions
-
 addon = xbmcaddon.Addon()
-
 setting = addon.getSetting
-
 lang = addon.getLocalizedString
-
 addonInfo = addon.getAddonInfo
-
 common.plugin = addonInfo('name')
 
 sCacheFunction = shortCache.cacheFunction
-
 lCacheFunction = longCache.cacheFunction
 
 #---------------------- CONFIG ----------------------------------------
@@ -39,6 +32,7 @@ websiteSecuredUrl = 'https://tfc.tv'
 
 # Cache
 cacheActive = setting('cacheActive')
+cacheActive = 'false'
 if cacheActive == 'false': 
     sCacheFunction = lambda x, *y: x(*y)
     lCacheFunction = lambda x, *y: x(*y)
@@ -183,7 +177,7 @@ def showEpisodes(showId, page=0):
     xbmcplugin.endOfDirectory(thisPlugin)
         
 def playEpisode(url):
-    # cleanCookies(False)
+    cleanCookies(False)
     errorCode = -1
     episodeDetails = {}
     episode = url.split('/')[0]
@@ -240,9 +234,6 @@ def getMediaInfoFromWebsite(episodeId):
             mediaToken = tokenmatch.group(1).encode("ascii")
             break
     if mediaToken:
-        import hashlib
-        global cookieJar
-        
         cookie = []
         for c in cookieJar:
             cookie.append('%s=%s' % (c.name, c.value))
@@ -263,6 +254,9 @@ def getMediaInfoFromWebsite(episodeId):
             mediaInfo['errorCode'] = episodeDetails['StatusCode']
             if 'MediaReturnObj' in episodeDetails and 'uri' in episodeDetails['MediaReturnObj']:
                 # episodeDetails['MediaReturnObj']['uri'] = episodeDetails['MediaReturnObj']['uri'].replace('o2-f', 'abscbnhdlive-f')
+                episodeDetails['MediaReturnObj']['uri'] = episodeDetails['MediaReturnObj']['uri'].replace('&b=100-1000', '')
+                # episodeDetails['MediaReturnObj']['uri'] = episodeDetails['MediaReturnObj']['uri'].replace('/i/', '/z/')
+                # episodeDetails['MediaReturnObj']['uri'] = episodeDetails['MediaReturnObj']['uri'].replace('/master.m3u8/', '/manifest.f4m/')
                 mediaInfo['data'] = episodeDetails['MediaReturnObj']
             if 'StatusMessage' in episodeDetails and episodeDetails['StatusMessage'] != '' and episodeDetails['StatusMessage'] != 'OK':
                 mediaInfo['StatusMessage'] = episodeDetails['StatusMessage']
@@ -983,13 +977,21 @@ def callServiceApi(path, params = {}, headers = [], base_url = websiteUrl, useCa
         headers.append(('User-Agent', userAgent))
         opener.addheaders = headers
         log('%s - %s' % (base_url + path, params))
-        if params:
-            data_encoded = urllib.urlencode(params)
-            response = opener.open(base_url + path, data_encoded)
-        else:
-            response = opener.open(base_url + path)
+        requestTimeOut = 20
+        response = None
+        
+        try:
+            if params:
+                data_encoded = urllib.urlencode(params)
+                response = opener.open(base_url + path, data_encoded, timeout = requestTimeOut)
+            else:
+                response = opener.open(base_url + path, timeout = requestTimeOut)
+        except (urllib2.URLError, ssl.SSLError) as e:
+            message = "Connection timeout : " + base_url + path
+            log(message)
+            showNotification(message)
             
-        res = response.read()
+        res = response.read() if response else ''
         log(res)
         
         if toCache == True and res:
@@ -1000,7 +1002,7 @@ def callServiceApi(path, params = {}, headers = [], base_url = websiteUrl, useCa
 
 def callJsonApi(path, params = {}, headers = [('X-Requested-With', 'XMLHttpRequest')], base_url = webserviceUrl, useCache = True):
     res = callServiceApi(path, params = params, headers = headers, base_url = base_url, useCache = useCache)
-    data = json.loads(res)
+    data = json.loads(res) if res != '' else []
     return data
     
 def getParams():
@@ -1056,7 +1058,7 @@ def log(mixed, level=0):
 def cleanCookies(notify=True):
     message = ''
     if os.path.exists(os.path.join(xbmc.translatePath('special://home'), 'cache', 'cookies.dat'))==True:  
-        log('cookies file FOUND')
+        log('cookies file FOUND (cache)')
         try: 
             os.unlink(os.path.join(xbmc.translatePath('special://home'), 'cache', 'cookies.dat'))
             message = lang(57004)
@@ -1064,9 +1066,16 @@ def cleanCookies(notify=True):
             message = lang(57005)
                 
     elif os.path.exists(os.path.join(xbmc.translatePath('special://home'), 'temp', 'cookies.dat'))==True:  
-        log('cookies file FOUND')
+        log('cookies file FOUND (temp)')
         try: 
             os.unlink(os.path.join(xbmc.translatePath('special://home'), 'temp', 'cookies.dat'))
+            message = lang(57004)
+        except: 
+            message = lang(57005)
+    elif os.path.exists(os.path.join(xbmc.translatePath(addonInfo('profile')), cookieFileName))==True:  
+        log('cookies file FOUND (profile)')
+        try: 
+            os.unlink(os.path.join(xbmc.translatePath(addonInfo('profile')), cookieFileName))
             message = lang(57004)
         except: 
             message = lang(57005)
@@ -1088,11 +1097,12 @@ userAgents = {
     }
     
 cookieJar = cookielib.CookieJar()
+cookieFileName = 'tfctv.cookie'
 cookieFile = ''
 cookieJarType = ''
 
 if os.path.exists(xbmc.translatePath(addonInfo('profile'))):
-    cookieFile = os.path.join(xbmc.translatePath(addonInfo('profile')), 'tfctv.cookie')
+    cookieFile = os.path.join(xbmc.translatePath(addonInfo('profile')), cookieFileName)
     cookieJar = cookielib.LWPCookieJar(cookieFile)
     cookieJarType = 'LWPCookieJar'
     
