@@ -1,3 +1,7 @@
+0.0.59
+    Added option HTTP request timeout in advanced settings (default: 20 seconds)
+    Retrieve data from website instead of TFC API due to timeout errors
+    Added website sections
 0.0.58
     Fixed image pixelation in video streams
     Disabled Cache
