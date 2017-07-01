@@ -17,6 +17,7 @@
     <string id="50113">HTTP request time out</string>
     <string id="50114">Display My Account</string>
     <string id="50115">Menu display settings</string>
+    <string id="50116">Request verification token</string>
     <string id="50200">TFC.tv Account</string>
     <string id="50201">Email Address</string>
     <string id="50202">Password</string>
@@ -37,6 +38,10 @@
     <string id="57004">Cookies data has successfully been deleted</string>
     <string id="57005">Can't delete cookies data file</string>
     <string id="57006">Can't find cookies data file</string>
+    <string id="57007">You're not logged into TFC.tv.</string>
+    <string id="57008">Do you want to log in as %s?</string>
+    <string id="57009">Welcome %s</string>
+    <string id="57010">You are now logged out from TFC. Hope to see you soon</string>
     
 </strings>
 

@@ -1,3 +1,6 @@
+0.0.60
+    My Account menu is now working again (account, subscription, transaction info)
+    For login issues at startup (preview mode), now we check if logged in and ask to log in if not
 0.0.59
     Added option HTTP request timeout in advanced settings (default: 20 seconds)
     Retrieve data from website instead of TFC API due to timeout errors

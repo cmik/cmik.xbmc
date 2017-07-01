@@ -62,6 +62,16 @@ def showMainMenu():
     checkAccountChange()
     # cleanCookies(False)
     
+    # if not logged in, ask to log in
+    if isLoggedIn() == False:
+        if (confirm(lang(57007), line1=lang(57008) % setting('emailAddress'))):
+            (account, logged) = checkAccountChange(True)
+            if logged == True:
+                user = getUserInfo()
+                showNotification(lang(57009) % user.get('FirstName', 'back to TFC'), title='')
+            else:
+                showNotification(lang(50205), title='')
+    
     # if setting('displayMostLovedShows') == 'true':
         # addDir('Most Loved Shows', '/', 5, 'icon.png')
     
@@ -248,6 +258,13 @@ def getMediaInfoFromWebsite(episodeId):
         for c in cookieJar:
             cookie.append('%s=%s' % (c.name, c.value))
         cookie.append('cc_fingerprintid='+hashlib.md5(setting('emailAddress')).hexdigest())
+        cookie.append('__RequestVerificationToken='+setting('requestVerificationToken'))
+        # cookie.append('__gads=ID=996d5655e625bd63:T=1496617344:S=ALNI_MZ-HrLFkHX1EDiZT2kTw618lLKlYQ')
+        # cookie.append('GED_PLAYLIST_ACTIVITY=W3sidSI6IjhRTFgiLCJ0c2wiOjE0OTY2MTgyNTAsIm52IjoxLCJ1cHQiOjE0OTY2MTczNzQsImx0IjoxNDk2NjE4MjQ4fV0.')
+        # cookie.append('ASP.NET_SessionId=i55k2ipa4h42w5mqzreh4vr0')
+        # cookie.append('ai_user=jzJtO|2017-06-03T23:11:11.107Z')
+        # cookie.append('is_first=1')
+        # cookie.append('HTML_VisitCountCookie=NaN')
         
         callHeaders = [
             ('Accept', 'application/json, text/javascript, */*; q=0.01'), 
@@ -294,8 +311,8 @@ def showCelebrityInfo(url):
 def showMyAccount():
     checkAccountChange(False)
     categories = [
-        { 'name' : 'My info', 'url' : '/', 'mode' : 13 },
-        { 'name' : 'Entitlements', 'url' : '/', 'mode' : 14 },
+        { 'name' : 'My info', 'url' : '/profile', 'mode' : 13 },
+        { 'name' : 'My subscription', 'url' : '/', 'mode' : 14 },
         { 'name' : 'Transactions', 'url' : '/', 'mode' : 15 }
     ]
     for c in categories:
@@ -304,22 +321,29 @@ def showMyAccount():
     xbmcplugin.endOfDirectory(thisPlugin)
     
 def showMyInfo():
-    UID = getUserUID()
+    # UID = getUserUID()
+    loggedIn = isLoggedIn()
     message = ''
-    if UID:
-        user = getUserInfo(UID)
-        message = 'Email: %s\nFirst name: %s\nLast name: %s\nCountry: %s\nState: %s\nCity: %s\n\n' % (user['Email'].encode('utf8'), user['FirstName'].encode('utf8'), user['LastName'].encode('utf8'), user['CountryCode'].encode('utf8'), user['State'].encode('utf8'), user['City'].encode('utf8'))
+    if loggedIn == True:
+        user = getUserInfo()
+        message = 'First name: %s\nLast name: %s\nCountry: %s\nState: %s\nCity: %s\nPhone: %s\nMember since: %s\n\n' % (
+            user.get('FirstName', ''),
+            user.get('LastName', ''), 
+            user.get('CountryCode', ''), 
+            user.get('State', ''), 
+            user.get('City', ''),
+            user.get('Phone', ''),
+            user.get('MemberSince', '')
+            )
     else:
         message = lang(57002)
     showMessage(message, lang(56001))
     
-def showMyEntitlements():
-    data = getUserEntitlements()
+def showMySubscription():
+    sub = getUserSubscription()
     message = ''
-    if data['total'] > 0:
-        for entitlement in data['data']:
-            entitlementEntry = 'Package Name: %s\n    EID: %s\n    Expiry Date: %s\n\n' % (entitlement['Content'], entitlement['EntitlementId'], entitlement['ExpiryDate'])
-            message += entitlementEntry
+    if sub:
+        message += 'Plan: %s\n\n%s' % (sub['Plan'], sub['Details'])
     else:
         message = lang(57002)
     showMessage(message, lang(56002))
@@ -329,8 +353,10 @@ def showMyTransactions():
     message = ''
     if len(transactions) > 0:
         for t in transactions:
-            expiryUnixTime = (int(t['TransactionDate'].replace('/Date(','').replace(')/', ''))) / 1000
-            message += 'TID: %s\nProduct: %s\nDate: %s\nAmount: %.2f\nCurrency: %s\nType: %s\nMode: %s\nReference: %s\n\n' % (t['TransactionId'], t['ProductName'].encode('utf8'), time.strftime('%B %d, %Y %X %Z', time.localtime(expiryUnixTime)), t['Amount'], t['Currency'].encode('utf8'), t['TransactionType'].encode('utf8'), t['Method'].encode('utf8'), t['Reference'].encode('utf8'))
+            keys = t.keys()
+            for key in keys:
+                message += key + ': ' + t[key] + "\n"
+            message += "\n"
     else:
         message = lang(57002)
     showMessage(message, lang(56003))
@@ -583,7 +609,7 @@ def extractWebsiteSectionShowData(url, html):
         'id' : int(showId),
         'parentid' : -1,
         'parentname' : '',
-        'name' : showName.encode('utf8'),
+        'name' : common.replaceHTMLCodes(showName.encode('utf8')),
         'image' : image,
         'description' : '',
         'shortdescription' : '',
@@ -728,7 +754,7 @@ def getShow(showId):
         for t in titles:
             id = int(re.compile('/([0-9]+)/', re.IGNORECASE).search(values[i]).group(1))
             episodes.update({id : {
-                'title' : t,
+                'title' : common.replaceHTMLCodes(t),
                 'episodenumber' : int(re.compile('Ep. ([0-9]+) -', re.IGNORECASE).search(t).group(1)),
                 'url' : values[i]
                 }})
@@ -737,11 +763,11 @@ def getShow(showId):
     data = {
         'id' : int(showId),
         'parentid' : -1,
-        'parentname' : genre.encode('utf8'),
-        'name' : name.encode('utf8'),
+        'parentname' : common.replaceHTMLCodes(genre.encode('utf8')),
+        'name' : common.replaceHTMLCodes(name.encode('utf8')),
         'image' : image,
-        'description' : description.encode('utf8'),
-        'shortdescription' : description.encode('utf8'),
+        'description' : common.replaceHTMLCodes(description.encode('utf8')),
+        'shortdescription' : common.replaceHTMLCodes(description.encode('utf8')),
         'year' : '',
         'fanart' : banner,
         'episodes' : episodes
@@ -815,12 +841,12 @@ def getEpisodesPerPage(showId, page=1, itemsPerPage=8):
             url = common.parseDOM(e, "a", ret = 'href')[0]
             episodeId = int(re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1))
             image = common.parseDOM(e, "div", attrs = {'class' : 'show-cover'}, ret = 'data-src')[0]
-            title = titles[i]
+            title = common.replaceHTMLCodes(titles[i])
             dateAired = title
             showTitle = showDetails['name']
             fanart = showDetails['fanart']
             year = title.split(', ').pop()
-            description = descriptions[i]
+            description = common.replaceHTMLCodes(descriptions[i])
             shortDescription = description
             episodeNumber = 0
             
@@ -909,41 +935,70 @@ def getCelebrities():
     data = callJsonApi(url)
     return data
     
-def getUserInfo(UID):
-    data = {}
-    url = '/Synapse/GetUserData?uid=%s'
-    res = callJsonApi(url % UID, useCache = False)
-    if res and 'data' in res:
-        data = res['data']
-    return data
+def getUserInfo():
+    url = '/profile'
+    html = callServiceApi(url, useCache = False)
     
-def getUserEntitlements():
-    data = {'data' : [], 'total': 0}
-
-    url = '/User/Entitlements'
-    htmlData = callServiceApi(url, useCache=False)
+    profile = common.parseDOM(html, 'div', attrs = {'class' : 'box box2 profile-info'})
+    firstName = common.parseDOM(profile, 'input', attrs = {'id' : 'FirstName'}, ret = 'placeholder')[0]
+    lastName = common.parseDOM(profile, 'input', attrs = {'id' : 'LastName'}, ret = 'placeholder')[0]
+    countryCodeHtml = common.parseDOM(profile, 'select', attrs = {'id' : 'CountryCode'})
+    countryCode = common.parseDOM(countryCodeHtml, 'option', attrs = {'selected' : 'selected'}, ret = 'value')[0]
+    state = common.parseDOM(profile, 'input', attrs = {'id' : 'State'}, ret = 'placeholder')[0]
+    city = common.parseDOM(profile, 'input', attrs = {'id' : 'City'}, ret = 'placeholder')[0]
+    phone = common.parseDOM(profile, 'input', attrs = {'id' : 'PhoneNumber'}, ret = 'placeholder')[0]
+    profileHeader = common.parseDOM(html, 'div', attrs = {'class' : 'profile_header'})
+    memberSince = common.parseDOM(profileHeader, 'div', attrs = {'class' : 'date'})[0]    
     
-    sectionTable = common.parseDOM(htmlData, "table", attrs = {'class' : 'table table-striped subscription_table'})
-    sectionTableBody = common.parseDOM(sectionTable, "tbody")
-    entitlements = common.parseDOM(sectionTableBody, "tr")
+    return {
+        'FirstName' : firstName.encode('utf8'),
+        'LastName' : lastName.encode('utf8'),
+        'CountryCode' : countryCode.encode('utf8'),
+        'State' : state.encode('utf8'),
+        'City' : city.encode('utf8'),
+        'Phone' : phone.encode('utf8'),
+        'MemberSince' : memberSince.replace('MEMBER SINCE ', '').encode('utf8')
+    }
     
-    for tr in entitlements:
-        column = common.parseDOM(tr, "td")
-        entitlement = {}
-        entitlement['EntitlementId'] = column[0]
-        entitlement['Content'] = column[1]
-        entitlement['ExpiryDate'] = column[2]
-        data['data'].append(entitlement)
-        data['total'] += 1
+def getUserSubscription():
+    url = '/profile'
+    html = callServiceApi(url, useCache=False)
     
-    return data
+    subscription = common.parseDOM(html, 'div', attrs = {'class' : 'box_row my_membership'})
+    plan = common.parseDOM(common.parseDOM(subscription, 'div', attrs = {'class' : 'p'}), 'strong')[0]
+    planDetails = common.parseDOM(common.parseDOM(subscription, "ul"), 'li')  
+    
+    details = ''
+    for d in planDetails:
+        details += '-' + d.encode('utf8') + "\n"
+        
+    return {
+            'Plan' : plan.encode('utf8'),
+            'Details' : details
+        }
     
 def getUserTransactions():
-    data = {}
-    url = '/Synapse/MyTransactions'
-    res = callJsonApi(url, useCache = False)
-    if res:
-        data = res        
+    data = []
+    url = '/profile'
+    html = callServiceApi(url, useCache = False)
+    
+    transactionsHtml = common.parseDOM(html, 'div', attrs = {'id' : 'transactions'})
+    transactions = common.parseDOM(common.parseDOM(transactionsHtml, 'tbody'), 'tr')
+    
+    header = []
+    headers = common.parseDOM(common.parseDOM(transactionsHtml, 'thead'), 'th')
+    for h in headers:
+        header.append(h.encode('utf8'))
+    
+    for transaction in transactions:
+        columns = common.parseDOM(transaction, 'td')
+        t = {}
+        i = 0
+        for c in columns:
+            t[header[i]] = c.encode('utf8')
+            i+=1
+        data.append(t)
+                
     return data
     
 def getUserSession():
@@ -1045,16 +1100,19 @@ def loginToWebsite(quiet=False):
         emailAddress = addon.getSetting('emailAddress')
         password = addon.getSetting('password')
         formdata = { "EMail" : emailAddress, "Password": password, '__RequestVerificationToken' : request_verification_token[0] }
+        addon.setSetting('requestVerificationToken', request_verification_token[0])
         html = callServiceApi("/user/login", formdata, headers = [('Referer', websiteSecuredUrl+'/user/login')], base_url = websiteSecuredUrl, useCache = False)
         if 'CTA_Login' in html and quiet == False:
             showNotification(lang(50205), lang(50204))
             return False
     return True
 
-def logout():
+def logout(quiet=True):
     # callServiceApi("/logout", headers = [('Referer', webserviceUrl+'/')], base_url = webserviceUrl, useCache = False)
     callServiceApi("/logout", headers = [('Referer', websiteUrl+'/')], base_url = websiteUrl, useCache = False)
     cookieJar.clear()
+    if quiet == False and isLoggedIn() == False:
+        showNotification(lang(57010))
 
 def callServiceApi(path, params = {}, headers = [], base_url = websiteUrl, useCache = True):
     import hashlib
@@ -1164,7 +1222,12 @@ def showMessage(message, title = lang(50001)):
     win.getControl(1).setLabel(title)
     win.getControl(5).setText(message)
     
-def showNotification(message, title = lang(50001)):
+def confirm(message, line1='', line2='', title=lang(50001)):
+    if not message:
+        return
+    return xbmcgui.Dialog().yesno(title, message, line1, line2)
+    
+def showNotification(message, title=lang(50001)):
     xbmc.executebuiltin('Notification(%s, %s)' % (title, message))
     
 def log(mixed, level=0):
@@ -1208,7 +1271,8 @@ xbmcplugin.setPluginFanart(thisPlugin, 'fanart.jpg')
 
 userAgents = { 
     webserviceUrl : 'Mozilla/5.0 (iPad; CPU OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3',
-    websiteUrl : 'Mozilla/5.0 (iPad; CPU OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3',
+    # websiteUrl : 'Mozilla/5.0 (iPad; CPU OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3',
+    websiteUrl : 'Mozilla/5.0 (iPad; CPU OS 7_0 like Mac OS X) AppleWebKit/537.51.1 (KHTML, like Gecko) CriOS/30.0.1599.12 Mobile/11A465 Safari/8536.25 (3B92C18B-D9DE-4CB7-A02A-22FD2AF17C8F)',
     'default' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2486.0 Safari/537.36 Edge/13.10586'
     }
     
@@ -1280,11 +1344,11 @@ elif mode == 12:
 elif mode == 13:
     showMyInfo()
 elif mode == 14:
-    showMyEntitlements()
+    showMySubscription()
 elif mode == 15:
     showMyTransactions()
 elif mode == 16:
-    logout()
+    logout(quiet=False)
 elif mode == 50:
     showTools()
 elif mode == 51:
@@ -1305,9 +1369,10 @@ if cookieJarType == 'LWPCookieJar':
 if setting('announcement') != addonInfo('version'):
     messages = {
         '0.0.56': 'Your TFC.tv plugin has been updated.\n\nTFC.tv has undergone a lot of changes and the plugin needs to be updated to adjust to those changes.\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=155870) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.59': 'Your TFC.tv plugin has been updated.\n\nNow using TFC website (no more API because of timeouts).\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=155870) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).'
+        '0.0.59': 'Your TFC.tv plugin has been updated.\n\nNow using TFC website (no more API because of timeouts).\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=155870) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
+        '0.0.60': 'Your TFC.tv plugin has been updated.\n\nWebsite sections and My account menus are now working (can be enabled from addon settings)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).'
         }
     if addonInfo('version') in messages:
         showMessage(messages[addonInfo('version')], lang(50106))
-        xbmcaddon.Addon().setSetting('announcement', addonInfo('version'))
+        addon.setSetting('announcement', addonInfo('version'))
 
