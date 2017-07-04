@@ -280,7 +280,7 @@ def getMediaInfoFromWebsite(episodeId):
         if episodeDetails and 'StatusCode' in episodeDetails:
             mediaInfo['errorCode'] = episodeDetails['StatusCode']
             if 'MediaReturnObj' in episodeDetails and 'uri' in episodeDetails['MediaReturnObj']:
-                episodeDetails['MediaReturnObj']['uri'] = episodeDetails['MediaReturnObj']['uri'].replace('&b=100-1000', '')
+                episodeDetails['MediaReturnObj']['uri'] = episodeDetails['MediaReturnObj']['uri'].replace('100-1000', '2000-4000').replace('http://o2-i.', 'https://life-vh.')
                 # episodeDetails['MediaReturnObj']['uri'] += '&b=2000-4000'
                 mediaInfo['data'] = episodeDetails['MediaReturnObj']
             if 'StatusMessage' in episodeDetails and episodeDetails['StatusMessage'] != '' and episodeDetails['StatusMessage'] != 'OK':
