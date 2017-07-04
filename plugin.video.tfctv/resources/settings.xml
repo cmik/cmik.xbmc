@@ -8,6 +8,7 @@
         <setting type="lsep" label="50115"/>
         <setting id="displayWebsiteSections" type="bool" label="50107" default="true" visible="true"/>
         <setting id="displayMyAccountMenu" type="bool" label="50114" default="true" visible="true"/>
+        <setting id="parentalAdvisoryCheck" type="bool" label="50117" default="true" visible="true"/>
         <setting type="sep" />
         <setting id="itemsPerPage" type="labelenum" label="50101" default="10" values="10|20|30|40|50" visible="false"/>
         <setting id="listSubscribedFirst" type="bool" label="50103" default="true" visible="false"/>

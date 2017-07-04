@@ -53,8 +53,8 @@ if cacheActive == 'false':
     lCacheFunction = lambda x, *y: x(*y)
 
 # Debug 
-# common.dbg = True # Default
-# common.dbglevel = 3 # Default
+common.dbg = True # Default
+common.dbglevel = 3 # Default
 
    
 #---------------------- FUNCTIONS ----------------------------------------
@@ -70,7 +70,7 @@ def showMainMenu():
                 user = getUserInfo()
                 showNotification(lang(57009) % user.get('FirstName', 'back to TFC'), title='')
             else:
-                showNotification(lang(50205), title='')
+                showNotification(lang(50205), title=lang(50204))
     
     # if setting('displayMostLovedShows') == 'true':
         # addDir('Most Loved Shows', '/', 5, 'icon.png')
@@ -246,6 +246,12 @@ def getMediaInfoFromWebsite(episodeId):
     html = callServiceApi(url % episodeId, base_url = websiteUrl, useCache=False)
     body = common.parseDOM(html, "body")
     scripts = common.parseDOM(body, "script", attrs = { 'type' : 'text/javascript' })
+    
+    # Parental advisory
+    if setting('parentalAdvisoryCheck') == 'true':
+        if re.compile('var dfp_c = ".*2900.*";', re.IGNORECASE).search(html):
+            alert(lang(57011),title=lang(50003))
+            
     mediaToken = None
     for script in scripts:
         line = script.strip();
@@ -253,18 +259,13 @@ def getMediaInfoFromWebsite(episodeId):
         if tokenmatch:
             mediaToken = tokenmatch.group(1).encode("ascii")
             break
+            
     if mediaToken:
         cookie = []
         for c in cookieJar:
             cookie.append('%s=%s' % (c.name, c.value))
         cookie.append('cc_fingerprintid='+hashlib.md5(setting('emailAddress')).hexdigest())
         cookie.append('__RequestVerificationToken='+setting('requestVerificationToken'))
-        # cookie.append('__gads=ID=996d5655e625bd63:T=1496617344:S=ALNI_MZ-HrLFkHX1EDiZT2kTw618lLKlYQ')
-        # cookie.append('GED_PLAYLIST_ACTIVITY=W3sidSI6IjhRTFgiLCJ0c2wiOjE0OTY2MTgyNTAsIm52IjoxLCJ1cHQiOjE0OTY2MTczNzQsImx0IjoxNDk2NjE4MjQ4fV0.')
-        # cookie.append('ASP.NET_SessionId=i55k2ipa4h42w5mqzreh4vr0')
-        # cookie.append('ai_user=jzJtO|2017-06-03T23:11:11.107Z')
-        # cookie.append('is_first=1')
-        # cookie.append('HTML_VisitCountCookie=NaN')
         
         callHeaders = [
             ('Accept', 'application/json, text/javascript, */*; q=0.01'), 
@@ -280,8 +281,29 @@ def getMediaInfoFromWebsite(episodeId):
         if episodeDetails and 'StatusCode' in episodeDetails:
             mediaInfo['errorCode'] = episodeDetails['StatusCode']
             if 'MediaReturnObj' in episodeDetails and 'uri' in episodeDetails['MediaReturnObj']:
-                episodeDetails['MediaReturnObj']['uri'] = episodeDetails['MediaReturnObj']['uri'].replace('100-1000', '2000-4000').replace('http://o2-i.', 'https://life-vh.')
-                # episodeDetails['MediaReturnObj']['uri'] += '&b=2000-4000'
+                # episodeDetails['MediaReturnObj']['uri'] = episodeDetails['MediaReturnObj']['uri'].replace('&b=100-1000', '').replace('http://o2-i.', 'https://o4-vh.')
+                episodeDetails['MediaReturnObj']['uri'] = episodeDetails['MediaReturnObj']['uri'].replace('&b=100-1000', '').replace('http://o2-i.', 'https://life-vh.') # Fix by gwapoman
+                
+                # choose best stream quality
+                # m3u8 = callServiceApi(episodeDetails['MediaReturnObj']['uri'], base_url = '')
+                # log(m3u8)
+                # lines = m3u8.split('\n')
+                # i = 0
+                # bandwidth = 0
+                # choosedStream = ''
+                # for l in lines:
+                    # match = re.compile('BANDWIDTH=([0-9]+)', re.IGNORECASE).search(lines[i])
+                    # if match :
+                        # if int(match.group(1)) > bandwidth:
+                            # bandwidth = int(match.group(1))
+                            # choosedStream = lines[i+1]
+                        # i+=2
+                    # else:
+                        # i+=1
+                    # if i >= len(lines):
+                        # break
+                # episodeDetails['MediaReturnObj']['uri'] = choosedStream
+                
                 mediaInfo['data'] = episodeDetails['MediaReturnObj']
             if 'StatusMessage' in episodeDetails and episodeDetails['StatusMessage'] != '' and episodeDetails['StatusMessage'] != 'OK':
                 mediaInfo['StatusMessage'] = episodeDetails['StatusMessage']
@@ -1227,6 +1249,11 @@ def confirm(message, line1='', line2='', title=lang(50001)):
         return
     return xbmcgui.Dialog().yesno(title, message, line1, line2)
     
+def alert(message, line1='', line2='', title=lang(50001)):
+    if not message:
+        return
+    return xbmcgui.Dialog().ok(title, message, line1, line2)
+    
 def showNotification(message, title=lang(50001)):
     xbmc.executebuiltin('Notification(%s, %s)' % (title, message))
     
@@ -1370,7 +1397,8 @@ if setting('announcement') != addonInfo('version'):
     messages = {
         '0.0.56': 'Your TFC.tv plugin has been updated.\n\nTFC.tv has undergone a lot of changes and the plugin needs to be updated to adjust to those changes.\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=155870) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
         '0.0.59': 'Your TFC.tv plugin has been updated.\n\nNow using TFC website (no more API because of timeouts).\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=155870) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.60': 'Your TFC.tv plugin has been updated.\n\nWebsite sections and My account menus are now working (can be enabled from addon settings)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).'
+        '0.0.60': 'Your TFC.tv plugin has been updated.\n\nWebsite sections and My account menus are now working (can be enabled from addon settings)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
+        '0.0.61': 'Your TFC.tv plugin has been updated.\n\nFixed low quality resolution\nAdded parental advisory notice (can be disabled from addon settings)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).'
         }
     if addonInfo('version') in messages:
         showMessage(messages[addonInfo('version')], lang(50106))

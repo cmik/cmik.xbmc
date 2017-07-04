@@ -2,6 +2,7 @@
 <strings>
     <string id="50001">Message</string>
     <string id="50002">Information</string>
+    <string id="50003">Parental Advisory</string>
     <string id="50100">Settings</string>
     <string id="50101">Episodes Per Page</string>
     <string id="50103">List subscribed shows first</string>
@@ -18,9 +19,9 @@
     <string id="50114">Display My Account</string>
     <string id="50115">Menu display settings</string>
     <string id="50116">Request verification token</string>
+    <string id="50117">Parental advisory check</string>
     <string id="50200">TFC.tv Account</string>
     <string id="50201">Email Address</string>
-    <string id="50202">Password</string>
     <string id="50202">Password</string>
     <string id="50203">Login Retries</string>
     <string id="50204">Login Failed</string>
@@ -42,6 +43,7 @@
     <string id="57008">Do you want to log in as %s?</string>
     <string id="57009">Welcome %s</string>
     <string id="57010">You are now logged out from TFC. Hope to see you soon</string>
+    <string id="57011">This video contains mature scenes, language and themes that are not suitable for young viewers aged 17 years and below.</string>
     
 </strings>
 

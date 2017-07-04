@@ -1,3 +1,6 @@
+0.0.61
+    Fixed low quality resolution (fix by gwapoman)
+    Added a parental advisory alert
 0.0.60
     My Account menu is now working again (account, subscription, transaction info)
     For login issues at startup (preview mode), now we check if logged in and ask to log in if not
