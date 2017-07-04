@@ -53,8 +53,8 @@ if cacheActive == 'false':
     lCacheFunction = lambda x, *y: x(*y)
 
 # Debug 
-common.dbg = True # Default
-common.dbglevel = 3 # Default
+# common.dbg = True # Default
+# common.dbglevel = 3 # Default
 
    
 #---------------------- FUNCTIONS ----------------------------------------
