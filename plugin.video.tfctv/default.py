@@ -229,9 +229,6 @@ def playEpisode(url):
     return False
     
 def getMediaInfo(episodeId):
-    # mediaInfo = getEpisodeVideo(episodeId)
-    # If media info can't be retrieve from JSON webservices, then we try from website HTML page
-    # if 'errorCode' in mediaInfo and mediaInfo['errorCode'] != 0:
     mediaInfo = getMediaInfoFromWebsite(episodeId)
     if mediaInfo and 'errorCode' in mediaInfo and mediaInfo['errorCode'] == 1:
         mediaInfo['errorCode'] = 0
@@ -281,7 +278,6 @@ def getMediaInfoFromWebsite(episodeId):
         if episodeDetails and 'StatusCode' in episodeDetails:
             mediaInfo['errorCode'] = episodeDetails['StatusCode']
             if 'MediaReturnObj' in episodeDetails and 'uri' in episodeDetails['MediaReturnObj']:
-                # episodeDetails['MediaReturnObj']['uri'] = episodeDetails['MediaReturnObj']['uri'].replace('&b=100-1000', '').replace('http://o2-i.', 'https://o4-vh.')
                 episodeDetails['MediaReturnObj']['uri'] = episodeDetails['MediaReturnObj']['uri'].replace('&b=100-1000', '').replace('http://o2-i.', 'https://life-vh.') # Fix by gwapoman
                 
                 # choose best stream quality
@@ -343,7 +339,6 @@ def showMyAccount():
     xbmcplugin.endOfDirectory(thisPlugin)
     
 def showMyInfo():
-    # UID = getUserUID()
     loggedIn = isLoggedIn()
     message = ''
     if loggedIn == True:
@@ -688,9 +683,6 @@ def getShows(subCategoryId, page = 1):
         for url in pages[1:]:
             subCategoryShows.append(extractShows(callServiceApi(url)))
     
-    # url = '/Genre?genreId=%s'
-    # subCategoryShows = callJsonApi(url % subCategoryId)
-    
     if len(subCategoryShows) > 0:
         for sub in subCategoryShows:
             for d in sub:
@@ -756,11 +748,11 @@ def getShow(showId):
         banners = common.parseDOM(html, "div", attrs = { 'class' : 'header-hero-image' }, ret = 'style')
     if len(banners) == 0:
         banners = common.parseDOM(html, "div", attrs = { 'id' : 'detail-video' }, ret = 'style')
-        
     if banners:
         banner = re.compile('url\((.+)\);', re.IGNORECASE).search(banners[0]).group(1)
     else:
         banner = image
+        
     name = common.parseDOM(html, "meta", attrs = { 'property' : 'og:title' }, ret = "content")[0]
     description = common.parseDOM(html, "div", attrs = { 'class' : 'celeb-desc-p' })[0]
     genres = common.parseDOM(html, "a", attrs = { 'class' : 'text-primary genre-deets' })
@@ -831,27 +823,29 @@ def getEpisodesPerPage(showId, page=1, itemsPerPage=8):
     html = callServiceApi(url % (showId, page))
     showDetails = sCacheFunction(getShow, showId)
     
-    # if no pagination, it's a movie
+    # if no pagination, it's a movie or special
     if html == '':
         url = '/show/details/%s'
         html = callServiceApi(url % showId)
-        episodeUrl = common.parseDOM(html, "a", attrs = { 'class' : 'hero-image-orange-btn' }, ret = 'href')
-        # If not found, probably a live channel
-        if len(episodeUrl) == 0:
-            episodeUrl = common.parseDOM(html, "link", attrs = { 'rel' : 'canonical' }, ret = 'href')
-        episodeId = int(re.compile('/([0-9]+)/', re.IGNORECASE).search(episodeUrl[0]).group(1))
+        episodeId = int(json.loads(re.compile('var mo =  (\{.+\});', re.IGNORECASE).search(html).group(1)).get('EpisodeId', '0'))
+        # episodeUrl = common.parseDOM(html, "a", attrs = { 'class' : 'hero-image-orange-btn' }, ret = 'href')
+        # if len(episodeUrl) == 0:
+            # episodeUrl = common.parseDOM(html, "a", attrs = { 'class' : 'link-to-episode' }, ret = 'href')
+        # if len(episodeUrl) == 0:
+            # episodeUrl = common.parseDOM(html, "link", attrs = { 'rel' : 'canonical' }, ret = 'href')
+        # episodeId = int(re.compile('/([0-9]+)/', re.IGNORECASE).search(episodeUrl[0]).group(1))
         
         data.append({
             'id' : episodeId,
-            'title' : showDetails['name'],
-            'show' : showDetails['name'],
-            'image' : showDetails['image'],
+            'title' : showDetails.get('name'),
+            'show' : showDetails.get('name'),
+            'image' : showDetails.get('image'),
             'episodenumber' : 0,
-            'description' : showDetails['description'],
-            'shortdescription' : showDetails['description'],
+            'description' : showDetails.get('description'),
+            'shortdescription' : showDetails.get('description'),
             'dateaired' : '',
-            'year' : showDetails['year'],
-            'fanart' : showDetails['fanart']
+            'year' : showDetails.get('year'),
+            'fanart' : showDetails.get('fanart')
             })
     else:
         i = 0
@@ -865,8 +859,8 @@ def getEpisodesPerPage(showId, page=1, itemsPerPage=8):
             image = common.parseDOM(e, "div", attrs = {'class' : 'show-cover'}, ret = 'data-src')[0]
             title = common.replaceHTMLCodes(titles[i])
             dateAired = title
-            showTitle = showDetails['name']
-            fanart = showDetails['fanart']
+            showTitle = showDetails.get('name')
+            fanart = showDetails.get('fanart')
             year = title.split(', ').pop()
             description = common.replaceHTMLCodes(descriptions[i])
             shortDescription = description
@@ -902,15 +896,15 @@ def getShowEpisodes(showId):
     showEpisodes = callJsonApi(url % showId)
     if showData and showEpisodes:
         for e in showEpisodes:
-            e['show'] = showData['name']
-            e['showimage'] = showData['image'].replace(' ', '%20')
-            e['fanart'] = showData['banner'].replace(' ', '%20')
-            e['image'] = e['ImageList']
-            e['description'] = e['Synopsis']
-            e['shortdescription'] = e['Description']
-            e['episodenumber'] = e['EpisodeNumber']
-            e['dateaired'] = e['DateAired'].split('T')[0]
-            data[e['EpisodeId']] = e
+            e['show'] = showData.get('name')
+            e['showimage'] = showData.get('image').replace(' ', '%20')
+            e['fanart'] = showData.get('banner').replace(' ', '%20')
+            e['image'] = e.get('ImageList')
+            e['description'] = e.get('Synopsis')
+            e['shortdescription'] = e.get('Description')
+            e['episodenumber'] = e.get('EpisodeNumber')
+            e['dateaired'] = e.get('DateAired').split('T')[0]
+            data[e.get('EpisodeId')] = e
     return data
       
 def getEpisodeDataByShow(showId, episodeId):
@@ -922,8 +916,8 @@ def getEpisodeDataByShow(showId, episodeId):
     else:
         episode = lCacheFunction(getEpisodeData, episodeId)
         if episode:
-            episode['title'] = episode['dateaired']
-            episode['description'] = episode['synopsis']
+            episode['title'] = episode.get('dateaired')
+            episode['description'] = episode.get('synopsis')
             data = episode
     return data
     
@@ -1023,34 +1017,6 @@ def getUserTransactions():
                 
     return data
     
-def getUserSession():
-    userSession = None
-    email = setting('emailAddress')
-    password = setting('password')
-    hash = hashlib.sha1(email + password).hexdigest()
-    for i in range(int(setting('loginRetries')) + 1):
-        res = shortCache.get('userSession_' + hash)
-        if res:
-            userSession = json.loads(res)
-            if userSession:
-                return userSession
-        loginToWebservice()
-    return userSession
-    
-def getUserUID():
-    uid = None
-    userSession = getUserSession()
-    if userSession and 'data' in userSession:
-        uid = userSession['data']['uid']
-    return uid
-    
-def getUserCookie():
-    cookie = None
-    userSession = getUserSession()
-    if userSession and 'info' in userSession:
-        userSession['info']
-    return cookie
-    
 def checkAccountChange(forceSignIn=False):
     email = setting('emailAddress')
     password = setting('password')
@@ -1072,9 +1038,6 @@ def checkAccountChange(forceSignIn=False):
         accountChanged = True
         logout()
         logged = True
-        # (signedIntoWebsite, signedIntoWebservice) = login()
-        # if signedIntoWebsite == True and signedIntoWebservice == True:
-            # loginSuccess
     elif not isLoggedIn():
         log('Not logged in')
         logged = True
@@ -1090,29 +1053,12 @@ def checkAccountChange(forceSignIn=False):
     return (accountChanged, loginSuccess)
     
 def login(quiet=False):
-    # signedIntoWebservice = loginToWebservice(quiet)
-    # signedIntoWebservice = True
     signedIntoWebsite = loginToWebsite(quiet)
-    # return (signedIntoWebsite, signedIntoWebservice)
     return signedIntoWebsite
     
 def isLoggedIn():
     html = callServiceApi('', base_url = websiteSecuredUrl, useCache = False)
     return False if 'CTA_Login' in html else True
-    
-def loginToWebservice(quiet=False):
-    email = setting('emailAddress')
-    password = setting('password')
-    param = {'email' : email, 'pw' : password}
-    userSession = callJsonApi("/.auth/login", params = param, headers = [('Referer', webserviceUrl+'/user/login')], base_url = webserviceUrl, useCache = False)
-    if userSession:
-        if 'errorCode' in userSession and userSession['errorCode'] == 0:
-            hash = hashlib.sha1(email + password).hexdigest()
-            shortCache.set('userSession_' + hash, json.dumps(userSession))
-            return True
-        elif 'errorMessage' in userSession and quiet == False:
-            showNotification(userSession['errorMessage'].encode('utf8'), lang(50204))
-    return False
     
 def loginToWebsite(quiet=False):
     login_page = callServiceApi("/user/login", useCache=False)
@@ -1130,7 +1076,6 @@ def loginToWebsite(quiet=False):
     return True
 
 def logout(quiet=True):
-    # callServiceApi("/logout", headers = [('Referer', webserviceUrl+'/')], base_url = webserviceUrl, useCache = False)
     callServiceApi("/logout", headers = [('Referer', websiteUrl+'/')], base_url = websiteUrl, useCache = False)
     cookieJar.clear()
     if quiet == False and isLoggedIn() == False:
@@ -1398,7 +1343,8 @@ if setting('announcement') != addonInfo('version'):
         '0.0.56': 'Your TFC.tv plugin has been updated.\n\nTFC.tv has undergone a lot of changes and the plugin needs to be updated to adjust to those changes.\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=155870) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
         '0.0.59': 'Your TFC.tv plugin has been updated.\n\nNow using TFC website (no more API because of timeouts).\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=155870) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
         '0.0.60': 'Your TFC.tv plugin has been updated.\n\nWebsite sections and My account menus are now working (can be enabled from addon settings)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.61': 'Your TFC.tv plugin has been updated.\n\nFixed low quality resolution\nAdded parental advisory notice (can be disabled from addon settings)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).'
+        '0.0.61': 'Your TFC.tv plugin has been updated.\n\nFixed low quality resolution\nAdded parental advisory notice (can be disabled from addon settings)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
+        '0.0.62': 'Your TFC.tv plugin has been updated.\n\nFixed playback of some shows with a unique episode (ex: specials)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).'
         }
     if addonInfo('version') in messages:
         showMessage(messages[addonInfo('version')], lang(50106))
