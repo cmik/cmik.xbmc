@@ -189,7 +189,7 @@ def displayShows(shows):
     xbmcplugin.endOfDirectory(thisPlugin)
     
 def showEpisodes(showId, page=1):
-    itemsPerPage = 8 #int(setting('itemsPerPage'))
+    itemsPerPage = int(setting('itemsPerPage'))
     episodes = sCacheFunction(getEpisodesPerPage, showId, page, itemsPerPage)
     for e in episodes:
         addDir(e['title'], str(e['id']), 4, e['image'], isFolder = False, **formatVideoInfo(e))
@@ -585,7 +585,7 @@ def getWebsiteHomeSections():
         i += 1
     return data
     
-def getWebsiteSectionContent(sectionId, page=1, itemsPerPage=10):
+def getWebsiteSectionContent(sectionId, page=1, itemsPerPage=8):
     
     page -= 1
     data = []
@@ -819,72 +819,86 @@ def getEpisodesPerPage(showId, page=1, itemsPerPage=8):
     import re
     
     data = []
-    url = '/modulebuilder/getepisodes/%s/show/%s'
-    html = callServiceApi(url % (showId, page))
+    
+    # max nb items per page that TFC website can provide
+    websiteNbItemsPerPage = 8
+    # Calculating page index and needed pages to request for building next page to display
+    firstPage = 1 if page == 1 else ((itemsPerPage / websiteNbItemsPerPage) * (page - 1) + 1)
+    lastPage = itemsPerPage / websiteNbItemsPerPage * page
+    
+    paginationURL = '/modulebuilder/getepisodes/%s/show/%s'
     showDetails = sCacheFunction(getShow, showId)
     
-    # if no pagination, it's a movie or special
-    if html == '':
-        url = '/show/details/%s'
-        html = callServiceApi(url % showId)
-        episodeId = int(json.loads(re.compile('var mo =  (\{.+\});', re.IGNORECASE).search(html).group(1)).get('EpisodeId', '0'))
-        # episodeUrl = common.parseDOM(html, "a", attrs = { 'class' : 'hero-image-orange-btn' }, ret = 'href')
-        # if len(episodeUrl) == 0:
-            # episodeUrl = common.parseDOM(html, "a", attrs = { 'class' : 'link-to-episode' }, ret = 'href')
-        # if len(episodeUrl) == 0:
-            # episodeUrl = common.parseDOM(html, "link", attrs = { 'rel' : 'canonical' }, ret = 'href')
-        # episodeId = int(re.compile('/([0-9]+)/', re.IGNORECASE).search(episodeUrl[0]).group(1))
-        
-        data.append({
-            'id' : episodeId,
-            'title' : showDetails.get('name'),
-            'show' : showDetails.get('name'),
-            'image' : showDetails.get('image'),
-            'episodenumber' : 0,
-            'description' : showDetails.get('description'),
-            'shortdescription' : showDetails.get('description'),
-            'dateaired' : '',
-            'year' : showDetails.get('year'),
-            'fanart' : showDetails.get('fanart')
-            })
-    else:
-        i = 0
-        episodes = common.parseDOM(html, 'li', attrs = {'class' : 'og-grid-item'})
-        descriptions = common.parseDOM(html, 'li', attrs = {'class' : 'og-grid-item'}, ret = 'data-show-description')
-        titles = common.parseDOM(html, 'li', attrs = {'class' : 'og-grid-item'}, ret = 'data-aired')
-        
-        for e in episodes:
-            url = common.parseDOM(e, "a", ret = 'href')[0]
-            episodeId = int(re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1))
-            image = common.parseDOM(e, "div", attrs = {'class' : 'show-cover'}, ret = 'data-src')[0]
-            title = common.replaceHTMLCodes(titles[i])
-            dateAired = title
-            showTitle = showDetails.get('name')
-            fanart = showDetails.get('fanart')
-            year = title.split(', ').pop()
-            description = common.replaceHTMLCodes(descriptions[i])
-            shortDescription = description
-            episodeNumber = 0
-            
-            episodeData = showDetails.get('episodes').get(episodeId)
-            if episodeData:
-                title = episodeData.get('title')
-                episodeNumber = episodeData.get('episodenumber')
+    for page in range(firstPage, lastPage+1, 1):
+        html = callServiceApi(paginationURL % (showId, page))
+    
+        # if page does not exist
+        if page > 1 and html == '':
+            break
+        # if no pagination, it's a movie or special
+        elif page == 1 and html == '':
+            showDetailURL = '/show/details/%s'
+            html = callServiceApi(showDetailURL % showId)
+            episodeId = int(json.loads(re.compile('var mo =  (\{.+\});', re.IGNORECASE).search(html).group(1)).get('EpisodeId', '0'))
+            # episodeUrl = common.parseDOM(html, "a", attrs = { 'class' : 'hero-image-orange-btn' }, ret = 'href')
+            # if len(episodeUrl) == 0:
+                # episodeUrl = common.parseDOM(html, "a", attrs = { 'class' : 'link-to-episode' }, ret = 'href')
+            # if len(episodeUrl) == 0:
+                # episodeUrl = common.parseDOM(html, "link", attrs = { 'rel' : 'canonical' }, ret = 'href')
+            # episodeId = int(re.compile('/([0-9]+)/', re.IGNORECASE).search(episodeUrl[0]).group(1))
             
             data.append({
                 'id' : episodeId,
-                'title' : title.encode('utf8'),
-                'show' : showTitle,
-                'image' : image,
-                'episodenumber' : episodeNumber,
-                'description' : description.encode('utf8'),
-                'shortdescription' : shortDescription.encode('utf8'),
-                'dateaired' : dateAired,
-                'year' : year,
-                'fanart' : fanart
+                'title' : showDetails.get('name'),
+                'show' : showDetails.get('name'),
+                'image' : showDetails.get('image'),
+                'episodenumber' : 0,
+                'description' : showDetails.get('description'),
+                'shortdescription' : showDetails.get('description'),
+                'dateaired' : '',
+                'year' : showDetails.get('year'),
+                'fanart' : showDetails.get('fanart')
                 })
                 
-            i += 1
+            break
+        else:
+            i = 0
+            episodes = common.parseDOM(html, 'li', attrs = {'class' : 'og-grid-item'})
+            descriptions = common.parseDOM(html, 'li', attrs = {'class' : 'og-grid-item'}, ret = 'data-show-description')
+            titles = common.parseDOM(html, 'li', attrs = {'class' : 'og-grid-item'}, ret = 'data-aired')
+            
+            for e in episodes:
+                url = common.parseDOM(e, "a", ret = 'href')[0]
+                episodeId = int(re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1))
+                image = common.parseDOM(e, "div", attrs = {'class' : 'show-cover'}, ret = 'data-src')[0]
+                title = common.replaceHTMLCodes(titles[i])
+                dateAired = title
+                showTitle = showDetails.get('name')
+                fanart = showDetails.get('fanart')
+                year = title.split(', ').pop()
+                description = common.replaceHTMLCodes(descriptions[i])
+                shortDescription = description
+                episodeNumber = 0
+                
+                episodeData = showDetails.get('episodes').get(episodeId)
+                if episodeData:
+                    title = episodeData.get('title')
+                    episodeNumber = episodeData.get('episodenumber')
+                
+                data.append({
+                    'id' : episodeId,
+                    'title' : title.encode('utf8'),
+                    'show' : showTitle,
+                    'image' : image,
+                    'episodenumber' : episodeNumber,
+                    'description' : description.encode('utf8'),
+                    'shortdescription' : shortDescription.encode('utf8'),
+                    'dateaired' : dateAired,
+                    'year' : year,
+                    'fanart' : fanart
+                    })
+                    
+                i += 1
             
     # return sorted(data, key=lambda episode: episode['title'], reverse=True)
     return data
@@ -1344,9 +1358,14 @@ if setting('announcement') != addonInfo('version'):
         '0.0.59': 'Your TFC.tv plugin has been updated.\n\nNow using TFC website (no more API because of timeouts).\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=155870) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
         '0.0.60': 'Your TFC.tv plugin has been updated.\n\nWebsite sections and My account menus are now working (can be enabled from addon settings)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
         '0.0.61': 'Your TFC.tv plugin has been updated.\n\nFixed low quality resolution\nAdded parental advisory notice (can be disabled from addon settings)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.62': 'Your TFC.tv plugin has been updated.\n\nFixed playback of some shows with a unique episode (ex: specials)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).'
+        '0.0.62': 'Your TFC.tv plugin has been updated.\n\nFixed playback of some shows with a unique episode (ex: specials)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
+        '0.0.62': 'Your TFC.tv plugin has been updated.\n\nEnabled items per page option in addon settings (Important : the larger the number of items, the more time it will take to load)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).'
         }
     if addonInfo('version') in messages:
         showMessage(messages[addonInfo('version')], lang(50106))
         addon.setSetting('announcement', addonInfo('version'))
-
+        
+# fix itemsPerPage value
+itemsPerPageMultiple = 8
+if (int(setting('itemsPerPage')) % itemsPerPageMultiple) > 0:
+    addon.setSetting('itemsPerPage', str(itemsPerPageMultiple))
