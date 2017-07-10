@@ -1,3 +1,7 @@
+0.0.64
+    Fixed replace HTML code error on some shows and episodes
+    Fixed no session check and improve login process
+    Added debug mode in addon option
 0.0.63
     Enabled items per page option in addon settings (Important : the larger the number of items, the more time it will take to load)
 0.0.62

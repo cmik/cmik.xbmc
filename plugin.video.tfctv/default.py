@@ -53,8 +53,9 @@ if cacheActive == 'false':
     lCacheFunction = lambda x, *y: x(*y)
 
 # Debug 
-# common.dbg = True # Default
-# common.dbglevel = 3 # Default
+if setting('debug') == 'true':
+    common.dbg = True # Default
+    common.dbglevel = int(setting('debugLevel')) # Default
 
    
 #---------------------- FUNCTIONS ----------------------------------------
@@ -71,7 +72,7 @@ def showMainMenu():
                 showNotification(lang(57009) % user.get('FirstName', 'back to TFC'), title='')
             else:
                 showNotification(lang(50205), title=lang(50204))
-    
+
     # if setting('displayMostLovedShows') == 'true':
         # addDir('Most Loved Shows', '/', 5, 'icon.png')
     
@@ -457,7 +458,7 @@ def showSubscribedShows(url):
                     pass
                 if showId in showListData:
                     thumbnail = showListData[showId][1]
-        showTitle = common.replaceHTMLCodes(s['Show'].encode('utf8'))
+        showTitle = common.replaceHTMLCodes(s['Show']).encode('utf8')
         addDir(showTitle, str(showId), 3, thumbnail)
     xbmcplugin.endOfDirectory(thisPlugin)
     
@@ -626,7 +627,7 @@ def extractWebsiteSectionShowData(url, html):
         'id' : int(showId),
         'parentid' : -1,
         'parentname' : '',
-        'name' : common.replaceHTMLCodes(showName.encode('utf8')),
+        'name' : common.replaceHTMLCodes(showName).encode('utf8'),
         'image' : image,
         'description' : '',
         'shortdescription' : '',
@@ -777,11 +778,11 @@ def getShow(showId):
     data = {
         'id' : int(showId),
         'parentid' : -1,
-        'parentname' : common.replaceHTMLCodes(genre.encode('utf8')),
-        'name' : common.replaceHTMLCodes(name.encode('utf8')),
+        'parentname' : common.replaceHTMLCodes(genre).encode('utf8'),
+        'name' : common.replaceHTMLCodes(name).encode('utf8'),
         'image' : image,
-        'description' : common.replaceHTMLCodes(description.encode('utf8')),
-        'shortdescription' : common.replaceHTMLCodes(description.encode('utf8')),
+        'description' : common.replaceHTMLCodes(description).encode('utf8'),
+        'shortdescription' : common.replaceHTMLCodes(description).encode('utf8'),
         'year' : '',
         'fanart' : banner,
         'episodes' : episodes
@@ -1072,9 +1073,10 @@ def login(quiet=False):
     
 def isLoggedIn():
     html = callServiceApi('', base_url = websiteSecuredUrl, useCache = False)
-    return False if 'CTA_Login' in html else True
+    return False if 'TfcTvId' not in html else True
     
 def loginToWebsite(quiet=False):
+    logged = False
     login_page = callServiceApi("/user/login", useCache=False)
     form_login = common.parseDOM(login_page, "form", attrs = {'id' : 'form1'})
     if len(form_login) > 0:
@@ -1084,10 +1086,15 @@ def loginToWebsite(quiet=False):
         formdata = { "EMail" : emailAddress, "Password": password, '__RequestVerificationToken' : request_verification_token[0] }
         addon.setSetting('requestVerificationToken', request_verification_token[0])
         html = callServiceApi("/user/login", formdata, headers = [('Referer', websiteSecuredUrl+'/user/login')], base_url = websiteSecuredUrl, useCache = False)
-        if 'CTA_Login' in html and quiet == False:
-            showNotification(lang(50205), lang(50204))
-            return False
-    return True
+        if 'TfcTvId' not in html and quiet == False:
+            message = lang(50205)
+            error = common.parseDOM(html, 'div', attrs = {'role' : 'alert'})
+            if len(error) > 0:
+                message = error[0]
+            showNotification(message, lang(50204))
+        else:
+            logged = True
+    return logged
 
 def logout(quiet=True):
     callServiceApi("/logout", headers = [('Referer', websiteUrl+'/')], base_url = websiteUrl, useCache = False)
@@ -1354,12 +1361,12 @@ if cookieJarType == 'LWPCookieJar':
 
 if setting('announcement') != addonInfo('version'):
     messages = {
-        '0.0.56': 'Your TFC.tv plugin has been updated.\n\nTFC.tv has undergone a lot of changes and the plugin needs to be updated to adjust to those changes.\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=155870) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
         '0.0.59': 'Your TFC.tv plugin has been updated.\n\nNow using TFC website (no more API because of timeouts).\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=155870) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
         '0.0.60': 'Your TFC.tv plugin has been updated.\n\nWebsite sections and My account menus are now working (can be enabled from addon settings)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
         '0.0.61': 'Your TFC.tv plugin has been updated.\n\nFixed low quality resolution\nAdded parental advisory notice (can be disabled from addon settings)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
         '0.0.62': 'Your TFC.tv plugin has been updated.\n\nFixed playback of some shows with a unique episode (ex: specials)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.62': 'Your TFC.tv plugin has been updated.\n\nEnabled items per page option in addon settings (Important : the larger the number of items, the more time it will take to load)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).'
+        '0.0.63': 'Your TFC.tv plugin has been updated.\n\nEnabled items per page option in addon settings (Important : the larger the number of items, the more time it will take to load)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
+        '0.0.64': 'Your TFC.tv plugin has been updated.\n\nFixed some error issues\nNow can enabled debug mode in addon option for debugging purpose\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).'
         }
     if addonInfo('version') in messages:
         showMessage(messages[addonInfo('version')], lang(50106))

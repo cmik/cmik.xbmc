@@ -20,6 +20,9 @@
     <string id="50115">Menu display settings</string>
     <string id="50116">Request verification token</string>
     <string id="50117">Parental advisory check</string>
+    <string id="50118">Debug</string>
+    <string id="50119">Activate debug mode</string>
+    <string id="50120">Debug level</string>
     <string id="50200">TFC.tv Account</string>
     <string id="50201">Email Address</string>
     <string id="50202">Password</string>
