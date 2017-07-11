@@ -1,3 +1,5 @@
+0.0.66
+    Fixed low quality resolution (using a secondary server so streams can be not available or can be uploaded late)
 0.0.65
     Fixed error at startup due to TFC homepage HTTPS redirection
 0.0.64
