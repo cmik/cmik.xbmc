@@ -1,3 +1,6 @@
+0.0.67
+    Returned to initial server which is back to HD quality streaming
+    Added stream server modification if we encounter low quality resolution again so we can enable in addon option
 0.0.66
     Fixed low quality resolution (using a secondary server so streams can be not available or can be uploaded late)
 0.0.65

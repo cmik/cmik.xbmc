@@ -23,6 +23,9 @@
     <string id="50118">Debug</string>
     <string id="50119">Activate debug mode</string>
     <string id="50120">Debug level</string>
+    <string id="50121">Stream Server</string>
+    <string id="50122">Enabled stream server modification</string>
+    <string id="50123">Specific stream server</string>
     <string id="50200">TFC.tv Account</string>
     <string id="50201">Email Address</string>
     <string id="50202">Password</string>
