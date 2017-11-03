@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addons> 
-    <addon id="plugin.video.tfctv" name="TFC.tv" version="0.0.68" provider-name="cmik">
+    <addon id="plugin.video.tfctv" name="TFC.tv" version="0.0.69" provider-name="cmik">
         <requires>
             <import addon="xbmc.python" version="2.1.0"/>
             <import addon="script.module.parsedom" version="0.9.1"/>

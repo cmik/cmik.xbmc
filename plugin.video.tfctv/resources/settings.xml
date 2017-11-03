@@ -29,6 +29,9 @@
         <setting type="lsep" label="50118"/>
         <setting id="debug" type="bool" label="50119" default="false" visible="true"/>
         <setting id="debugLevel" type="labelenum" label="50120" default="3" values="1|2|3" visible="true"/>
-        
+        <setting type="lsep" label="50124"/>
+        <setting id="generateNewFingerprintID" type="bool" label="50125" default="false" visible="true"/>
+        <setting id="fingerprintID" type="text" label="50124" default="" visible="false"/>
+        <setting id="previousFingerprintID" type="text" label="50124" default="" visible="false"/>
     </category>
 </settings>
