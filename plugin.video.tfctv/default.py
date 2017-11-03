@@ -263,7 +263,7 @@ def getMediaInfoFromWebsite(episodeId):
         for c in cookieJar:
             cookie.append('%s=%s' % (c.name, c.value))
         if setting('fingerprintID') == '':
-            generateNewFingerprintID(hashlib.md5(setting('emailAddress')+setting('randomInt')).hexdigest())
+            generateNewFingerprintID(hashlib.md5(setting('emailAddress')).hexdigest())
         cookie.append('cc_fingerprintid='+setting('fingerprintID'))
         cookie.append('cc_prevfingerprintid='+setting('previousFingerprintID'))
         cookie.append('__RequestVerificationToken='+setting('requestVerificationToken'))
