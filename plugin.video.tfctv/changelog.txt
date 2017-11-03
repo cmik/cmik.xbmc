@@ -1,3 +1,5 @@
+0.0.68
+    Fixed login error when asking to log at start
 0.0.67
     Returned to initial server which is back to HD quality streaming
     Added stream server modification if we encounter low quality resolution again so we can enable in addon option

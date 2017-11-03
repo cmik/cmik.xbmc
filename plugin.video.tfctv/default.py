@@ -1115,22 +1115,24 @@ def callServiceApi(path, params = {}, headers = [], base_url = websiteUrl, useCa
     key = hashlib.md5(base_url + path + urllib.urlencode(params)).hexdigest()
     log('Key %s : %s - %s' % (key, base_url + path, params))
     
-    if cacheActive == 'true' and useCache == True:
-        if shortCache.get(key):
-            cached = True
-            res = shortCache.get(key)
-            log('Used cache for (%s)' % key)
+    
+    if useCache == True:
+        if cacheActive == 'true':
+            if shortCache.get(key):
+                cached = True
+                res = shortCache.get(key)
+                log('Used cache for (%s)' % key)
+            else:
+                toCache = True
+                log('No cache for (%s)' % key)
         else:
-            toCache = True
-            log('No cache for (%s)' % key)
-    else:
-        if key in sessionCache:
-            cached = True
-            res = sessionCache[key]
-            log('Used session cache for (%s)' % key)
-        else:
-            toCache = True
-            log('No session cache for (%s)' % key)
+            if key in sessionCache:
+                cached = True
+                res = sessionCache[key]
+                log('Used session cache for (%s)' % key)
+            else:
+                toCache = True
+                log('No session cache for (%s)' % key)
     
     if cached is False:
         opener = urllib2.build_opener(urllib2.HTTPRedirectHandler(), urllib2.HTTPCookieProcessor(cookieJar))
