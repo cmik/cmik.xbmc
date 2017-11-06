@@ -262,10 +262,13 @@ def getMediaInfoFromWebsite(episodeId):
         cookie = []
         for c in cookieJar:
             cookie.append('%s=%s' % (c.name, c.value))
-        if setting('fingerprintID') == '':
-            generateNewFingerprintID(hashlib.md5(setting('emailAddress')).hexdigest())
+        
+        if setting('generateNewFingerprintID') == 'true':
+            generateNewFingerprintID()
+        
         cookie.append('cc_fingerprintid='+setting('fingerprintID'))
-        cookie.append('cc_prevfingerprintid='+setting('previousFingerprintID'))
+        if setting('previousFingerprintID') != '':
+            cookie.append('cc_prevfingerprintid='+setting('previousFingerprintID'))
         cookie.append('__RequestVerificationToken='+setting('requestVerificationToken'))
         
         callHeaders = [
@@ -1099,8 +1102,7 @@ def loginToWebsite(quiet=False):
             showNotification(message, lang(50204))
         else:
             logged = True
-            if setting('generateNewFingerprintID') == 'true':
-                generateNewFingerprintID()
+            generateNewFingerprintID()
     return logged
 
 def generateNewFingerprintID(previous=False):
@@ -1110,6 +1112,8 @@ def generateNewFingerprintID(previous=False):
     else:
         addon.setSetting('previousFingerprintID', previous)
     addon.setSetting('fingerprintID', hashlib.md5(setting('emailAddress')+str(randint(0, 1000000))).hexdigest())
+    if setting('generateNewFingerprintID') == 'true':
+        addon.setSetting('generateNewFingerprintID', 'false')
     return True
     
 def logout(quiet=True):
