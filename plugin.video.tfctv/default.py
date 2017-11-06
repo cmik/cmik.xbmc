@@ -251,13 +251,20 @@ def getMediaInfoFromWebsite(episodeId):
             alert(lang(57011),title=lang(50003))
             
     mediaToken = None
+    securityKey = ''
     for script in scripts:
         line = script.strip();
-        tokenmatch = re.compile('/Scripts/amp-.+\.js\?token\=(.+)" type', re.IGNORECASE).search(line)
-        if tokenmatch:
-            mediaToken = tokenmatch.group(1).encode("ascii")
+        scriptmatch = re.compile('(/Scripts/amp-.+\.js\?token\=(.+))" type', re.IGNORECASE).search(line)
+        if scriptmatch:
+            mediaToken = scriptmatch.group(2).encode("ascii")
+            # retrieve security key
+            scriptUrl = scriptmatch.group(1)
+            scriptContent = callServiceApi(scriptUrl, base_url = websiteUrl, useCache=False)
+            sKeyMatch = re.compile('sk:\'(.+)\'', re.IGNORECASE).search(scriptContent)
+            if sKeyMatch:
+                securityKey = sKeyMatch.group(1)
             break
-            
+    
     if mediaToken:
         cookie = []
         for c in cookieJar:
@@ -281,7 +288,7 @@ def getMediaInfoFromWebsite(episodeId):
             ('Origin', websiteUrl),
             ('Referer', websiteUrl+'/')
             ]
-        episodeDetails = callJsonApi('/media/get', params = {'id': episodeId, 'pv': 'false'}, headers = callHeaders, base_url = websiteUrl, useCache=False)
+        episodeDetails = callJsonApi('/media/get', params = {'id': episodeId, 'pv': 'false', 'sk' : securityKey}, headers = callHeaders, base_url = websiteUrl, useCache=False)
         if episodeDetails and 'StatusCode' in episodeDetails:
             mediaInfo['errorCode'] = episodeDetails['StatusCode']
             if 'MediaReturnObj' in episodeDetails and 'uri' in episodeDetails['MediaReturnObj']:
@@ -1390,7 +1397,8 @@ if setting('announcement') != addonInfo('version'):
         '0.0.63': 'Your TFC.tv plugin has been updated.\n\nEnabled items per page option in addon settings (Important : the larger the number of items, the more time it will take to load)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
         '0.0.65': 'Your TFC.tv plugin has been updated.\n\nFixed some error issues\nNow can enabled debug mode in addon option for debugging purpose\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
         '0.0.66': 'Your TFC.tv plugin has been updated.\n\nFixed low quality resolution (using a secondary server so streams can be not available or can be uploaded late)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.67': 'Your TFC.tv plugin has been updated.\n\nReturned to initial server which is back to HD quality streaming\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).'
+        '0.0.67': 'Your TFC.tv plugin has been updated.\n\nReturned to initial server which is back to HD quality streaming\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
+        '0.0.71': 'Your TFC.tv plugin has been updated.\n\nAdded latest TFC.tv security updates. If you still have playback issues, go to addon settings and set Advanced > Enable stream server modification to ON.\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).'
         }
     if addonInfo('version') in messages:
         showMessage(messages[addonInfo('version')], lang(50106))
