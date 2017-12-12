@@ -56,7 +56,13 @@ Add-on_manager#Updating (wiki)
 I'm encountering some issues. How can I report it?
 If you encounter anything that you think is a bug, please report it to this TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the addon github repo (https://github.com/cmik/cmik.xbmc/issues). Do not hesitate to give more details about your issue : your device & plateform version, your TFC.tv addon version, how to reproduce the bug or the error, eventually corresponding error message in Kodi.log file, etc.
 
-------------------------------
-  ADDON THREAD ON KODI FORUM
-------------------------------
+--------------------------------------------------
+  Find some help from other users on Kodi forum
+--------------------------------------------------
 https://forum.kodi.tv/showthread.php?tid=317008
+
+
+If you like this addon and want to support it, you can make a donation (bitcoin) to show your appreciation : 3DTuBV3iipW4FD7uocbwJknw6Hr8qGheUq
+
+Enjoy!
+
