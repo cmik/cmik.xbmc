@@ -39,9 +39,9 @@ http://kodi.wiki/view/HOW-TO:Install%20a...ip%20files
 http://kodi.wiki/view/HOW-TO:Install%20add-ons
 
 For Firestick users:
--Used the Downloader app from the amazon interface to download the zip to the Firestick.
--Opened kodi > system > add-ons > install from zip > external > downloader > Cmik repo
--install from repository> Cmik repo >Tfc.tv
+- Use the Downloader app from the amazon appstore to download the zip to the Firestick.
+- Open kodi > system > add-ons > install from zip > external > downloader > Cmik repo
+- install from repository> Cmik repo >Tfc.tv
 
 
 How to update to the latest version?
@@ -49,8 +49,8 @@ Normally, Kodi checks for updates at startup or from time to time.
 You can also force Kodi to check for updates:
 
 Go to general "Settings" > Add-on > "Seach for updates" (mine is in menu sidebar).
-Add-on_manager#How_to_access_the_Add-on_manager (wiki)
-Add-on_manager#Updating (wiki)
+- Add-on_manager#How_to_access_the_Add-on_manager (wiki) - http://kodi.wiki/view/Add-on_manager#How_to_access_the_Add-on_manager
+- Add-on_manager#Updating (wiki) - http://kodi.wiki/view/Add-on_manager#Updating
 
 
 I'm encountering some issues. How can I report it?
@@ -61,6 +61,7 @@ If you encounter anything that you think is a bug, please report it to this TFC.
 --------------------------------------------------
 https://forum.kodi.tv/showthread.php?tid=317008
 
+--------------------------------------------------
 
 If you like this addon and want to support it, you can make a donation (bitcoin) to show your appreciation : 3DTuBV3iipW4FD7uocbwJknw6Hr8qGheUq
 
