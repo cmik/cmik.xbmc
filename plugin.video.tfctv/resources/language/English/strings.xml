@@ -52,6 +52,6 @@
     <string id="57009">Welcome %s</string>
     <string id="57010">You are now logged out from TFC. Hope to see you soon</string>
     <string id="57011">This video contains mature scenes, language and themes that are not suitable for young viewers aged 17 years and below.</string>
-    
+    <string id="57012">Session timed out. Trying to reconnect...</string>
 </strings>
 

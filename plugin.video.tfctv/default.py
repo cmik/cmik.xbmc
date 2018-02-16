@@ -203,12 +203,18 @@ def playEpisode(url):
     errorCode = -1
     episodeDetails = {}
     episode = url.split('/')[0]
+    
+    # Check if logged in
+    if isLoggedIn() == False:
+        login()
+        
     for i in range(int(setting('loginRetries')) + 1):
         episodeDetails = getMediaInfo(episode)
         if episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] == 0 and 'data' in episodeDetails:
             break
         else:
             login()
+            
     if episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] == 0 and 'data' in episodeDetails:
         if 'preview' in episodeDetails['data'] and episodeDetails['data']['preview'] == True:
             showNotification(lang(50207), lang(50002))
@@ -293,6 +299,7 @@ def getMediaInfoFromWebsite(episodeId):
             mediaInfo['errorCode'] = episodeDetails['StatusCode']
             if 'MediaReturnObj' in episodeDetails and 'uri' in episodeDetails['MediaReturnObj']:
                 episodeDetails['MediaReturnObj']['uri'] = episodeDetails['MediaReturnObj']['uri'].replace('&b=100-1000', '')
+                episodeDetails['MediaReturnObj']['uri'] = episodeDetails['MediaReturnObj']['uri'] + '&__b__=5000'
                 if setting('streamServerModification') == 'true' and setting('streamServer') != '':
                     episodeDetails['MediaReturnObj']['uri'] = episodeDetails['MediaReturnObj']['uri'].replace('http://o2-i.', setting('streamServer'))
                 
@@ -1087,7 +1094,7 @@ def login(quiet=False):
     return signedIntoWebsite
     
 def isLoggedIn():
-    html = callServiceApi('', useCache = False)
+    html = callServiceApi("/profiles", headers = [('Referer', websiteSecuredUrl+'/')], base_url = websiteSecuredUrl, useCache = False)
     return False if 'TfcTvId' not in html else True
     
 def loginToWebsite(quiet=False):
@@ -1398,7 +1405,8 @@ if setting('announcement') != addonInfo('version'):
         '0.0.65': 'Your TFC.tv plugin has been updated.\n\nFixed some error issues\nNow can enabled debug mode in addon option for debugging purpose\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
         '0.0.66': 'Your TFC.tv plugin has been updated.\n\nFixed low quality resolution (using a secondary server so streams can be not available or can be uploaded late)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
         '0.0.67': 'Your TFC.tv plugin has been updated.\n\nReturned to initial server which is back to HD quality streaming\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.71': 'Your TFC.tv plugin has been updated.\n\nAdded latest TFC.tv security updates. If you still have playback issues, go to addon settings and set Advanced > Enable stream server modification to ON.\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).'
+        '0.0.71': 'Your TFC.tv plugin has been updated.\n\nAdded latest TFC.tv security updates. If you still have playback issues, go to addon settings and set Advanced > Enable stream server modification to ON.\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
+        '0.0.72': 'Your TFC.tv addon has been updated.\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).'
         }
     if addonInfo('version') in messages:
         showMessage(messages[addonInfo('version')], lang(50106))
