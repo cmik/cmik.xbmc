@@ -206,6 +206,7 @@ def playEpisode(url):
     
     # Check if logged in
     if isLoggedIn() == False:
+        showNotification(lang(57012), lang(50002))
         login()
         
     for i in range(int(setting('loginRetries')) + 1):
@@ -301,7 +302,7 @@ def getMediaInfoFromWebsite(episodeId):
                 episodeDetails['MediaReturnObj']['uri'] = episodeDetails['MediaReturnObj']['uri'].replace('&b=100-1000', '')
                 episodeDetails['MediaReturnObj']['uri'] = episodeDetails['MediaReturnObj']['uri'] + '&__b__=5000'
                 if setting('streamServerModification') == 'true' and setting('streamServer') != '':
-                    episodeDetails['MediaReturnObj']['uri'] = episodeDetails['MediaReturnObj']['uri'].replace('http://o2-i.', setting('streamServer'))
+                    episodeDetails['MediaReturnObj']['uri'] = episodeDetails['MediaReturnObj']['uri'].replace('https://o2-i.', setting('streamServer'))
                 
                 # choose best stream quality
                 # m3u8 = callServiceApi(episodeDetails['MediaReturnObj']['uri'], base_url = '')
@@ -604,6 +605,7 @@ def getWebsiteHomeSections():
         if len(header) > 0:
             data.append({'id' : str(i), 'name' : common.replaceHTMLCodes(header[0])}) #, 'url' : '/', 'fanart' : ''})
         else:
+            i += 1
             continue
         i += 1
     return data
@@ -1406,7 +1408,8 @@ if setting('announcement') != addonInfo('version'):
         '0.0.66': 'Your TFC.tv plugin has been updated.\n\nFixed low quality resolution (using a secondary server so streams can be not available or can be uploaded late)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
         '0.0.67': 'Your TFC.tv plugin has been updated.\n\nReturned to initial server which is back to HD quality streaming\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
         '0.0.71': 'Your TFC.tv plugin has been updated.\n\nAdded latest TFC.tv security updates. If you still have playback issues, go to addon settings and set Advanced > Enable stream server modification to ON.\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.72': 'Your TFC.tv addon has been updated.\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).'
+        '0.0.72': 'Your TFC.tv addon has been updated.\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
+        '0.0.73': 'Your TFC.tv addon has been updated.\n\nIf you\'re encountering playback issues, go to TFC.tv addon options and enable stream server modification and set stream server to \'http://o2-i.\'. \n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).'
         }
     if addonInfo('version') in messages:
         showMessage(messages[addonInfo('version')], lang(50106))
