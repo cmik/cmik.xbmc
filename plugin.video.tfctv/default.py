@@ -257,22 +257,12 @@ def getMediaInfoFromWebsite(episodeId):
         if re.compile('var dfp_c = ".*2900.*";', re.IGNORECASE).search(html):
             alert(lang(57011),title=lang(50003))
             
-    mediaToken = None
-    securityKey = ''
-    for script in scripts:
-        line = script.strip();
-        scriptmatch = re.compile('(/Scripts/amp-.+\.js\?token\=(.+))" type', re.IGNORECASE).search(line)
-        if scriptmatch:
-            mediaToken = scriptmatch.group(2).encode("ascii")
-            # retrieve security key
-            scriptUrl = scriptmatch.group(1)
-            scriptContent = callServiceApi(scriptUrl, base_url = websiteUrl, useCache=False)
-            sKeyMatch = re.compile('sk:\'(.+)\'', re.IGNORECASE).search(scriptContent)
-            if sKeyMatch:
-                securityKey = sKeyMatch.group(1)
-            break
-    
-    if mediaToken:
+    sid = None
+    sidmatch = re.compile('(media/fetch.+sid: (\d+),)', re.IGNORECASE).search(html)
+    if sidmatch:
+        sid = sidmatch.group(2)
+            
+    if sid:
         cookie = []
         for c in cookieJar:
             cookie.append('%s=%s' % (c.name, c.value))
@@ -290,22 +280,22 @@ def getMediaInfoFromWebsite(episodeId):
             ('X-Requested-With', 'XMLHttpRequest'),
             ('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8'),
             ('Cookie', '; '.join(cookie)),
-            ('mediaToken', mediaToken),
             ('Host', 'tfc.tv'),
             ('Origin', websiteUrl),
             ('Referer', websiteUrl+'/')
             ]
-        episodeDetails = callJsonApi('/media/get', params = {'id': episodeId, 'pv': 'false', 'sk' : securityKey}, headers = callHeaders, base_url = websiteUrl, useCache=False)
+        episodeDetails = callJsonApi('/media/fetch', params = {'eid': episodeId, 'pv': 'false', 'sid' : sid}, headers = callHeaders, base_url = websiteUrl, useCache=False)
+        # {"StatusCode":1,"StatusMessage":"OK","media":{"poster":"https://img.tfc.tv/xcms/categoryimages/4737/TFCtv-SinceIFoundYouHEROWEB-1280x720.jpg","source":[{"src":"https://o2-i.akamaihd.net/i/sinceifoundyou/20180625/20180625-sinceifoundyou-hd-,150000,300000,500000,800000,1000000,1300000,1500000,.mp4.csmil/master.m3u8?hdnea=ip=82.251.245.66~st=1529953572~exp=1529953872~acl=/i/sinceifoundyou/20180625/20180625-sinceifoundyou-hd-,150000,300000,500000,800000,1000000,1300000,1500000,.mp4.csmil/*~id=163d6ffc-89fc-45ce-a547-b9a05b9dac3c~data=208685~hmac=770698ab628fcd39a2950a8623faa10c70b34a7bab87de19cdd8f08e27ccbbdc","type":"application/x-mpegURL"}]},"mediainfo":{"preview":false,"live":false,"snippet":null,"lastposition":16.18,"free":false},"user":{"userid":"163d6ffc-89fc-45ce-a547-b9a05b9dac3c","email":"bN3Oyt7pCqIRxCekOg+aBFWlTwrlhOx+PJD2ICSD9Rg=","type":"REGISTERED","package":"PREMIUM","fingerprint":"9e0a3e99079c7bd679404038527b6c89","country":"FR","ipcountry":"FR"},"episode":{"episodeid":159345,"dateaired":"Jun 25, 2018"},"asset":{"assetid":208685,"type":"FULL"},"category":{"categoryid":4737,"name":"Since I Found You","dateaired":"Apr 16, 2018","type":"SHOW","poster":"https://img.tfc.tv/xcms/categoryimages/4737/TFCtv-SinceIFoundYouHEROWEB-1280x720.jpg"},"ad":{"uri":"//tfc.tv/tfcads.xml?adUri=https%3a%2f%2fpubads.g.doubleclick.net%2fgampad%2fads%3fsz%3d640x480%26iu%3d%2f2744311%2fTFC_VideoPlayer%26impl%3ds%26gdfp_req%3d1%26env%3dvp%26output%3dvast%26unviewed_position_start%3d1%26url%3d%5boUri%5d%26description_url%3d%5bdescriptionUri%5d%26correlator%3d1529953586756%26cust_params%3d&midroll=&cp=ShowName%3dsince-i-found-you&descUri=http%3a%2f%2ftfc.tv%2fepisode%2fdetails%2f159345%2fsince-i-found-you-june-25-2018"}}'
         if episodeDetails and 'StatusCode' in episodeDetails:
             mediaInfo['errorCode'] = episodeDetails['StatusCode']
-            if 'MediaReturnObj' in episodeDetails and 'uri' in episodeDetails['MediaReturnObj']:
-                episodeDetails['MediaReturnObj']['uri'] = episodeDetails['MediaReturnObj']['uri'].replace('&b=100-1000', '')
-                episodeDetails['MediaReturnObj']['uri'] = episodeDetails['MediaReturnObj']['uri'] + '&__b__=5000'
+            if 'media' in episodeDetails and 'source' in episodeDetails['media'] and 'src' in episodeDetails['media']['source'][0] :
+                episodeDetails['media']['uri'] = episodeDetails['media']['source'][0]['src'].replace('&b=100-1000', '')
+                episodeDetails['media']['uri'] = episodeDetails['media']['uri'] + '&__b__=5000'
                 if setting('streamServerModification') == 'true' and setting('streamServer') != '':
-                    episodeDetails['MediaReturnObj']['uri'] = episodeDetails['MediaReturnObj']['uri'].replace('https://o2-i.', setting('streamServer'))
+                    episodeDetails['media']['uri'] = episodeDetails['media']['uri'].replace('https://o2-i.', setting('streamServer'))
                 
                 # choose best stream quality
-                # m3u8 = callServiceApi(episodeDetails['MediaReturnObj']['uri'], base_url = '')
+                # m3u8 = callServiceApi(episodeDetails['media']['uri'], base_url = '')
                 # log(m3u8)
                 # lines = m3u8.split('\n')
                 # i = 0
@@ -322,9 +312,9 @@ def getMediaInfoFromWebsite(episodeId):
                         # i+=1
                     # if i >= len(lines):
                         # break
-                # episodeDetails['MediaReturnObj']['uri'] = choosedStream
+                # episodeDetails['media']['uri'] = choosedStream
                 
-                mediaInfo['data'] = episodeDetails['MediaReturnObj']
+                mediaInfo['data'] = episodeDetails['media']
             if 'StatusMessage' in episodeDetails and episodeDetails['StatusMessage'] != '' and episodeDetails['StatusMessage'] != 'OK':
                 mediaInfo['StatusMessage'] = episodeDetails['StatusMessage']
     return mediaInfo
