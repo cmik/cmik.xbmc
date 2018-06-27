@@ -1,3 +1,6 @@
+0.0.75
+    Fixed Movies category
+    Added plot info in playing video
 0.0.74
     Implemented latest updates from TFC.tv on media query and response
 0.0.73

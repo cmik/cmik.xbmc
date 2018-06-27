@@ -223,9 +223,12 @@ def playEpisode(url):
             if 'StatusMessage' in episodeDetails and episodeDetails['StatusMessage'] != '':
                 showNotification(episodeDetails['StatusMessage'], lang(57000))
         url = episodeDetails['data']['uri']
+        plot = episodeDetails['data']['plot']
+        fanart = episodeDetails['data']['fanart']
         # url = url.replace('=/', '=%2f')
         liz = xbmcgui.ListItem(name, iconImage = "DefaultVideo.png", thumbnailImage = thumbnail, path = url)
-        liz.setInfo( type = "Video", infoLabels = { "Title": name } )
+        liz.setInfo( type = "Video", infoLabels = { "Title": name, "Plot": plot } )
+        liz.setProperty('fanart_image', fanart)
         liz.setProperty('IsPlayable', 'true')
         return xbmcplugin.setResolvedUrl(thisPlugin, True, liz)
     else:
@@ -250,6 +253,7 @@ def getMediaInfoFromWebsite(episodeId):
     url = '/episode/details/%s'
     html = callServiceApi(url % episodeId, base_url = websiteUrl, useCache=False)
     body = common.parseDOM(html, "body")
+    episodeData = json.loads(re.compile('var ldj = (\{.+\})', re.IGNORECASE).search(html).group(1))
     scripts = common.parseDOM(body, "script", attrs = { 'type' : 'text/javascript' })
     
     # Parental advisory
@@ -315,8 +319,13 @@ def getMediaInfoFromWebsite(episodeId):
                 # episodeDetails['media']['uri'] = choosedStream
                 
                 mediaInfo['data'] = episodeDetails['media']
+                mediaInfo['data']['plot'] = episodeData.get('description').encode('utf8')
+                mediaInfo['data']['fanart'] = episodeData.get('image').encode('utf8')
+                mediaInfo['data']['type'] = episodeData.get('@type').encode('utf8').lower()
+                
             if 'StatusMessage' in episodeDetails and episodeDetails['StatusMessage'] != '' and episodeDetails['StatusMessage'] != 'OK':
                 mediaInfo['StatusMessage'] = episodeDetails['StatusMessage']
+                
     return mediaInfo
     
 def showCelebrities():
@@ -854,7 +863,7 @@ def getEpisodesPerPage(showId, page=1, itemsPerPage=8):
         elif page == 1 and html == '':
             showDetailURL = '/show/details/%s'
             html = callServiceApi(showDetailURL % showId)
-            episodeId = int(json.loads(re.compile('var mo =  (\{.+\});', re.IGNORECASE).search(html).group(1)).get('EpisodeId', '0'))
+            episodeId = int(re.compile('var dfp_e = "(.+)";', re.IGNORECASE).search(html).group(1))
             # episodeUrl = common.parseDOM(html, "a", attrs = { 'class' : 'hero-image-orange-btn' }, ret = 'href')
             # if len(episodeUrl) == 0:
                 # episodeUrl = common.parseDOM(html, "a", attrs = { 'class' : 'link-to-episode' }, ret = 'href')
@@ -920,7 +929,7 @@ def getEpisodesPerPage(showId, page=1, itemsPerPage=8):
       
 def getShowEpisodes(showId):
     data = {}
-    showData = getShow(showId)
+    showData = sCacheFunction(getShow, showId)
     url = '/Episodes?showId=%s'
     showEpisodes = callJsonApi(url % showId)
     if showData and showEpisodes:
@@ -1399,7 +1408,8 @@ if setting('announcement') != addonInfo('version'):
         '0.0.67': 'Your TFC.tv plugin has been updated.\n\nReturned to initial server which is back to HD quality streaming\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
         '0.0.71': 'Your TFC.tv plugin has been updated.\n\nAdded latest TFC.tv security updates. If you still have playback issues, go to addon settings and set Advanced > Enable stream server modification to ON.\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
         '0.0.72': 'Your TFC.tv addon has been updated.\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.73': 'Your TFC.tv addon has been updated.\n\nIf you\'re encountering playback issues, go to TFC.tv addon options and enable stream server modification and set stream server to \'http://o2-i.\'. \n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).'
+        '0.0.73': 'Your TFC.tv addon has been updated.\n\nIf you\'re encountering playback issues, go to TFC.tv addon options and enable stream server modification and set stream server to \'http://o2-i.\'. \n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
+        '0.0.75': 'Your TFC.tv addon has been updated.\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).'
         }
     if addonInfo('version') in messages:
         showMessage(messages[addonInfo('version')], lang(50106))
