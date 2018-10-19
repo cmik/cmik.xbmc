@@ -26,8 +26,8 @@ lCacheFunction = longCache.cacheFunction
 
 #---------------------- CONFIG ----------------------------------------
 # URLs
-webserviceUrl = 'https://api.tfcone.com'
-websiteUrl = 'http://tfc.tv'
+webserviceUrl = 'https://tfc.tv'
+websiteUrl = 'https://tfc.tv'
 websiteSecuredUrl = 'https://tfc.tv'
 
 # Cache
@@ -294,7 +294,7 @@ def getMediaInfoFromWebsite(episodeId):
             mediaInfo['errorCode'] = episodeDetails['StatusCode']
             if 'media' in episodeDetails and 'source' in episodeDetails['media'] and 'src' in episodeDetails['media']['source'][0] :
                 episodeDetails['media']['uri'] = episodeDetails['media']['source'][0]['src'].replace('&b=100-1000', '')
-                episodeDetails['media']['uri'] = episodeDetails['media']['uri'] + '&__b__=5000'
+                # episodeDetails['media']['uri'] = episodeDetails['media']['uri'] + '&__b__=5000'
                 if setting('streamServerModification') == 'true' and setting('streamServer') != '':
                     episodeDetails['media']['uri'] = episodeDetails['media']['uri'].replace('https://o2-i.', setting('streamServer'))
                 
@@ -383,7 +383,7 @@ def showMySubscription():
     sub = getUserSubscription()
     message = ''
     if sub:
-        message += 'Plan: %s\n\n%s' % (sub['Plan'], sub['Details'])
+        message += '%s' % (sub['Details'])
     else:
         message = lang(57002)
     showMessage(message, lang(56002))
@@ -393,10 +393,7 @@ def showMyTransactions():
     message = ''
     if len(transactions) > 0:
         for t in transactions:
-            keys = t.keys()
-            for key in keys:
-                message += key + ': ' + t[key] + "\n"
-            message += "\n"
+            message += t + "\n"
     else:
         message = lang(57002)
     showMessage(message, lang(56003))
@@ -595,14 +592,17 @@ def getSubCategories(categoryId):
     return data
 
 def getWebsiteHomeSections():
+    import re
+    TAG_RE = re.compile(r'<[^>]+>')
+    
     data = []
     html = callServiceApi('', base_url = websiteUrl)
     sections = common.parseDOM(html, "div", attrs = { 'class' : 'main-container-xl main-container-xl-mobile' })
     i = 1
     for section in sections:
-        header = common.parseDOM(section, "a", attrs = { 'class' : 'h2 heading-slider first' })
+        header = common.parseDOM(section, "a", attrs = { 'class' : 'h2 heading-slider first' })        
         if len(header) > 0:
-            data.append({'id' : str(i), 'name' : common.replaceHTMLCodes(header[0])}) #, 'url' : '/', 'fanart' : ''})
+            data.append({'id' : str(i), 'name' : TAG_RE.sub('', common.replaceHTMLCodes(header[0])).strip()}) #, 'url' : '/', 'fanart' : ''})
         else:
             i += 1
             continue
@@ -818,6 +818,9 @@ def formatShowInfo(info):
         'listArts' : { 'fanart' : info['fanart'], 'banner' : info['fanart'] }, 
         'listInfos' : { 
             'video' : { 'plot' : info['description'], 'year' : info['year'] } 
+            },
+        'contextMenu' : { 
+            lang(50300) : 'XBMC.Container.Update(%s)' % generatePluginActionUrl('formatShowInfo', 98)
             } 
         }
     return data
@@ -835,6 +838,9 @@ def formatVideoInfo(info):
                 'aired' : info['dateaired'], 
                 'year' : info['year'] 
                 } 
+            },
+        'contextMenu' : { 
+            lang(50300) : 'XBMC.Container.Update(%s)' % generatePluginActionUrl('formatVideoInfo', 98)
             } 
         }
     return data
@@ -1015,23 +1021,33 @@ def getUserInfo():
     }
     
 def getUserSubscription():
-    url = '/profile'
-    html = callServiceApi(url, useCache=False)
+    import re
     
-    subscription = common.parseDOM(html, 'div', attrs = {'class' : 'box_row my_membership'})
-    plan = common.parseDOM(common.parseDOM(subscription, 'div', attrs = {'class' : 'p'}), 'strong')[0]
-    planDetails = common.parseDOM(common.parseDOM(subscription, "ul"), 'li')  
+    url = '/profile/details'
+    subscription = callJsonApi(url, useCache=False)
     
+    first_cap_re = re.compile('(.)([A-Z][a-z]+)')
+        
+    subKeys = ['Type', 'SubscriptionName', 'SubscriptionStatus', 'ExpirationDate', 'ExpirationDate', 'BillingPeriod', 'AutoRenewal']
     details = ''
-    for d in planDetails:
-        details += '-' + d.encode('utf8') + "\n"
+    for d in subscription['Details']:
+        for key in subKeys:
+            label = first_cap_re.sub(r'\1 \2', key)
+            value = ''
+            if isinstance(d[key], (bool)):
+                value = 'ACTIVE' if d[key] == True else 'NON ACTIVE'
+            else:
+                value = d[key]
+            details += "%s: %s\n" % (label, value)
         
     return {
-            'Plan' : plan.encode('utf8'),
             'Details' : details
         }
     
 def getUserTransactions():
+    import re
+    TAG_HTML = re.compile('<[^>]+>')
+
     data = []
     url = '/profile'
     html = callServiceApi(url, useCache = False)
@@ -1045,15 +1061,34 @@ def getUserTransactions():
         header.append(h.encode('utf8'))
     
     for transaction in transactions:
-        columns = common.parseDOM(transaction, 'td')
-        t = {}
+        columns = common.parseDOM(transaction, 'td', attrs = {'class' : 'loader'})
+        if len(columns) > 0:
+            continue
+        
+        columns = common.parseDOM(transaction.replace('<td></td>', '<td>-</td>'), 'td')
+        t = ''
         i = 0
+        
         for c in columns:
-            t[header[i]] = c.encode('utf8')
+            value = '-'
+            if not TAG_HTML.search(c):
+                value = c.encode('utf8')
+            t += "%s: %s\n" % (header[i], value)
             i+=1
         data.append(t)
                 
     return data
+    
+    
+def addToMyList():
+    showNotification(lang(50208))
+    # url = '/method/addtolist'
+    # data = callJsonApi(url, params = {'CategoryId': 4894, 'EpisodeId': 167895, 'type': 'episode'}, useCache=False)
+
+def removeFromMyList():
+    showNotification(lang(50208))
+    # url = '/method/deletefromlist'
+    # data = callJsonApi(url, params = {'CategoryId': 4894, 'EpisodeId': 167895, 'type': 'episode'}, useCache=False)
     
 def checkAccountChange(forceSignIn=False):
     email = setting('emailAddress')
@@ -1095,7 +1130,7 @@ def login(quiet=False):
     return signedIntoWebsite
     
 def isLoggedIn():
-    html = callServiceApi("/profiles", headers = [('Referer', websiteSecuredUrl+'/')], base_url = websiteSecuredUrl, useCache = False)
+    html = callServiceApi("/profiles", headers = [('Referer', websiteSecuredUrl+'/')    ], base_url = websiteSecuredUrl, useCache = False)
     return False if 'TfcTvId' not in html else True
     
 def loginToWebsite(quiet=False):
@@ -1223,7 +1258,7 @@ def getParams():
     return param
 
 def addDir(name, url, mode, thumbnail, page = 0, isFolder = True, **kwargs):
-    u = sys.argv[0] + "?url=" + urllib.quote_plus(url) + "&mode=" + str(mode) + "&name=" + urllib.quote_plus(name) + "&page=" + str(page) + "&thumbnail=" + urllib.quote_plus(thumbnail)
+    u = generatePluginActionUrl(url, mode, name, thumbnail, page)
     liz = xbmcgui.ListItem(name, iconImage = "DefaultFolder.png", thumbnailImage = thumbnail)
     liz.setInfo( type = "Video", infoLabels = { "Title": name } )
     for k, v in kwargs.iteritems():
@@ -1236,8 +1271,30 @@ def addDir(name, url, mode, thumbnail, page = 0, isFolder = True, **kwargs):
         if k == 'listArts':
             for listArtKey, listArtValue in v.iteritems():
                 liz.setArt(v)
+        if k == 'contextMenu':
+            menuItems = []
+            for label, action in v.iteritems():
+                menuItems.append((label, action))
+            if len(menuItems) > 0: liz.addContextMenuItems(menuItems)
     return xbmcplugin.addDirectoryItem(handle = thisPlugin, url = u,listitem = liz, isFolder = isFolder)
 
+def generatePluginActionUrl(url, mode, name=None, thumbnail='', page = 0):
+    url = sys.argv[0] + "?url=" + urllib.quote_plus(url) + "&mode=" + str(mode) 
+    try:
+        if name != None: url += "&name=" + urllib.quote_plus(name) 
+    except:
+        pass
+    try:
+        if int(page) >= 0: url += "&page=" + str(page) 
+    except:
+        pass
+    try:
+        if thumbnail != '': url += "&thumbnail=" + urllib.quote_plus(thumbnail)
+    except:
+        pass
+        
+    return url       
+    
 def showMessage(message, title = lang(50001)):
     if not message:
         return
@@ -1300,7 +1357,8 @@ thisPlugin = int(sys.argv[1])
 xbmcplugin.setPluginFanart(thisPlugin, 'fanart.jpg')
 
 userAgents = { 
-    webserviceUrl : 'Mozilla/5.0 (iPad; CPU OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3',
+    # webserviceUrl : 'Mozilla/5.0 (iPad; CPU OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3',
+    webserviceUrl : 'Mozilla/5.0 (iPad; CPU OS 7_0 like Mac OS X) AppleWebKit/537.51.1 (KHTML, like Gecko) CriOS/30.0.1599.12 Mobile/11A465 Safari/8536.25 (3B92C18B-D9DE-4CB7-A02A-22FD2AF17C8F)',
     # websiteUrl : 'Mozilla/5.0 (iPad; CPU OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3',
     websiteUrl : 'Mozilla/5.0 (iPad; CPU OS 7_0 like Mac OS X) AppleWebKit/537.51.1 (KHTML, like Gecko) CriOS/30.0.1599.12 Mobile/11A465 Safari/8536.25 (3B92C18B-D9DE-4CB7-A02A-22FD2AF17C8F)',
     'default' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2486.0 Safari/537.36 Edge/13.10586'
@@ -1379,12 +1437,18 @@ elif mode == 15:
     showMyTransactions()
 elif mode == 16:
     logout(quiet=False)
+elif mode == 20:
+    showMyShowList()
+elif mode == 21:
+    showMyEpisodeList()
 elif mode == 50:
     showTools()
 elif mode == 51:
     reloadCatalogCache()
 elif mode == 52:
     cleanCookies()
+elif mode == 98:
+     addToMyList()
 elif mode == 99:
     cookieJar.clear()
     # callServiceApi(url)
@@ -1410,7 +1474,8 @@ if setting('announcement') != addonInfo('version'):
         '0.0.72': 'Your TFC.tv addon has been updated.\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
         '0.0.73': 'Your TFC.tv addon has been updated.\n\nIf you\'re encountering playback issues, go to TFC.tv addon options and enable stream server modification and set stream server to \'http://o2-i.\'. \n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
         '0.0.75': 'Your TFC.tv addon has been updated.\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.76': 'Your TFC.tv addon has been updated.\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).'
+        '0.0.76': 'Your TFC.tv addon has been updated.\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
+        '0.0.77': 'Your TFC.tv addon has been updated.\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).'
         }
     if addonInfo('version') in messages:
         showMessage(messages[addonInfo('version')], lang(50106))

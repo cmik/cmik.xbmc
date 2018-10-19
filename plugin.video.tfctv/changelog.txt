@@ -1,3 +1,6 @@
+0.0.77
+    Fixed home section with HTML text
+    Fixed user subscription and transaction display
 0.0.76
     Fixed video playback (media/fetch HTTP 404 error with unsecured URL)
 0.0.75

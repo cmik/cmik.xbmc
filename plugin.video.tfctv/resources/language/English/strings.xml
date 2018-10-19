@@ -36,6 +36,8 @@
     <string id="50205">Can't login to TFC website</string>
     <string id="50206">[Preview] %s</string>
     <string id="50207">You are only allowed to watch a preview</string>
+    <string id="50208">This feature is coming soon :)</string>
+    <string id="50300">Add to my watchlist</string>
     <string id="56001">TFC.tv My Account Information</string>
     <string id="56002">TFC.tv My Subscriptions</string>
     <string id="56003">TFC.tv My Transactions</string>
@@ -53,5 +55,5 @@
     <string id="57010">You are now logged out from TFC. Hope to see you soon</string>
     <string id="57011">This video contains mature scenes, language and themes that are not suitable for young viewers aged 17 years and below.</string>
     <string id="57012">Session timed out. Trying to reconnect...</string>
+    
 </strings>
-
