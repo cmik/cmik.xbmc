@@ -3,6 +3,8 @@
     <string id="50001">Message</string>
     <string id="50002">Information</string>
     <string id="50003">Parental Advisory</string>
+    <string id="50004">Error</string>
+    <string id="50005">Please wait</string>
     <string id="50100">Settings</string>
     <string id="50101">Episodes Per Page</string>
     <string id="50103">List subscribed shows first</string>
@@ -28,6 +30,11 @@
     <string id="50123">Specific stream server</string>
     <string id="50124">Fingerprint ID</string>
     <string id="50125">Generate new fingerprint ID</string>
+    <string id="50126">Addon new installation</string>
+    <string id="50127">TFC.tv UID</string>
+    <string id="50128">TFC.tv UID Signature</string>
+    <string id="50129">Display my TFC.tv List</string>
+    <string id="50130">Default directory background image</string>
     <string id="50200">TFC.tv Account</string>
     <string id="50201">Email Address</string>
     <string id="50202">Password</string>
@@ -38,10 +45,11 @@
     <string id="50207">You are only allowed to watch a preview</string>
     <string id="50208">This feature is coming soon :)</string>
     <string id="50300">Add to my watchlist</string>
+    <string id="50301">Remove from my watchlist</string>
     <string id="56001">TFC.tv My Account Information</string>
     <string id="56002">TFC.tv My Subscriptions</string>
     <string id="56003">TFC.tv My Transactions</string>
-    
+    <!-- notifications / messages -->
     <string id="57000">Media Error</string>
     <string id="57001">Subscription is already expired or the item is not part of your subscription</string>
     <string id="57002">No available information</string>
@@ -55,5 +63,17 @@
     <string id="57010">You are now logged out from TFC. Hope to see you soon</string>
     <string id="57011">This video contains mature scenes, language and themes that are not suitable for young viewers aged 17 years and below.</string>
     <string id="57012">Session timed out. Trying to reconnect...</string>
+    <string id="57013">Retrieving home sections...</string>
+    <string id="57014">Retrieving categories, shows and episodes...</string>
+    <string id="57015">Cleaning caches...</string>
+    <string id="57016">Thank you for using this non official TFC.tv addon!
     
+Watch your favorite online Pinoy shows, movies, news and live channels directly from your KODI plateform!
+IMPORTANT: A subscription to TFC.tv website (http://tfc.tv) is required.
+
+Enjoy!
+    </string>
+    <string id="57017">You're actually not connected</string>
+    <string id="57018">Welcome Kapamilya!</string>
+    <string id="57019">Login into TFC.tv...</string>
 </strings>

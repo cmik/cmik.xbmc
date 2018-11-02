@@ -1,3 +1,8 @@
+0.0.78
+    Implement new login process Kapamilya Account Single Sign On
+    Added default background image
+    Fixed wrong URL for checking if logged in
+    Fixed some minor bugs
 0.0.77
     Fixed home section with HTML text
     Fixed user subscription and transaction display
