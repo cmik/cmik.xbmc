@@ -5,6 +5,9 @@
     <string id="50003">Parental Advisory</string>
     <string id="50004">Error</string>
     <string id="50005">Please wait</string>
+    <string id="50006">Login Failed</string>
+    <string id="50007">Login successful</string>
+    <string id="50008">Loading</string>
     <string id="50100">Settings</string>
     <string id="50101">Episodes Per Page</string>
     <string id="50103">List subscribed shows first</string>
@@ -33,13 +36,17 @@
     <string id="50126">Addon new installation</string>
     <string id="50127">TFC.tv UID</string>
     <string id="50128">TFC.tv UID Signature</string>
-    <string id="50129">Display my TFC.tv List</string>
-    <string id="50130">Default directory background image</string>
+    <string id="50129">TFC.tv Signature timestamp</string>
+    <string id="50130">Display my TFC.tv List</string>
+    <string id="50131">Default directory background image</string>
+    <string id="50132">Streaming Proxy</string>
+    <string id="50133">Use streaming proxy</string>
+    <string id="50134">Host URL format</string>
+    <string id="50135">Port</string>
     <string id="50200">TFC.tv Account</string>
     <string id="50201">Email Address</string>
     <string id="50202">Password</string>
     <string id="50203">Login Retries</string>
-    <string id="50204">Login Failed</string>
     <string id="50205">Can't login to TFC website</string>
     <string id="50206">[Preview] %s</string>
     <string id="50207">You are only allowed to watch a preview</string>
@@ -76,4 +83,6 @@ Enjoy!
     <string id="57017">You're actually not connected</string>
     <string id="57018">Welcome Kapamilya!</string>
     <string id="57019">Login into TFC.tv...</string>
+    <string id="57020">Preparing menu...</string>
+    <string id="57020">Can't play the selected item</string>
 </strings>

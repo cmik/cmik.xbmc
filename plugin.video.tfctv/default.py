@@ -1,7 +1,13 @@
-import sys, urllib, urllib2, ssl, json, cookielib, time, os.path, hashlib
+import re
+import sys
+import urllib, urllib2, ssl, cookielib
+import json
+import time
+import hashlib
 import xbmc, xbmcgui, xbmcplugin, xbmcaddon
+import os.path
 from operator import itemgetter
-import CommonFunctions
+import CommonFunctions as common
 
 try:
    import StorageServer
@@ -14,7 +20,6 @@ longCache = StorageServer.StorageServer("tfctv_db", 24 * 7) # 1 week cache
 
 sessionCache = {}
 
-common = CommonFunctions
 addon = xbmcaddon.Addon()
 setting = addon.getSetting
 lang = addon.getLocalizedString
@@ -65,18 +70,12 @@ if setting('debug') == 'true':
 #---------------------- FUNCTIONS ----------------------------------------
 def showMainMenu():
     checkAccountChange()
-    # cleanCookies(False)
     
     # if not logged in, ask to log in
     if isLoggedIn() == False:
         if setting('emailAddress') != '':
             if (confirm(lang(57007), line1=lang(57008) % setting('emailAddress'))):
                 (account, logged) = checkAccountChange(True)
-                if logged == True:
-                    user = getUserInfo()
-                    showNotification(lang(57009) % user.get('FirstName', 'back to TFC'), title='')
-                else:
-                    showNotification(lang(50205), title=lang(50204))
         else:
             if setting('addonNewInstall') == 'true':
                 showMessage(lang(57016), lang(57018))
@@ -92,6 +91,7 @@ def showMainMenu():
         showCategories()
         
     if setting('displayWebsiteSections') == 'true':
+        showNotification(lang(57020), lang(50008))
         sections = getWebsiteHomeSections()
         for s in sections:
             addDir(s['name'].title(), str(s['id']), 11, 'icon.png', isFolder = True, **formatMenu())
@@ -107,7 +107,7 @@ def showMainMenu():
 def showMyList():   
     categories = getMyListCategories()
     for c in categories:
-        addDir(c['name'], str(c['id']), 21, 'icon.png')
+        addDir(c['name'], str(c['id']), 21, 'icon.png', **formatMenu())
     xbmcplugin.endOfDirectory(thisPlugin)
     
 def showMyListCategory(url):   
@@ -212,8 +212,7 @@ def showEpisodes(showId, page=1):
         addDir("Next >>", showId, 3, '', page + 1)
     xbmcplugin.endOfDirectory(thisPlugin)
         
-def playEpisode(url):
-    cleanCookies(False)
+def playEpisode(url):    
     errorCode = -1
     episodeDetails = {}
     episode = url.split('/')[0]
@@ -236,15 +235,17 @@ def playEpisode(url):
         else:
             if 'StatusMessage' in episodeDetails and episodeDetails['StatusMessage'] != '':
                 showNotification(episodeDetails['StatusMessage'], lang(57000))
-        url = episodeDetails['data']['uri']
+        url = setting('proxyHostUrl') % (setting('proxyPort'), urllib.quote(episodeDetails['data']['uri'])) if (setting('useProxy') == 'true') else episodeDetails['data']['uri']
         plot = episodeDetails['data']['plot']
         fanart = episodeDetails['data']['fanart']
-        # url = url.replace('=/', '=%2f')
-        liz = xbmcgui.ListItem(name, iconImage = "DefaultVideo.png", thumbnailImage = thumbnail, path = url)
-        liz.setInfo( type = "Video", infoLabels = { "Title": name, "Plot": plot } )
+        liz = xbmcgui.ListItem(name, path=url, thumbnailImage=thumbnail, iconImage="DefaultVideo.png")
+        liz.setInfo(type='Video', infoLabels={ 'Title': name, 'Plot': plot })
         liz.setProperty('fanart_image', fanart)
         liz.setProperty('IsPlayable', 'true')
-        return xbmcplugin.setResolvedUrl(thisPlugin, True, liz)
+        try: 
+            return xbmcplugin.setResolvedUrl(thisPlugin, True, liz)
+        except: 
+            showNotification(lang(57020), lang(50004))
     else:
         if (not episodeDetails) or (episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] != 0):
             if 'StatusMessage' in episodeDetails:
@@ -257,12 +258,10 @@ def getMediaInfo(episodeId):
     mediaInfo = getMediaInfoFromWebsite(episodeId)
     if mediaInfo and 'errorCode' in mediaInfo and mediaInfo['errorCode'] == 1:
         mediaInfo['errorCode'] = 0
-    if 'data' in mediaInfo and 'Url' in mediaInfo['data']:
-        mediaInfo['data']['uri'] = mediaInfo['data']['Url']
     return mediaInfo
     
 def getMediaInfoFromWebsite(episodeId):
-    import re
+        
     mediaInfo = {}
     url = '/episode/details/%s'
     html = callServiceApi(url % episodeId, base_url = websiteUrl, useCache=False)
@@ -280,15 +279,14 @@ def getMediaInfoFromWebsite(episodeId):
         sid = sidmatch.group(2)
             
     if sid:
-        cookie = getCookieContent()
-        
+        cookie = getCookieContent() 
+        log(cookie)
         if setting('generateNewFingerprintID') == 'true':
             generateNewFingerprintID()
         
         cookie.append('cc_fingerprintid='+setting('fingerprintID'))
         if setting('previousFingerprintID') != '':
             cookie.append('cc_prevfingerprintid='+setting('previousFingerprintID'))
-        cookie.append('__RequestVerificationToken='+setting('requestVerificationToken'))
         
         callHeaders = [
             ('Accept', 'application/json, text/javascript, */*; q=0.01'), 
@@ -299,12 +297,16 @@ def getMediaInfoFromWebsite(episodeId):
             ('Origin', websiteUrl),
             ('Referer', websiteUrl+'/')
             ]
-        episodeDetails = callJsonApi('/media/fetch', params = {'eid': episodeId, 'pv': 'false', 'sid' : sid}, headers = callHeaders, base_url = websiteSecuredUrl, useCache=False)
-        # {"StatusCode":1,"StatusMessage":"OK","media":{"poster":"https://img.tfc.tv/xcms/categoryimages/4737/TFCtv-SinceIFoundYouHEROWEB-1280x720.jpg","source":[{"src":"https://o2-i.akamaihd.net/i/sinceifoundyou/20180625/20180625-sinceifoundyou-hd-,150000,300000,500000,800000,1000000,1300000,1500000,.mp4.csmil/master.m3u8?hdnea=ip=82.251.245.66~st=1529953572~exp=1529953872~acl=/i/sinceifoundyou/20180625/20180625-sinceifoundyou-hd-,150000,300000,500000,800000,1000000,1300000,1500000,.mp4.csmil/*~id=163d6ffc-89fc-45ce-a547-b9a05b9dac3c~data=208685~hmac=770698ab628fcd39a2950a8623faa10c70b34a7bab87de19cdd8f08e27ccbbdc","type":"application/x-mpegURL"}]},"mediainfo":{"preview":false,"live":false,"snippet":null,"lastposition":16.18,"free":false},"user":{"userid":"163d6ffc-89fc-45ce-a547-b9a05b9dac3c","email":"bN3Oyt7pCqIRxCekOg+aBFWlTwrlhOx+PJD2ICSD9Rg=","type":"REGISTERED","package":"PREMIUM","fingerprint":"9e0a3e99079c7bd679404038527b6c89","country":"FR","ipcountry":"FR"},"episode":{"episodeid":159345,"dateaired":"Jun 25, 2018"},"asset":{"assetid":208685,"type":"FULL"},"category":{"categoryid":4737,"name":"Since I Found You","dateaired":"Apr 16, 2018","type":"SHOW","poster":"https://img.tfc.tv/xcms/categoryimages/4737/TFCtv-SinceIFoundYouHEROWEB-1280x720.jpg"},"ad":{"uri":"//tfc.tv/tfcads.xml?adUri=https%3a%2f%2fpubads.g.doubleclick.net%2fgampad%2fads%3fsz%3d640x480%26iu%3d%2f2744311%2fTFC_VideoPlayer%26impl%3ds%26gdfp_req%3d1%26env%3dvp%26output%3dvast%26unviewed_position_start%3d1%26url%3d%5boUri%5d%26description_url%3d%5bdescriptionUri%5d%26correlator%3d1529953586756%26cust_params%3d&midroll=&cp=ShowName%3dsince-i-found-you&descUri=http%3a%2f%2ftfc.tv%2fepisode%2fdetails%2f159345%2fsince-i-found-you-june-25-2018"}}'
+        params = {
+            'eid': episodeId, 
+            'pv': 'false', 
+            'sid' : sid
+            }
+        episodeDetails = callJsonApi('/media/fetch', params, headers=callHeaders, base_url=websiteSecuredUrl, useCache=False, jsonData=True)
         if episodeDetails and 'StatusCode' in episodeDetails:
             mediaInfo['errorCode'] = episodeDetails['StatusCode']
             if 'media' in episodeDetails and 'source' in episodeDetails['media'] and 'src' in episodeDetails['media']['source'][0] :
-                episodeDetails['media']['uri'] = episodeDetails['media']['source'][0]['src'].replace('&b=100-1000', '')
+                episodeDetails['media']['uri'] = episodeDetails['media']['source'][0]['src'].encode('utf8')
                 # DVR Window 
                 # episodeDetails['media']['uri'] += '&dw=30&n10'
                 # limit by bitrate
@@ -312,26 +314,7 @@ def getMediaInfoFromWebsite(episodeId):
                 # prefered bitrate
                 # episodeDetails['media']['uri'] += '&_b_=700'
                 if setting('streamServerModification') == 'true' and setting('streamServer') != '':
-                    episodeDetails['media']['uri'] = episodeDetails['media']['uri'].replace('https://o2-i.', setting('streamServer'))
-                
-                # choose best stream quality
-                # m3u8 = callServiceApi(episodeDetails['media']['uri'], base_url = '')
-                # lines = m3u8.split('\n')
-                # i = 0
-                # bandwidth = 0
-                # choosedStream = ''
-                # for l in lines:
-                    # match = re.compile('BANDWIDTH=([0-9]+)', re.IGNORECASE).search(lines[i])
-                    # if match :
-                        # if int(match.group(1)) > bandwidth:
-                            # bandwidth = int(match.group(1))
-                            # choosedStream = lines[i+1]
-                        # i+=2
-                    # else:
-                        # i+=1
-                    # if i >= len(lines):
-                        # break
-                # episodeDetails['media']['uri'] = choosedStream
+                    episodeDetails['media']['uri'] = episodeDetails['media']['uri'].replace('https://o2-i.', setting('streamServer'))                
                 
                 mediaInfo['data'] = episodeDetails['media']
                 mediaInfo['data']['plot'] = episodeData.get('description').encode('utf8')
@@ -484,7 +467,7 @@ def updateCatalogCache():
     
     
 def getSiteMenu():
-    import re
+        
     data = []
     
     html = callServiceApi('', base_url = websiteUrl)
@@ -560,7 +543,7 @@ def extractListCategoryItems(html, id):
     return data
     
 def extractMyListShowData(url, html):
-    import re
+        
     
     showId = re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1)
     showName = common.replaceHTMLCodes(common.parseDOM(html, "div", attrs = { 'class' : 'show-cover-thumb-title-mobile sub-category' })[0])
@@ -580,7 +563,7 @@ def extractMyListShowData(url, html):
         }
 
 def extracMyListEpisodeData(url, html):
-    import re
+        
     
     episodeId = re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1)
     showName = common.replaceHTMLCodes(common.parseDOM(html, "h2", attrs = { 'class' : 'show-cover-thumb-title-mobile sub-category' })[0])
@@ -614,14 +597,11 @@ def extracMyListEpisodeData(url, html):
         }
     
 def extractListCategories(html):
-    import re
-    TAG_RE = re.compile(r'<[^>]+>')
-    
     data = []
     
     nav = common.parseDOM(common.parseDOM(html, "nav"), "li")
     for li in nav:
-        name, count = TAG_RE.sub('', common.parseDOM(li, "a")[0]).split(' ', 1)
+        name, count = common.stripTags(common.parseDOM(li, "a")[0]).split(' ', 1)
         data.append({
             'id' : common.parseDOM(li, "a", ret = 'href')[0].replace('#', ''),
             'name' : '%s (%s)' % (name.title(), count)
@@ -630,19 +610,20 @@ def extractListCategories(html):
     # int(re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1))
     return data
 
-def getWebsiteHomeSections():
-    import re
-    TAG_RE = re.compile(r'<[^>]+>')
-    
+def getWebsiteHomeSections():   
     data = []
     html = callServiceApi('', base_url = websiteUrl)
     sections = common.parseDOM(html, "div", attrs = { 'class' : 'main-container-xl main-container-xl-mobile' })
     i = 1
     for section in sections:
         header = common.parseDOM(section, "a", attrs = { 'class' : 'h2 heading-slider first' })        
-        exceptSection = ['CONTINUE WATCHING', 'MY LIST']
+        exceptSection = [
+            'CONTINUE WATCHING', 
+            'MY LIST', 
+            'IWANT ORIGINALS - EXCLUSIVE FOR PREMIUM'
+            ]
         if len(header) > 0 and header[0] not in exceptSection:
-            data.append({'id' : str(i), 'name' : TAG_RE.sub('', common.replaceHTMLCodes(header[0])).strip()}) #, 'url' : '/', 'fanart' : ''})
+            data.append({'id' : str(i), 'name' : common.stripTags(common.replaceHTMLCodes(header[0])).strip()}) #, 'url' : '/', 'fanart' : ''})
         i += 1
     return data
     
@@ -674,7 +655,7 @@ def getWebsiteSectionContent(sectionId, page=1, itemsPerPage=8):
     return data
     
 def extractWebsiteSectionShowData(url, html):
-    import re
+        
     
     showId = re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1)
     filter = 'port-cover-thumb-title' if 'port-cover-thumb-title' in html else 'show-cover-thumb-title-mobile'
@@ -695,7 +676,7 @@ def extractWebsiteSectionShowData(url, html):
         }
 
 def extractWebsiteSectionEpisodeData(url, html):
-    import re
+        
     
     episodeId = re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1)
     showName = common.replaceHTMLCodes(common.parseDOM(html, "h3", attrs = { 'class' : 'show-cover-thumb-title-mobile' })[0])
@@ -763,7 +744,7 @@ def getShows(subCategoryId, page = 1):
     return data
     
 def extractShows(html):
-    import re
+        
     
     data = []
     list = common.parseDOM(html, "ul", attrs = { 'id' : 'og-grid' })[0]
@@ -790,7 +771,7 @@ def extractShows(html):
     return data
 
 def getShow(showId):
-    import re
+        
 
     data = {}
     
@@ -893,7 +874,7 @@ def formatVideoInfo(info, addToList=True, options = {}):
     return data
 
 def getEpisodesPerPage(showId, page=1, itemsPerPage=8):
-    import re
+        
     
     data = []
     
@@ -999,7 +980,7 @@ def getShowEpisodes(showId):
     return data
       
 def getEpisodeDataByShow(showId, episodeId):
-    import re
+        
     data = {}
     episodes = sCacheFunction(getShowEpisodes, showId)
     if episodes and episodeId in episodes:
@@ -1068,7 +1049,7 @@ def getUserInfo():
     }
     
 def getUserSubscription():
-    import re
+        
     
     url = '/profile/details'
     subscription = callJsonApi(url, useCache=False)
@@ -1092,7 +1073,7 @@ def getUserSubscription():
         }
     
 def getUserTransactions():
-    import re
+        
     TAG_HTML = re.compile('<[^>]+>')
 
     data = []
@@ -1155,6 +1136,7 @@ def checkAccountChange(forceSignIn=False):
         else: 
             with open(hashFile) as f:
                 savedHash = f.read()
+                f.close()
                 
     if savedHash != hash:
         accountChanged = True
@@ -1169,6 +1151,7 @@ def checkAccountChange(forceSignIn=False):
         if loginSuccess == True and os.path.exists(xbmc.translatePath(addonInfo('profile'))):
             with open(hashFile, 'w') as f:
                 f.write(hash)
+                f.close()
         elif os.path.exists(hashFile)==True: 
             os.unlink(hashFile)
         
@@ -1184,7 +1167,7 @@ def isLoggedIn():
     
 def loginToWebsite(quiet=False): 
     from random import randint
-    import time, re
+    import time
     global cookieJar
     
     logged = False
@@ -1214,9 +1197,9 @@ def loginToWebsite(quiet=False):
     data = callJsonApi("/api/spa/login", authData, base_url=websiteSSOUrl, useCache = False, jsonData=True)
     if (not data or ('errorCode' in data and data.get('errorCode') != 0) or ('errorMessage' in data)) and quiet == False:
         if 'errorMessage' in data:
-            showNotification(data.get('errorMessage'), lang(50204))
+            showNotification(data.get('errorMessage'), lang(50006))
         else:
-            showNotification(lang(50205), lang(50204))
+            showNotification(lang(50205), lang(50006))
     else:
     
         gigyaUrl = ''
@@ -1253,6 +1236,7 @@ def loginToWebsite(quiet=False):
         dataCenter = re.compile('gigya.dataCenter=\'([a-zA-Z0-9.]+)\';').search(gigyaHtml).group(1)
         ssoKey = re.compile('"ssoKey":"([a-zA-Z0-9_-]+)",').search(gigyaHtml).group(1)       
         apiDomainCookie = 'apiDomain_' + ssoKey + '=' + dataCenter + '.' + defaultApiDomain
+        apiDomain = dataCenter + '.' + defaultApiDomain
         
         # Retrieve authorization code from cookie
         gacCookie = getFromCookieByName('gac_', startWith=True)
@@ -1301,7 +1285,7 @@ def loginToWebsite(quiet=False):
             'format' : 'json',
             'context' : 'R' + str(randint(10000, 99999)**2)
             }
-        notifyLogin = callServiceApi(
+        gigyaJSON = callJsonApi(
             '/socialize.notifyLogin?' + urllib.urlencode(params),
             headers = [
                 ('Cookie', '; '.join(cookie)),
@@ -1310,19 +1294,13 @@ def loginToWebsite(quiet=False):
             base_url= gigyaSocializeUrl, 
             useCache = False
             )
-        try:
-            gigyaJSON = json.loads(notifyLogin)
-        except:
-            gigyaJSON = {}
-            pass
         
         # Retrieve login token from cookie
         if 'errorMessage' in gigyaJSON:
             showNotification(gigyaJSON.get('errorMessage'), lang(50004))
                 
         if 'statusCode' in gigyaJSON and gigyaJSON.get('statusCode') == 200 and 'login_token' in gigyaJSON:
-            loginToken = gigyaJSON.get('login_token')
-            accountJSON = {}
+            loginToken = gigyaJSON.get('login_token').encode('utf8')
             
             # Retrieve UID, UIDSignature and signatureTimestamp
             params = {
@@ -1335,7 +1313,7 @@ def loginToWebsite(quiet=False):
                 'format' : 'json',
                 'context' : 'R' + str(randint(10000, 99999)**2)
                 }
-            getAccountInfo = callServiceApi(
+            accountJSON = callJsonApi(
                 '/accounts.getAccountInfo?' + urllib.urlencode(params), 
                 headers = [
                     ('Cookie', '; '.join(cookie)),
@@ -1344,78 +1322,104 @@ def loginToWebsite(quiet=False):
                 base_url= gigyaAccountUrl, 
                 useCache = False
                 )
-            try:
-                accountJSON = json.loads(getAccountInfo)
-            except:
-                accountJSON = {}
-                pass
             
             if 'errorMessage' in accountJSON:
                 showNotification(accountJSON.get('errorMessage'), lang(50004))
             
             if 'statusCode' in accountJSON and accountJSON.get('statusCode') == 200:
-                UID = accountJSON.get('UID')
-                UIDSignature = accountJSON.get('UIDSignature')
-                signatureTimestamp = accountJSON.get('signatureTimestamp')
                 
-                addon.setSetting('UID', UID)
-                addon.setSetting('UIDSignature', UIDSignature)
-                
-                gltAPIToken = 'glt_' + apikey + '=' + loginToken
-                gltSSOToken = 'glt_' + ssoKey + '=' + loginToken + '%7CUUID%3Dc105bc07c71b490881398f5cda1a1f2e'
-                
-                cookie = getCookieContent(exceptFilter=[gacCookie.name])   
+                # get Gmid Ticket
+                cookieJar.set_cookie(cookielib.Cookie(version=0, name='gig_hasGmid', value='ver2', port=None, port_specified=False, domain='.tfc.tv', domain_specified=False, domain_initial_dot=False, path='/', path_specified=True, secure=False, expires=None, discard=True, comment=None, comment_url=None, rest={'HttpOnly': None}, rfc2109=False))
+                cookie = getCookieContent(['hasGmid', 'gmid', 'ucid', 'gig_hasGmid'])   
                 cookie.append(apiDomainCookie)
-                cookie.append(gltAPIToken)
-                cookie.append(gltSSOToken)
-                cookie.append('cc_fingerprintid='+setting('fingerprintID'))
-                if setting('previousFingerprintID') != '':
-                    cookie.append('cc_prevfingerprintid='+setting('previousFingerprintID'))                
-
-                # Generate authorization
                 params = {
-                    'client_id' : 'tfconline', 
-                    'redirect_uri': 'https://tfc.tv/callback', 
-                    'response_type' : 'id_token token',
-                    'scope' : 'openid profile offline_access',
-                    'nonce' : time.time()
+                    'apiKey': apikey,
+                    'expires' : 3600,
+                    'pageURL' : 'https://kapamilya-accounts.abs-cbn.com/welcome',
+                    'format' : 'json',
+                    'context' : 'R' + str(randint(10000, 99999)**2)
                     }
-                callServiceApi(
-                    '/connect/authorize/callback?' + urllib.urlencode(params),
-                    headers = [
-                        ('Cookie', '; '.join(cookie))
-                    ], 
-                    base_url = websiteSSOUrl, 
-                    useCache = False
-                    )
-                    
-                # Authenticate into TFC.tv
-                params = {
-                    'u' : UID, 
-                    's' : UIDSignature, 
-                    't' : signatureTimestamp,
-                    'returnUrl' : '/' 
-                    }
-                html = callServiceApi(
-                    '/sso/authenticate?' + urllib.urlencode(params), 
+                gmidJSON = callJsonApi(
+                    '/socialize.getGmidTicket?' + urllib.urlencode(params),
                     headers = [
                         ('Cookie', '; '.join(cookie)),
-                        ('Referer', websiteUrl+'/')
-                    ], 
-                    base_url = websiteUrl, 
+                        ('Referer', gigyaCDNUrl + webSdkURI)
+                        ], 
+                    base_url= gigyaSocializeUrl, 
                     useCache = False
                     )
                 
-                # If no error, check if connected
-                if 'TFC - Error' not in html:
-                    # Check if session OK
+                if 'statusCode' in gmidJSON and gmidJSON.get('statusCode') == 200 and 'gmidTicket' in gmidJSON:
+                    
+                    UID = accountJSON.get('UID')
+                    UIDSignature = accountJSON.get('UIDSignature')
+                    signatureTimestamp = accountJSON.get('signatureTimestamp')
+                    
+                    addon.setSetting('UID', UID)
+                    addon.setSetting('UIDSignature', UIDSignature)
+                    addon.setSetting('signatureTimestamp', signatureTimestamp)
+                    
+                    # Generate authorization
+                    redirectParams = {
+                        'client_id' : 'tfconline', 
+                        'redirect_uri': 'https://tfc.tv/callback', 
+                        'response_type' : 'id_token token',
+                        'scope' : 'openid profile offline_access',
+                        'nonce' : time.time()
+                        }
+                    # SSOGateway
+                    gmidTicket = gmidJSON.get('gmidTicket').encode('utf8')
+                    redirectURL = websiteSSOUrl + '/connect/authorize/callback?' + urllib.urlencode(redirectParams)
+                    params = {
+                        'sessionExpiration' : -2, 
+                        'apiDomain' : apiDomain, 
+                        'apiKey': apikey, 
+                        'gmidTicket' : gmidTicket,
+                        'loginToken' : loginToken,
+                        'redirectURL' : redirectURL.replace('+', '%20')
+                        }
+                    SSOGateway = callServiceApi(
+                        '/gs/SSOGateway.aspx',
+                        params,
+                        headers = [
+                            ('Cookie', '; '.join(cookie)),
+                            ('Origin', 'https://kapamilya-accounts.abs-cbn.com'),
+                            ('Referer', 'https://kapamilya-accounts.abs-cbn.com/welcome'),
+                            ('Content-Type', 'application/x-www-form-urlencoded')
+                            ], 
+                        base_url = gigyaSocializeUrl,
+                        useCache = False
+                        )
+                    UUID = re.compile('UUID=([a-zA-Z0-9.]+)";').search(SSOGateway).group(1)
+                    
+                    # gltAPIToken = urllib.urlencode({ 'glt_' + apikey : loginToken + '|UUID=' + UUID })
+                    cookieJar.set_cookie(cookielib.Cookie(version=0, name='glt_' + apikey, value=loginToken + '|UUID=' + UUID, port=None, port_specified=False, domain='.tfc.tv', domain_specified=False, domain_initial_dot=False, path='/', path_specified=True, secure=False, expires=None, discard=True, comment=None, comment_url=None, rest={'HttpOnly': None}, rfc2109=False))
+                    gltSSOToken = urllib.urlencode({ 'glt_' + ssoKey : loginToken + '|UUID=' + UUID })
+                    # writeFile('additionalCookie', '; '.join([apiDomainCookie, gltAPIToken, 'gig_hasGmid=ver2']))
+                    
+                    cookie = getCookieContent(exceptFilter=[gacCookie.name]) 
+                    cookie.append(apiDomainCookie)
+                    cookie.append(gltSSOToken)
+                    
+                    # Authorize callback URL
+                    callServiceApi(
+                        '/connect/authorize/callback?' + urllib.urlencode(redirectParams),
+                        headers = [
+                            ('Cookie', '; '.join(cookie))
+                        ], 
+                        base_url = websiteSSOUrl, 
+                        useCache = False
+                        )
+                        
+                    # Authenticate into TFC.tv
                     params = {
                         'u' : UID, 
                         's' : UIDSignature, 
-                        't' : signatureTimestamp
+                        't' : signatureTimestamp,
+                        'returnUrl' : '/' 
                         }
-                    checksession = callJsonApi(
-                        '/sso/checksession?' + urllib.urlencode(params), 
+                    html = callServiceApi(
+                        '/sso/authenticate?' + urllib.urlencode(params), 
                         headers = [
                             ('Cookie', '; '.join(cookie)),
                             ('Referer', websiteUrl+'/')
@@ -1423,12 +1427,34 @@ def loginToWebsite(quiet=False):
                         base_url = websiteUrl, 
                         useCache = False
                         )
-                
-                if checksession and 'StatusCode' in checksession and checksession.get('StatusCode') == 0:
-                    logged = True
-                    generateNewFingerprintID()
-                elif quiet == False:
-                    showNotification(lang(50205), lang(50204))
+                    log(cookieJar)
+                    # If no error, check if connected
+                    if 'TFC - Error' not in html:
+                        # Check if session OK
+                        params = {
+                            'u' : UID, 
+                            's' : UIDSignature, 
+                            't' : signatureTimestamp
+                            }
+                        checksession = callJsonApi(
+                            '/sso/checksession?' + urllib.urlencode(params), 
+                            headers = [
+                                ('Cookie', '; '.join(cookie)),
+                                ('Referer', websiteUrl+'/')
+                            ], 
+                            base_url = websiteUrl, 
+                            useCache = False
+                            )
+                    
+                    if checksession and 'StatusCode' in checksession and checksession.get('StatusCode') == 0:
+                        logged = True
+                        generateNewFingerprintID()
+                    
+        if quiet == False:
+            if logged == True:
+                showNotification(lang(57009) % accountJSON.get('profile').get('firstName'), lang(50007))
+            else:
+                showNotification(lang(50205), lang(50006))
             
     return logged 
     
@@ -1436,7 +1462,6 @@ def getFromCookieByName(string, startWith=False):
     global cookieJar
     cookieObj = None
     
-    log(cookieJar)
     for c in cookieJar:
         if (startWith and c.name.startswith(string)) or (not startWith and c.name == string) :
             cookieObj = c
@@ -1472,7 +1497,6 @@ def logout(quiet=True):
         showNotification(lang(57010))
 
 def generateHashKey(string):
-    import hashlib
     return hashlib.md5(string).hexdigest()
 
 def callServiceApi(path, params = {}, headers = [], base_url = websiteUrl, useCache = True, jsonData=False):
@@ -1508,6 +1532,7 @@ def callServiceApi(path, params = {}, headers = [], base_url = websiteUrl, useCa
         userAgent = userAgents[base_url] if base_url in userAgents else userAgents['default']
         headers.append(('User-Agent', userAgent))
         opener.addheaders = headers
+        log('### Request headers, URL & params ###')
         log(headers)
         log('%s - %s' % (base_url + path, params))
         requestTimeOut = int(setting('requestTimeOut')) if setting('requestTimeOut') != '' else 20
@@ -1515,7 +1540,7 @@ def callServiceApi(path, params = {}, headers = [], base_url = websiteUrl, useCa
         
         try:
             if params:
-                if jsonData == False:                    
+                if jsonData == True:                    
                     request = urllib2.Request(base_url + path)
                     request.add_header('Content-Type', 'application/json')
                     response = opener.open(request, json.dumps(params), timeout = requestTimeOut)
@@ -1524,16 +1549,20 @@ def callServiceApi(path, params = {}, headers = [], base_url = websiteUrl, useCa
                     response = opener.open(base_url + path, data_encoded, timeout = requestTimeOut)
             else:
                 response = opener.open(base_url + path, timeout = requestTimeOut)
+                
+            log('### Response headers ###')
+            log(response.geturl())
+            log('### Response redirect URL ###')
+            log(response.info())
+            res = response.read() if response else ''
+            log('### Response ###')
+            log(res)
         except (urllib2.URLError, ssl.SSLError) as e:
             log(e)
             message = '%s : %s' % (e, base_url + path)
             # message = "Connection timeout : " + base_url + path
             log(message)
             showNotification(message)
-        
-        log(response.geturl())
-        res = response.read() if response else ''
-        log(res)
         
         if toCache == True and res:
             if cacheActive == 'true':
@@ -1547,7 +1576,7 @@ def callServiceApi(path, params = {}, headers = [], base_url = websiteUrl, useCa
 
 def callJsonApi(path, params = {}, headers = [('X-Requested-With', 'XMLHttpRequest')], base_url = webserviceUrl, useCache = True, jsonData = False):
     data = {}
-    res = callServiceApi(path, params = params, headers = headers, base_url = base_url, useCache = useCache)
+    res = callServiceApi(path, params, headers, base_url, useCache, jsonData)
     try:
         data = json.loads(res) if res != '' else []
     except:
@@ -1635,6 +1664,24 @@ def log(mixed, level=0):
     if common.dbg and common.dbglevel > level:
         common.log(mixed)
 
+def readFile(name):
+    filePath = os.path.join(xbmc.translatePath(addonInfo('profile')), name)
+    if os.path.exists(filePath):
+        with open(filePath) as f:
+            content = f.read()
+            f.close()
+            return content
+    return False
+    
+def writeFile(name, string):
+    filePath = os.path.join(xbmc.translatePath(addonInfo('profile')), name)
+    with open(filePath, 'w') as f:
+        f.write(string)
+        f.close()
+    if os.path.exists(filePath):
+        return True
+    return False
+        
 # This function is a workaround to fix an issue on cookies conflict between live stream and shows episodes
 def cleanCookies(notify=True):
     message = ''
@@ -1671,9 +1718,9 @@ thisPlugin = int(sys.argv[1])
 xbmcplugin.setPluginFanart(thisPlugin, 'fanart.jpg')
 
 userAgents = { 
-    webserviceUrl : 'Mozilla/5.0 (iPad; CPU OS 7_0 like Mac OS X) AppleWebKit/537.51.1 (KHTML, like Gecko) CriOS/30.0.1599.12 Mobile/11A465 Safari/8536.25 (3B92C18B-D9DE-4CB7-A02A-22FD2AF17C8F)',
-    websiteUrl : 'Mozilla/5.0 (iPad; CPU OS 7_0 like Mac OS X) AppleWebKit/537.51.1 (KHTML, like Gecko) CriOS/30.0.1599.12 Mobile/11A465 Safari/8536.25 (3B92C18B-D9DE-4CB7-A02A-22FD2AF17C8F)',
-    'default' : 'Mozilla/5.0 (iPad; CPU OS 7_0 like Mac OS X) AppleWebKit/537.51.1 (KHTML, like Gecko) CriOS/30.0.1599.12 Mobile/11A465 Safari/8536.25 (3B92C18B-D9DE-4CB7-A02A-22FD2AF17C8F)'
+    webserviceUrl : 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:52.0) Gecko/20100101 Firefox/52.0',
+    websiteUrl : 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:52.0) Gecko/20100101 Firefox/52.0',
+    'default' : 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:52.0) Gecko/20100101 Firefox/52.0'
     }
     
 cookieJar = cookielib.CookieJar()

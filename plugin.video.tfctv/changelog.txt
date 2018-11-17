@@ -1,3 +1,9 @@
+0.0.79
+    Added streaming proxy settings
+    Added Tfc.tv My List in home menu (read-only: retrieved from your list on Tfc.tv website)
+    Improve login process
+    Fixed playback issue due to blocked headers
+    Fixed minor bugs
 0.0.78
     Implement new login process Kapamilya Account Single Sign On
     Added default background image

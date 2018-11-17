@@ -7,7 +7,7 @@
         <setting type="sep"/>
         <setting type="lsep" label="50115"/>
         <setting id="displayWebsiteSections" type="bool" label="50107" default="true" visible="true"/>
-        <setting id="displayMyList" type="bool" label="50129" default="false" visible="false"/>
+        <setting id="displayMyList" type="bool" label="50130" default="false" visible="true"/>
         <setting id="displayMyAccountMenu" type="bool" label="50114" default="true" visible="true"/>
         <setting id="parentalAdvisoryCheck" type="bool" label="50117" default="true" visible="true"/>
         <setting type="sep" />
@@ -20,7 +20,8 @@
         <setting id="addonNewInstall" type="bool" label="50126" default="true" visible="false"/>
         <setting id="UID" type="text" label="50127" default="" visible="false"/>
         <setting id="UIDSignature" type="text" label="50128" default="" visible="false"/>
-        <setting id="defaultBG" type="text" label="50130" default="https://img.tfc.tv/assets/img/bg2.jpg" visible="false"/>
+        <setting id="UIDSignature" type="text" label="50129" default="" visible="false"/>
+        <setting id="defaultBG" type="text" label="50131" default="https://img.tfc.tv/assets/img/bg2.jpg" visible="false"/>
     </category>
     <category label="50110">
         <setting id="requestTimeOut" type="labelenum" label="50113" default="20" values="5|10|20|30|60|120|300" visible="true"/>
@@ -38,5 +39,9 @@
         <setting id="generateNewFingerprintID" type="bool" label="50125" default="false" visible="true"/>
         <setting id="fingerprintID" type="text" label="50124" default="" visible="false"/>
         <setting id="previousFingerprintID" type="text" label="50124" default="" visible="false"/>
+        <setting type="lsep" label="50132"/>
+        <setting id="useProxy" type="bool" label="50133" default="true" visible="true"/>
+        <setting id="proxyHostUrl" label="50134" type="text" default="http://127.0.0.1:%s/?url=%s" visible="true"/>
+        <setting id="proxyPort" label="50135" type="number" default="6531" visible="true"/>
     </category>
 </settings>
