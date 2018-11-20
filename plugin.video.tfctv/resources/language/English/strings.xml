@@ -8,25 +8,27 @@
     <string id="50006">Login Failed</string>
     <string id="50007">Login successful</string>
     <string id="50008">Loading</string>
-    <string id="50100">Settings</string>
-    <string id="50101">Episodes Per Page</string>
-    <string id="50103">List subscribed shows first</string>
-    <string id="50104">Show unsubscribed shows in [I]Italics[/I]</string>
-    <string id="50105">Show thumbnails in subscribed shows</string>
-    <string id="50106">Announcement</string>
+    <string id="50009">Media Error</string>
+    <string id="50100">General</string>
+    <string id="50101">Advanced</string>
+    <string id="50102">Menu settings</string>
+    <string id="50103">Requests</string>
+    <string id="50104"></string>
+    <string id="50105">Episodes per page</string>
+    <string id="50106">Last version installed</string>
     <string id="50107">Display TFC.tv's website sections</string>
     <string id="50108">Display most loved shows</string>
     <string id="50109">Display Live TV Channels</string>
-    <string id="50110">Advanced</string>
-    <string id="50111">Activate cache</string>    
+    <string id="50110">Parental Control</string>
+    <string id="50111">Enable cache</string>    
     <string id="50112">Display Tools</string>
     <string id="50113">HTTP request time out</string>
-    <string id="50114">Display My Account</string>
-    <string id="50115">Menu display settings</string>
+    <string id="50114">Display Account menu</string>
+    <string id="50115">Force best stream</string>
     <string id="50116">Request verification token</string>
-    <string id="50117">Parental advisory check</string>
+    <string id="50117">Parental advisory alert</string>
     <string id="50118">Debug</string>
-    <string id="50119">Activate debug mode</string>
+    <string id="50119">Enable debug mode</string>
     <string id="50120">Debug level</string>
     <string id="50121">Stream Server</string>
     <string id="50122">Enable stream server modification</string>
@@ -43,21 +45,21 @@
     <string id="50133">Use streaming proxy</string>
     <string id="50134">Host URL format</string>
     <string id="50135">Port</string>
-    <string id="50200">TFC.tv Account</string>
-    <string id="50201">Email Address</string>
-    <string id="50202">Password</string>
-    <string id="50203">Login Retries</string>
-    <string id="50205">Can't login to TFC website</string>
+    <string id="50136">Enable parental control</string>
+    <string id="50137">Parental code</string>
+    <string id="50138">Credentials</string>
+    <string id="50139">Email Address</string>
+    <string id="50140">Password</string>
+    <string id="50141">Login Retries</string>
+    <string id="50142">Account JSON</string>
     <string id="50206">[Preview] %s</string>
-    <string id="50207">You are only allowed to watch a preview</string>
-    <string id="50208">This feature is coming soon :)</string>
     <string id="50300">Add to my watchlist</string>
     <string id="50301">Remove from my watchlist</string>
     <string id="56001">TFC.tv My Account Information</string>
     <string id="56002">TFC.tv My Subscriptions</string>
     <string id="56003">TFC.tv My Transactions</string>
     <!-- notifications / messages -->
-    <string id="57000">Media Error</string>
+    <string id="57000">Logging out in progress...</string>
     <string id="57001">Subscription is already expired or the item is not part of your subscription</string>
     <string id="57002">No available information</string>
     <string id="57003">Catalog cache loaded successfully</string>
@@ -85,4 +87,16 @@ Enjoy!
     <string id="57019">Login into TFC.tv...</string>
     <string id="57020">Preparing menu...</string>
     <string id="57020">Can't play the selected item</string>
+    <string id="57021">Please enter your parental code</string>
+    <string id="57022">You are not allowed to watch this video</string>
+    <string id="57023">Your TFC.tv addon has been updated to version %s.
+    
+Please see the changelog for further informations.
+If you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the addon repo website (https://github.com/cmik/cmik.xbmc/issues).
+
+Enjoy!
+    </string>
+    <string id="57024">Can't login to TFC website</string>
+    <string id="57025">You are only allowed to watch a preview</string>
+    <string id="57026">This feature is coming soon :)</string>
 </strings>

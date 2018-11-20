@@ -1,21 +1,24 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
     <category label="50100">
-        <setting id="emailAddress" type="text" label="50201" default=""/>
-        <setting id="password" type="text" label="50202" option="hidden" enable="!eq(-1,)" default=""/>
-        <setting id="loginRetries" type="labelenum" label="50203" default="1" values="1|2|3" visible="false"/>
+        <setting type="lsep" label="50138"/>
+        <setting id="emailAddress" type="text" label="50139" default=""/>
+        <setting id="password" type="text" label="50140" option="hidden" enable="!eq(-1,)" default=""/>
+        <setting id="loginRetries" type="labelenum" label="50141" default="1" values="1|2|3" visible="false"/>
+        <setting id="accountJSON" type="text" label="50142" default="" visible="false"/>
         <setting type="sep"/>
-        <setting type="lsep" label="50115"/>
+        <setting type="lsep" label="50102"/>
         <setting id="displayWebsiteSections" type="bool" label="50107" default="true" visible="true"/>
         <setting id="displayMyList" type="bool" label="50130" default="false" visible="true"/>
         <setting id="displayMyAccountMenu" type="bool" label="50114" default="true" visible="true"/>
-        <setting id="parentalAdvisoryCheck" type="bool" label="50117" default="true" visible="true"/>
         <setting type="sep" />
-        <setting id="itemsPerPage" type="labelenum" label="50101" default="8" values="8|16|32|64|128" visible="true"/>
-        <setting id="listSubscribedFirst" type="bool" label="50103" default="true" visible="false"/>
-        <setting id="italiciseUnsubscribed" type="bool" label="50104" default="true" visible="false"/>
-        <setting id="showSubscribedShowsThumbnails" type="bool" label="50105" default="false" visible="false"/>
-        <setting id="announcement" type="text" label="50106" default="" visible="false"/>
+        <setting id="itemsPerPage" type="labelenum" label="50105" default="8" values="8|16|32|64|128" visible="true"/>
+        <setting type="sep"/>
+        <setting type="lsep" label="50110"/>
+        <setting id="parentalAdvisoryCheck" type="bool" label="50117" default="true" visible="true"/>
+        <setting id="parentalControl" type="bool" label="50136" default="false" visible="true"/>
+        <setting id="parentalCode" type="number" label="50137" option="hidden" enable="eq(-1,true)" default="1234"/>
+        <setting id="lastVersion" type="text" label="50106" default="" visible="false"/>
         <setting id="requestVerificationToken" type="text" label="50116" default="" visible="false"/>
         <setting id="addonNewInstall" type="bool" label="50126" default="true" visible="false"/>
         <setting id="UID" type="text" label="50127" default="" visible="false"/>
@@ -23,25 +26,29 @@
         <setting id="UIDSignature" type="text" label="50129" default="" visible="false"/>
         <setting id="defaultBG" type="text" label="50131" default="https://img.tfc.tv/assets/img/bg2.jpg" visible="false"/>
     </category>
-    <category label="50110">
+    <category label="50101">
+        <setting type="lsep" label="50103"/>
         <setting id="requestTimeOut" type="labelenum" label="50113" default="20" values="5|10|20|30|60|120|300" visible="true"/>
         <setting id="cacheActive" type="bool" label="50111" default="false" visible="true"/>
-        <setting id="displayTools" type="bool" label="50112" default="false" visible="true"/>
+        <setting id="displayTools" type="bool" label="50112" default="false" visible="false"/>
         <setting type="sep"/>
         <setting type="lsep" label="50121"/>
+        <setting id="chooseBestStream" type="bool" label="50115" default="true" visible="true"/>
         <setting id="streamServerModification" type="bool" label="50122" default="false" visible="true"/>
-        <setting id="streamServer" type="text" label="50123" default="https://o4-vh." visible="true"/>
+        <setting id="streamServer" type="text" label="50123" default="https://o4-vh." enable="eq(-1,true)" visible="true"/>
         <setting type="sep"/>
-        <setting type="lsep" label="50118"/>
-        <setting id="debug" type="bool" label="50119" default="false" visible="true"/>
-        <setting id="debugLevel" type="labelenum" label="50120" default="3" values="1|2|3" visible="true"/>
-        <setting type="lsep" label="50124"/>
-        <setting id="generateNewFingerprintID" type="bool" label="50125" default="false" visible="true"/>
-        <setting id="fingerprintID" type="text" label="50124" default="" visible="false"/>
-        <setting id="previousFingerprintID" type="text" label="50124" default="" visible="false"/>
         <setting type="lsep" label="50132"/>
         <setting id="useProxy" type="bool" label="50133" default="true" visible="true"/>
         <setting id="proxyHostUrl" label="50134" type="text" default="http://127.0.0.1:%s/?url=%s" visible="true"/>
         <setting id="proxyPort" label="50135" type="number" default="6531" visible="true"/>
+        <setting type="sep"/>
+        <setting type="lsep" label="50124"/>
+        <setting id="generateNewFingerprintID" type="bool" label="50125" default="false" visible="true"/>
+        <setting id="fingerprintID" type="text" label="50124" default="" visible="false"/>
+        <setting id="previousFingerprintID" type="text" label="50124" default="" visible="false"/>
+        <setting type="sep"/>
+        <setting type="lsep" label="50118"/>
+        <setting id="debug" type="bool" label="50119" default="false" visible="true"/>
+        <setting id="debugLevel" type="labelenum" label="50120" default="3" values="1|2|3" enable="eq(-1,true)" visible="true"/>
     </category>
 </settings>

@@ -1,3 +1,8 @@
+0.0.80
+    Added option to force best stream (fixes KODI Jarvis low quality issue)
+    Added option to enable parental control by code for shows with parental advisory
+    Minor enhancements
+    Fixed My Account menu info and subscription display
 0.0.79
     Added streaming proxy settings
     Added Tfc.tv My List in home menu (read-only: retrieved from your list on Tfc.tv website)

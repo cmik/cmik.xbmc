@@ -161,45 +161,13 @@ def showWebsiteSectionContent(section, page=1):
     xbmcplugin.endOfDirectory(thisPlugin)
 
 def displayShows(shows):
-    listSubscribedFirst = True if setting('listSubscribedFirst') == 'true' else False
-    italiciseUnsubscribed = True if setting('italiciseUnsubscribed') == 'true' else False
-    listSubscribedFirst = False
-    italiciseUnsubscribed = False
-    subscribedShowIds = []
+    sortedShowInfos = []
+    for show in shows:
+        sortedShowInfos.append((show['name'].lower(), show['name'], str(show['id']), 3, show['image'], formatShowInfo(show)))
     
-    if listSubscribedFirst or italiciseUnsubscribed: 
-        # make an API call only if we're checking against subscribed shows
-        subscribedShowIds = getSubscribedShowIds()
-        
-    if listSubscribedFirst:
-        unsubscribedShows = []
-        sortedShowInfos = []
-        sortedUnsubscibed = []
-        
-        for show in shows:
-            if show['id'] in subscribedShowIds:
-                sortedShowInfos.append((show['name'].lower(), show['name'], str(show['id']), 3, show['image'], formatShowInfo(show)))
-            else:
-                showTitle = '[I]' + show['name'] + '[/I]' if italiciseUnsubscribed else show['name']
-                sortedUnsubscibed.append((show['name'].lower(), showTitle, str(show['id']), 3, show['image'], formatShowInfo(show)))
-        
-        sortedShowInfos = sorted(sortedShowInfos, key = itemgetter(0))
-        sortedUnsubscibed = sorted(sortedUnsubscibed, key = itemgetter(0))
-        
-        for info in sortedShowInfos:
-            addDir(info[1], info[2], info[3], info[4], isFolder = True, **info[5])
-            
-        for info in sortedUnsubscibed:
-            addDir(info[1], info[2], info[3], info[4], isFolder = True, **info[5])
-    else:
-        sortedShowInfos = []
-        for show in shows:
-            showTitle = '[I]' + show['name'] + '[/I]' if italiciseUnsubscribed and show['id'] in subscribedShowIds else show['name']
-            sortedShowInfos.append((show['name'].lower(), showTitle, str(show['id']), 3, show['image'], formatShowInfo(show)))
-        
-        sortedShowInfos = sorted(sortedShowInfos, key = itemgetter(0))
-        for info in sortedShowInfos:
-            addDir(info[1], info[2], info[3], info[4], isFolder = True, **info[5])
+    sortedShowInfos = sorted(sortedShowInfos, key = itemgetter(0))
+    for info in sortedShowInfos:
+        addDir(info[1], info[2], info[3], info[4], isFolder = True, **info[5])
             
     xbmcplugin.endOfDirectory(thisPlugin)
     
@@ -229,12 +197,12 @@ def playEpisode(url):
         else:
             login()
             
-    if episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] == 0 and 'data' in episodeDetails:
+    if episodeDetails and 'viewingNotAllowed' not in episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] == 0 and 'data' in episodeDetails:
         if 'preview' in episodeDetails['data'] and episodeDetails['data']['preview'] == True:
-            showNotification(lang(50207), lang(50002))
+            showNotification(lang(57025), lang(50002))
         else:
             if 'StatusMessage' in episodeDetails and episodeDetails['StatusMessage'] != '':
-                showNotification(episodeDetails['StatusMessage'], lang(57000))
+                showNotification(episodeDetails['StatusMessage'], lang(50009))
         url = setting('proxyHostUrl') % (setting('proxyPort'), urllib.quote(episodeDetails['data']['uri'])) if (setting('useProxy') == 'true') else episodeDetails['data']['uri']
         plot = episodeDetails['data']['plot']
         fanart = episodeDetails['data']['fanart']
@@ -247,11 +215,11 @@ def playEpisode(url):
         except: 
             showNotification(lang(57020), lang(50004))
     else:
-        if (not episodeDetails) or (episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] != 0):
+        if (not episodeDetails) or ('viewingNotAllowed' in episodeDetails) or (episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] != 0):
             if 'StatusMessage' in episodeDetails:
                 showNotification(episodeDetails['StatusMessage'])
             else:
-                showNotification(lang(57001), lang(57000))
+                showNotification(lang(57001), lang(50009))
     return False
     
 def getMediaInfo(episodeId):
@@ -261,17 +229,24 @@ def getMediaInfo(episodeId):
     return mediaInfo
     
 def getMediaInfoFromWebsite(episodeId):
-        
     mediaInfo = {}
     url = '/episode/details/%s'
     html = callServiceApi(url % episodeId, base_url = websiteUrl, useCache=False)
-    body = common.parseDOM(html, "body")
+    body = common.parseDOM(html, 'body')
     episodeData = json.loads(re.compile('var ldj = (\{.+\})', re.IGNORECASE).search(html).group(1))
     
     # Parental advisory
-    if setting('parentalAdvisoryCheck') == 'true':
-        if re.compile('var dfp_c = ".*2900.*";', re.IGNORECASE).search(html):
+    if re.compile('var dfp_c = ".*2900.*";', re.IGNORECASE).search(html):
+        if setting('parentalAdvisoryCheck') == 'true':
             alert(lang(57011),title=lang(50003))
+        if setting('parentalControl') == 'true':
+            code = numpad(lang(57021))
+            if code != setting('parentalCode'):
+                mediaInfo['viewingNotAllowed'] = True
+                mediaInfo['StatusMessage'] = lang(57022)
+                mediaInfo['errorCode'] = 0
+                mediaInfo['data'] = {}
+                return mediaInfo
             
     sid = None
     sidmatch = re.compile('(media/fetch.+sid: (\d+),)', re.IGNORECASE).search(html)
@@ -312,9 +287,29 @@ def getMediaInfoFromWebsite(episodeId):
                 # limit by bitrate
                 # episodeDetails['media']['uri'] += '&b=700-1800'
                 # prefered bitrate
-                # episodeDetails['media']['uri'] += '&_b_=700'
+                # episodeDetails['media']['uri'] += '&_b_=1800'
                 if setting('streamServerModification') == 'true' and setting('streamServer') != '':
                     episodeDetails['media']['uri'] = episodeDetails['media']['uri'].replace('https://o2-i.', setting('streamServer'))                
+                
+                # choose best stream quality
+                if (setting('chooseBestStream') == 'true'):
+                    m3u8 = callServiceApi(episodeDetails['media']['uri'], base_url = '')
+                    lines = m3u8.split('\n')
+                    i = 0
+                    bandwidth = 0
+                    choosedStream = ''
+                    for l in lines:
+                        match = re.compile('BANDWIDTH=([0-9]+)', re.IGNORECASE).search(lines[i])
+                        if match :
+                            if int(match.group(1)) > bandwidth:
+                                bandwidth = int(match.group(1))
+                                choosedStream = lines[i+1]
+                            i+=2
+                        else:
+                            i+=1
+                        if i >= len(lines):
+                            break
+                    episodeDetails['media']['uri'] = choosedStream
                 
                 mediaInfo['data'] = episodeDetails['media']
                 mediaInfo['data']['plot'] = episodeData.get('description').encode('utf8')
@@ -325,27 +320,6 @@ def getMediaInfoFromWebsite(episodeId):
                 mediaInfo['StatusMessage'] = episodeDetails['StatusMessage']
                 
     return mediaInfo
-    
-def showCelebrities():
-    celebrities = getCelebrities()
-    for c in celebrities:
-        image = c['ImageUrl'].encode('utf8').replace(' ', '%20')
-        lastName = c['LastName'].encode('utf8') if c['LastName'] else ''
-        firstName = c['FirstName'].encode('utf8') if c['FirstName'] else ''
-        addDir('%s %s' % (lastName, firstName), '/Synapse/GetCelebrityDetails/%s' % c['CelebrityId'], 7, image, isFolder = False)
-    xbmcplugin.endOfDirectory(thisPlugin)
-    
-def showCelebrityInfo(url):
-    d = callJsonApi(url)
-    name = d['name'].encode('utf8') if d['name'] else ''
-    if d['birthday'] or d['birthplace'] or d['description']:
-        birthday = d['birthday'].encode('utf8') if d['birthday'] else '-'
-        birthplace = d['birthplace'].encode('utf8') if d['birthplace'] else '-'
-        description = d['description'].encode('utf8') if d['description'] else ''
-        message = 'Birthday: %s\nBirth place: %s\n\n%s\n\n' % (birthday, birthplace, description)
-    else:
-        message = lang(57002)
-    showMessage(message, name)
     
 def showMyAccount():
     checkAccountChange(False)
@@ -361,20 +335,20 @@ def showMyAccount():
     
 def showMyInfo():
     loggedIn = isLoggedIn()
-    message = ''
+    message = lang(57002)
     if loggedIn == True:
-        user = getUserInfo()
-        message = 'First name: %s\nLast name: %s\nCountry: %s\nState: %s\nCity: %s\nPhone: %s\nMember since: %s\n\n' % (
-            user.get('FirstName', ''),
-            user.get('LastName', ''), 
-            user.get('CountryCode', ''), 
-            user.get('State', ''), 
-            user.get('City', ''),
-            user.get('Phone', ''),
-            user.get('MemberSince', '')
-            )
-    else:
-        message = lang(57002)
+        try:
+            user = getUserInfo()
+            message = 'First name: %s\nLast name: %s\nEmail: %s\nState: %s\nCountry: %s\nMember since: %s\n\n' % (
+                user.get('firstName', ''),
+                user.get('lastName', ''), 
+                user.get('email', ''), 
+                user.get('state', ''),
+                user.get('country', ''), 
+                user.get('memberSince', '')
+                )
+        except:
+            pass
     showMessage(message, lang(56001))
     
 def showMySubscription():
@@ -395,45 +369,6 @@ def showMyTransactions():
     else:
         message = lang(57002)
     showMessage(message, lang(56003))
-    
-def getSubscribedShowIds():
-    return getSubscribedShows()[0]
-    
-def getSubscribedShows():
-    jsonData = ''
-    entitlementsData = getEntitlementsData()
-    subscribedShows = []
-    showIds = []
-    for e in entitlementsData['data']:
-        expiry = int(e['ExpiryDate'].replace('/Date(','').replace(')/', ''))
-        if expiry >= (time.time() * 1000):
-            if e['PackageId']:
-                url = "/Packages/GetShows?packageId=%s" % (e['PackageId'])
-                packagesData = []
-                for i in range(int(setting('loginRetries')) + 1):
-                    jsonData = callServiceApi(url)
-                    packagesData = json.loads(jsonData)
-                    if packagesData:
-                        break
-                    else:
-                        loginToWebsite()
-                for p in packagesData:
-                    if p['ShowId'] in showIds:
-                        pass
-                    else:
-                        subscribedShows.append(p)
-                        showIds.append(p['ShowId'])
-            else:
-                if e['CategoryId'] and e['CategoryId'] not in showIds:
-                    e['MainCategory'] = u'A la carte'
-                    e['ShowId'] = e['CategoryId']
-                    e['Show'] = e['Content']
-                    subscribedShows.append(e)
-                    showIds.append(e['CategoryId'])
-    return showIds, subscribedShows
-    
-def normalizeCategoryName(categoryName):
-    return categoryName.replace('LITE', '').replace('PREMIUM', '').strip()
         
 def reloadCatalogCache():
     res = updateCatalogCache()
@@ -467,7 +402,6 @@ def updateCatalogCache():
     
     
 def getSiteMenu():
-        
     data = []
     
     html = callServiceApi('', base_url = websiteUrl)
@@ -543,8 +477,6 @@ def extractListCategoryItems(html, id):
     return data
     
 def extractMyListShowData(url, html):
-        
-    
     showId = re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1)
     showName = common.replaceHTMLCodes(common.parseDOM(html, "div", attrs = { 'class' : 'show-cover-thumb-title-mobile sub-category' })[0])
     image = common.parseDOM(html, "img", ret = 'src')[0]
@@ -563,8 +495,6 @@ def extractMyListShowData(url, html):
         }
 
 def extracMyListEpisodeData(url, html):
-        
-    
     episodeId = re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1)
     showName = common.replaceHTMLCodes(common.parseDOM(html, "h2", attrs = { 'class' : 'show-cover-thumb-title-mobile sub-category' })[0])
     image = common.parseDOM(html, "img", ret = 'src')[0]
@@ -612,18 +542,20 @@ def extractListCategories(html):
 
 def getWebsiteHomeSections():   
     data = []
-    html = callServiceApi('', base_url = websiteUrl)
+    html = callServiceApi('/home', base_url = websiteUrl)
     sections = common.parseDOM(html, "div", attrs = { 'class' : 'main-container-xl main-container-xl-mobile' })
     i = 1
     for section in sections:
-        header = common.parseDOM(section, "a", attrs = { 'class' : 'h2 heading-slider first' })        
-        exceptSection = [
-            'CONTINUE WATCHING', 
-            'MY LIST', 
-            'IWANT ORIGINALS - EXCLUSIVE FOR PREMIUM'
-            ]
-        if len(header) > 0 and header[0] not in exceptSection:
-            data.append({'id' : str(i), 'name' : common.stripTags(common.replaceHTMLCodes(header[0])).strip()}) #, 'url' : '/', 'fanart' : ''})
+        header = common.parseDOM(section, "a", attrs = { 'class' : 'h2 heading-slider first' })
+        if len(header):
+            sectionName = common.stripTags(common.replaceHTMLCodes(header[0])).strip()
+            exceptSections = [
+                'CONTINUE WATCHING', 
+                'MY LIST', 
+                'IWANT ORIGINALS - EXCLUSIVE FOR PREMIUM'
+                ]
+            if sectionName not in exceptSections:
+                data.append({'id' : str(i), 'name' : sectionName}) #, 'url' : '/', 'fanart' : ''})
         i += 1
     return data
     
@@ -631,9 +563,9 @@ def getWebsiteSectionContent(sectionId, page=1, itemsPerPage=8):
     page -= 1
     data = []
     
-    html = callServiceApi('', base_url = websiteUrl)
+    html = callServiceApi('/home', base_url = websiteUrl)
     sections = common.parseDOM(html, "div", attrs = { 'class' : 'main-container-xl main-container-xl-mobile' })
-    section = sections[int(sectionId) - 1]
+    section = sections[int(sectionId)-1]
     links = common.parseDOM(section, "a", attrs = { 'data-category' : 'CTA_Sections' }, ret = 'href')
     items = common.parseDOM(section, "a", attrs = { 'data-category' : 'CTA_Sections' })
     
@@ -655,7 +587,6 @@ def getWebsiteSectionContent(sectionId, page=1, itemsPerPage=8):
     return data
     
 def extractWebsiteSectionShowData(url, html):
-        
     
     showId = re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1)
     filter = 'port-cover-thumb-title' if 'port-cover-thumb-title' in html else 'show-cover-thumb-title-mobile'
@@ -676,8 +607,6 @@ def extractWebsiteSectionShowData(url, html):
         }
 
 def extractWebsiteSectionEpisodeData(url, html):
-        
-    
     episodeId = re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1)
     showName = common.replaceHTMLCodes(common.parseDOM(html, "h3", attrs = { 'class' : 'show-cover-thumb-title-mobile' })[0])
     image = common.parseDOM(html, "div", attrs = { 'class' : 'show-cover' }, ret = 'data-src')[0]
@@ -744,8 +673,6 @@ def getShows(subCategoryId, page = 1):
     return data
     
 def extractShows(html):
-        
-    
     data = []
     list = common.parseDOM(html, "ul", attrs = { 'id' : 'og-grid' })[0]
     shows = common.parseDOM(list, "li", attrs = { 'class' : 'og-grid-item-o' })
@@ -771,8 +698,6 @@ def extractShows(html):
     return data
 
 def getShow(showId):
-        
-
     data = {}
     
     url = '/show/details/%s'
@@ -838,8 +763,8 @@ def formatMenu():
     return data
     
 def formatShowInfo(info, addToList=True, options = {}):
-    add = { lang(50300) : 'XBMC.Container.Update(%s)' % generatePluginActionUrl('formatShowInfo', 22) } 
-    remove = { lang(50301) : 'XBMC.Container.Update(%s)' % generatePluginActionUrl('formatShowInfo', 23) } 
+    add = { lang(50300) : 'XBMC.Container.Update(%s)' % generatePluginActionUrl(str(info['id']), 22, info['name']) } 
+    remove = { lang(50301) : 'XBMC.Container.Update(%s)' % generatePluginActionUrl(str(info['id']), 23, info['name']) } 
     contextMenu = add if addToList == True else remove
     
     data = { 
@@ -852,8 +777,8 @@ def formatShowInfo(info, addToList=True, options = {}):
     return data
         
 def formatVideoInfo(info, addToList=True, options = {}):
-    add = { lang(50300) : 'XBMC.Container.Update(%s)' % generatePluginActionUrl('formatShowInfo', 22) } 
-    remove = { lang(50301) : 'XBMC.Container.Update(%s)' % generatePluginActionUrl('formatShowInfo', 23) } 
+    add = { lang(50300) : 'XBMC.Container.Update(%s)' % generatePluginActionUrl(str(info['id']), 24, info['title']) } 
+    remove = { lang(50301) : 'XBMC.Container.Update(%s)' % generatePluginActionUrl(str(info['id']), 25, info['title']) } 
     contextMenu = add if addToList == True else remove
 
     data = { 
@@ -874,8 +799,6 @@ def formatVideoInfo(info, addToList=True, options = {}):
     return data
 
 def getEpisodesPerPage(showId, page=1, itemsPerPage=8):
-        
-    
     data = []
     
     # max nb items per page that TFC website can provide
@@ -898,13 +821,6 @@ def getEpisodesPerPage(showId, page=1, itemsPerPage=8):
             showDetailURL = '/show/details/%s'
             html = callServiceApi(showDetailURL % showId)
             episodeId = int(re.compile('var dfp_e = "(.+)";', re.IGNORECASE).search(html).group(1))
-            # episodeUrl = common.parseDOM(html, "a", attrs = { 'class' : 'hero-image-orange-btn' }, ret = 'href')
-            # if len(episodeUrl) == 0:
-                # episodeUrl = common.parseDOM(html, "a", attrs = { 'class' : 'link-to-episode' }, ret = 'href')
-            # if len(episodeUrl) == 0:
-                # episodeUrl = common.parseDOM(html, "link", attrs = { 'rel' : 'canonical' }, ret = 'href')
-            # episodeId = int(re.compile('/([0-9]+)/', re.IGNORECASE).search(episodeUrl[0]).group(1))
-            
             data.append({
                 'id' : episodeId,
                 'title' : showDetails.get('name'),
@@ -980,7 +896,6 @@ def getShowEpisodes(showId):
     return data
       
 def getEpisodeDataByShow(showId, episodeId):
-        
     data = {}
     episodes = sCacheFunction(getShowEpisodes, showId)
     if episodes and episodeId in episodes:
@@ -1027,30 +942,26 @@ def getUserInfo():
     url = '/profile'
     html = callServiceApi(url, useCache = False)
     
-    profile = common.parseDOM(html, 'div', attrs = {'class' : 'box box2 profile-info'})
-    firstName = common.parseDOM(profile, 'input', attrs = {'id' : 'FirstName'}, ret = 'placeholder')[0]
-    lastName = common.parseDOM(profile, 'input', attrs = {'id' : 'LastName'}, ret = 'placeholder')[0]
-    countryCodeHtml = common.parseDOM(profile, 'select', attrs = {'id' : 'CountryCode'})
-    countryCode = common.parseDOM(countryCodeHtml, 'option', attrs = {'selected' : 'selected'}, ret = 'value')[0]
-    state = common.parseDOM(profile, 'input', attrs = {'id' : 'State'}, ret = 'placeholder')[0]
-    city = common.parseDOM(profile, 'input', attrs = {'id' : 'City'}, ret = 'placeholder')[0]
-    phone = common.parseDOM(profile, 'input', attrs = {'id' : 'PhoneNumber'}, ret = 'placeholder')[0]
+    # Retrieve info from website
     profileHeader = common.parseDOM(html, 'div', attrs = {'class' : 'profile_header'})
+    name = common.parseDOM(profileHeader, 'div', attrs = {'class' : 'name'})[0]
+    state = common.parseDOM(profileHeader, 'div', attrs = {'class' : 'name'})[0]
     memberSince = common.parseDOM(profileHeader, 'div', attrs = {'class' : 'date'})[0]    
     
+    # Retrieve info from account JSON string
+    user = json.loads(setting('accountJSON')).get('profile')
+    
     return {
-        'FirstName' : firstName.encode('utf8'),
-        'LastName' : lastName.encode('utf8'),
-        'CountryCode' : countryCode.encode('utf8'),
-        'State' : state.encode('utf8'),
-        'City' : city.encode('utf8'),
-        'Phone' : phone.encode('utf8'),
-        'MemberSince' : memberSince.replace('MEMBER SINCE ', '').encode('utf8')
+        'name' : name.encode('utf8'),
+        'firstName' : user.get('firstName', '').encode('utf8'),
+        'lastName' : user.get('lastName', '').encode('utf8'),
+        'email' : user.get('email', '').encode('utf8'),
+        'state' : state.encode('utf8'),
+        'country' : user.get('country', '').encode('utf8'),
+        'memberSince' : memberSince.replace('MEMBER SINCE ', '').encode('utf8')
     }
     
 def getUserSubscription():
-        
-    
     url = '/profile/details'
     subscription = callJsonApi(url, useCache=False)
     
@@ -1058,22 +969,23 @@ def getUserSubscription():
         
     subKeys = ['Type', 'SubscriptionName', 'SubscriptionStatus', 'ExpirationDate', 'ExpirationDate', 'BillingPeriod', 'AutoRenewal']
     details = ''
-    for d in subscription['Details']:
-        for key in subKeys:
-            label = first_cap_re.sub(r'\1 \2', key)
-            value = ''
-            if isinstance(d[key], (bool)):
-                value = 'ACTIVE' if d[key] == True else 'NON ACTIVE'
-            else:
-                value = d[key]
-            details += "%s: %s\n" % (label, value)
-        
+    if 'Details' in subscription:
+        for d in subscription['Details']:
+            for key in subKeys:
+                label = first_cap_re.sub(r'\1 \2', key)
+                if key in d:
+                    value = ''
+                    if isinstance(d[key], (bool)):
+                        value = 'ACTIVE' if d[key] == True else 'NON ACTIVE'
+                    else:
+                        value = d[key]
+                    details += "%s: %s\n" % (label, value)
+            details += "\n"
     return {
             'Details' : details
         }
     
 def getUserTransactions():
-        
     TAG_HTML = re.compile('<[^>]+>')
 
     data = []
@@ -1107,16 +1019,15 @@ def getUserTransactions():
                 
     return data
     
-    
-def addToMyList(url):
+def addToMyList(url, name, type):
     log(url)
-    showNotification(lang(50208))
+    showNotification(lang(57026))
     # url = '/method/addtolist'
     # data = callJsonApi(url, params = {'CategoryId': 4894, 'EpisodeId': 167895, 'type': 'episode'}, useCache=False)
 
-def removeFromMyList(url):
+def removeFromMyList(url, name, type):
     log(url)
-    showNotification(lang(50208))
+    showNotification(lang(57026))
     # url = '/method/deletefromlist'
     # data = callJsonApi(url, params = {'CategoryId': 4894, 'EpisodeId': 167895, 'type': 'episode'}, useCache=False)
     
@@ -1199,7 +1110,7 @@ def loginToWebsite(quiet=False):
         if 'errorMessage' in data:
             showNotification(data.get('errorMessage'), lang(50006))
         else:
-            showNotification(lang(50205), lang(50006))
+            showNotification(lang(57024), lang(50006))
     else:
     
         gigyaUrl = ''
@@ -1452,9 +1363,10 @@ def loginToWebsite(quiet=False):
                     
         if quiet == False:
             if logged == True:
+                addon.setSetting('accountJSON', json.dumps(accountJSON))
                 showNotification(lang(57009) % accountJSON.get('profile').get('firstName'), lang(50007))
             else:
-                showNotification(lang(50205), lang(50006))
+                showNotification(lang(57024), lang(50006))
             
     return logged 
     
@@ -1491,10 +1403,13 @@ def generateNewFingerprintID(previous=False):
     
 def logout(quiet=True):
     # https://kapamilya-accounts.abs-cbn.com/api/spa/SSOLogout
+    if quiet == False and isLoggedIn() == False:
+        showNotification(lang(57000), lang(50005))
     callServiceApi("/logout", headers = [('Referer', websiteUrl+'/')], base_url = websiteUrl, useCache = False)
     cookieJar.clear()
     if quiet == False and isLoggedIn() == False:
         showNotification(lang(57010))
+        xbmc.executebuiltin("XBMC.Container.Update(path,replace)")
 
 def generateHashKey(string):
     return hashlib.md5(string).hexdigest()
@@ -1650,7 +1565,12 @@ def showMessage(message, title = lang(50001)):
 def confirm(message, line1='', line2='', title=lang(50001)):
     if not message:
         return
-    return xbmcgui.Dialog().yesno(title, message, line1, line2)
+    return xbmcgui.Dialog().yesno(title, message, line1, line2)  
+    
+def numpad(message, default=''):
+    if not message:
+        return
+    return xbmcgui.Dialog().numeric(0, message, default)
     
 def alert(message, line1='', line2='', title=lang(50001)):
     if not message:
@@ -1715,7 +1635,7 @@ def cleanCookies(notify=True):
     
 #---------------------- MAIN ----------------------------------------
 thisPlugin = int(sys.argv[1])
-xbmcplugin.setPluginFanart(thisPlugin, 'fanart.jpg')
+# xbmcplugin.setPluginFanart(thisPlugin, 'fanart.jpg')
 
 userAgents = { 
     webserviceUrl : 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:52.0) Gecko/20100101 Firefox/52.0',
@@ -1801,9 +1721,13 @@ elif mode == 20:
 elif mode == 21:
     showMyListCategory(url)
 elif mode == 22:
-    addToMyList(url)
+    addToMyList(url, name, 'show')
 elif mode == 23:
-    removeFromMyList(url)
+    removeFromMyList(url, name, 'show')
+elif mode == 24:
+    addToMyList(url, name, 'episode')
+elif mode == 25:
+    removeFromMyList(url, name, 'episode')
 elif mode == 50:
     showTools()
 elif mode == 51:
@@ -1812,32 +1736,13 @@ elif mode == 52:
     cleanCookies()
 elif mode == 99:
     cookieJar.clear()
-    # callServiceApi(url)
     
 if cookieJarType == 'LWPCookieJar':
     cookieJar.save()
 
-if setting('announcement') != addonInfo('version'):
-    messages = {
-        '0.0.59': 'Your TFC.tv plugin has been updated.\n\nNow using TFC website (no more API because of timeouts).\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=155870) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.60': 'Your TFC.tv plugin has been updated.\n\nWebsite sections and My account menus are now working (can be enabled from addon settings)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.61': 'Your TFC.tv plugin has been updated.\n\nFixed low quality resolution\nAdded parental advisory notice (can be disabled from addon settings)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.62': 'Your TFC.tv plugin has been updated.\n\nFixed playback of some shows with a unique episode (ex: specials)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.63': 'Your TFC.tv plugin has been updated.\n\nEnabled items per page option in addon settings (Important : the larger the number of items, the more time it will take to load)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.65': 'Your TFC.tv plugin has been updated.\n\nFixed some error issues\nNow can enabled debug mode in addon option for debugging purpose\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.66': 'Your TFC.tv plugin has been updated.\n\nFixed low quality resolution (using a secondary server so streams can be not available or can be uploaded late)\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.67': 'Your TFC.tv plugin has been updated.\n\nReturned to initial server which is back to HD quality streaming\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.71': 'Your TFC.tv plugin has been updated.\n\nAdded latest TFC.tv security updates. If you still have playback issues, go to addon settings and set Advanced > Enable stream server modification to ON.\n\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.72': 'Your TFC.tv addon has been updated.\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.73': 'Your TFC.tv addon has been updated.\n\nIf you\'re encountering playback issues, go to TFC.tv addon options and enable stream server modification and set stream server to \'http://o2-i.\'. \n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.75': 'Your TFC.tv addon has been updated.\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.76': 'Your TFC.tv addon has been updated.\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.77': 'Your TFC.tv addon has been updated.\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).',
-        '0.0.78': 'Your TFC.tv addon has been updated.\n\nTFC.tv website has recently implemented single-sign on system (SSO) called \'Kapamilya Accounts\'.\nBefore using this addon, you will have to sign in once to the Kapamilya Accounts:\na. If you already have a TFC Online account and a Kapamilya Name, your TFC Online password will now be your Single Sign On password when signing in to Kapamilya Accounts.\nb. if you\'re not yet registered to Kapamilya Accounts, you can sign in to your TFC Online account where you will be prompted to nominate your own Kapamilya Name.\nNEWS : https://tfc.tv/article/details/5/tfc-online-is-now-part-of-kapamilya-accounts\nFAQS : https://tfc.tv/article/details/6/sign-in-faqs\n\nIf you encounter anything that you think is a bug, please report it to the TFC.tv Kodi Forum thread (https://forum.kodi.tv/showthread.php?tid=317008) or to the plugin website (https://github.com/cmik/cmik.xbmc/issues).'
-        }
-    if addonInfo('version') in messages:
-        showMessage(messages[addonInfo('version')], lang(50106))
-        addon.setSetting('announcement', addonInfo('version'))
+if setting('lastVersion') != addonInfo('version'):
+    showMessage(lang(57023) % addonInfo('version'), lang(50002))
+    addon.setSetting('lastVersion', addonInfo('version'))
         
 # fix itemsPerPage value
 itemsPerPageMultiple = 8
