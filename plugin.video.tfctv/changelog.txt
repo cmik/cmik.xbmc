@@ -1,3 +1,6 @@
+0.0.81
+    Fixed playback error HTTP 403 when retrieving m3u8 segments
+    Fixed force best stream linked to playback issue
 0.0.80
     Added option to force best stream (fixes KODI Jarvis low quality issue)
     Added option to enable parental control by code for shows with parental advisory

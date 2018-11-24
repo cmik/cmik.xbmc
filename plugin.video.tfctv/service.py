@@ -15,20 +15,15 @@ setting = xbmcaddon.Addon().getSetting
 class ProxyHandler(SimpleHTTPRequestHandler):
 
     _cj = cookielib.LWPCookieJar()
-    _user_agent = 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:52.0) Gecko/20100101 Firefox/52.0'
+    _user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36'
             
     def do_GET(self):
+        xbmc.log('Requested : %s' % (self.path), level=xbmc.LOGDEBUG)
         query = self.getQueryParameters(self.path)
         if ('url' in query):
         
             requestHeaders = []
-            for h in self.headers:
-                if h.lower() not in ('host', 'user-agent', 'icy-metadata', 'connection'):
-                    requestHeaders.append((h, self.headers.get(h)))
-            requestHeaders.append(('User-Agent', self._user_agent))
-            requestHeaders.append(('Connection', 'keep-alive'))
-            requestHeaders.append(('Keep-Alive', 'timeout=5, max=1000'))
-            
+            requestHeaders.append(('User-Agent', self._user_agent))            
             res = self.urlopen(query.get('url'), headers=requestHeaders)
             
             if (res.get('status')):

@@ -293,7 +293,7 @@ def getMediaInfoFromWebsite(episodeId):
                 
                 # choose best stream quality
                 if (setting('chooseBestStream') == 'true'):
-                    m3u8 = callServiceApi(episodeDetails['media']['uri'], base_url = '')
+                    m3u8 = callServiceApi(episodeDetails['media']['uri'], base_url = '', headers=[])
                     lines = m3u8.split('\n')
                     i = 0
                     bandwidth = 0
@@ -1638,9 +1638,9 @@ thisPlugin = int(sys.argv[1])
 # xbmcplugin.setPluginFanart(thisPlugin, 'fanart.jpg')
 
 userAgents = { 
-    webserviceUrl : 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:52.0) Gecko/20100101 Firefox/52.0',
-    websiteUrl : 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:52.0) Gecko/20100101 Firefox/52.0',
-    'default' : 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:52.0) Gecko/20100101 Firefox/52.0'
+    webserviceUrl : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36',
+    websiteUrl : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36',
+    'default' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36'
     }
     
 cookieJar = cookielib.CookieJar()
