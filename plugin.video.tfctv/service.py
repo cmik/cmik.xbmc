@@ -28,6 +28,7 @@ class ProxyHandler(SimpleHTTPRequestHandler):
             requestHeaders.append(('User-Agent', self._user_agent))
             requestHeaders.append(('Connection', 'keep-alive'))
             requestHeaders.append(('Keep-Alive', 'timeout=5, max=1000'))
+            requestHeaders.append(('Range', ''))
             
             res = self.urlopen(query.get('url'), headers=requestHeaders)
             
