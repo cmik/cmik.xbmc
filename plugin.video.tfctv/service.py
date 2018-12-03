@@ -1,53 +1,58 @@
 #!/usr/bin/env python2
-import SocketServer
-import re
-import shutil
-import threading
-import urllib, urllib2, ssl, cookielib
-import xbmc, xbmcaddon
+# -*- coding: utf-8 -*-
+
+'''
+    Tfc.tv Add-on
+    Copyright (C) 2018 cmik
+'''
+
+import SocketServer,re,shutil,threading,urllib,urllib2,ssl,cookielib
+import xbmc,xbmcaddon
 
 from SimpleHTTPServer import SimpleHTTPRequestHandler
-from urlparse import urlparse
-
-AddonName = xbmcaddon.Addon('plugin.video.tfctv').getAddonInfo('name')
-setting = xbmcaddon.Addon().getSetting
+from urlparse import urlparse, parse_qsl
+from resources import config
+from resources.lib.libraries import control
 
 class ProxyHandler(SimpleHTTPRequestHandler):
 
     _cj = cookielib.LWPCookieJar()
-    _user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36'
+    _user_agent = config.userAgents['default']
             
     def do_GET(self):
         xbmc.log('Requested : %s' % (self.path), level=xbmc.LOGDEBUG)
-        query = self.getQueryParameters(self.path)
-        if ('url' in query):
-        
-            requestHeaders = []
-            requestHeaders.append(('User-Agent', self._user_agent))            
-            res = self.urlopen(query.get('url'), headers=requestHeaders)
-            
-            if (res.get('status')):
-                proxyUrlFormat = setting('proxyHostUrl')
-                content = re.sub(r'(http[^\s"]+)', lambda x: proxyUrlFormat % (setting('proxyPort'), urllib.quote(x.group(0))), res.get('body'))
-                
-                self.send_response(res.get('status'))
-                for header, value in res.get('headers').items():
-                    if (header.lower() == 'content-length'):
-                        value = len(content)
-                    if (header.lower() == 'set-cookie'):
-                        netloc = urlparse(proxyUrlFormat).netloc
-                        host = netloc.split(':')[0] if ':' in netloc else netloc
-                        value = re.sub(r'path=[^;]+; domain=.+', 'path=/; domain=%s' % (host), value)
-                    if (header.lower() in ('server', 'set-cookie')):
-                        continue
-                    self.send_header(header, value)
-                self.end_headers()
-                self.wfile.write(content)
-                self.wfile.close()
-            else:
-                self.send_error(522)
+        if '/healthcheck' in self.path:
+            self.send_response(200)
         else:
-            self.send_error(400)
+            query = self.getQueryParameters(self.path)
+            if ('url' in query):
+            
+                requestHeaders = []
+                requestHeaders.append(('User-Agent', self._user_agent))            
+                res = self.urlopen(query.get('url'), headers=requestHeaders)
+                
+                if (res.get('status')):
+                    proxyUrlFormat = control.setting('proxyStreamingUrl')
+                    content = re.sub(r'(http[^\s"]+)', lambda x: proxyUrlFormat % (control.setting('proxyHost'), control.setting('proxyPort'), urllib.quote(x.group(0))), res.get('body'))
+                    
+                    self.send_response(res.get('status'))
+                    for header, value in res.get('headers').items():
+                        if (header.lower() == 'content-length'):
+                            value = len(content)
+                        if (header.lower() == 'set-cookie'):
+                            netloc = urlparse(proxyUrlFormat).netloc
+                            host = netloc.split(':')[0] if ':' in netloc else netloc
+                            value = re.sub(r'path=[^;]+; domain=.+', 'path=/; domain=%s' % (host), value)
+                        if (header.lower() in ('server', 'set-cookie')):
+                            continue
+                        self.send_header(header, value)
+                    self.end_headers()
+                    self.wfile.write(content)
+                    self.wfile.close()
+                else:
+                    self.send_error(522)
+            else:
+                self.send_error(400)
                         
     def urlopen(self, url, params = {}, headers = []):        
         res = {}
@@ -77,20 +82,16 @@ class ProxyHandler(SimpleHTTPRequestHandler):
         qparam = {}
         query = url.split('?')[1] if (len(url.split('?')) > 1) else None 
         if query:
-            pairs = query.split('&')
-            for i in range(len(pairs)):
-                keyvalue = pairs[i].split('=')
-                if (len(keyvalue)) == 2:
-                    qparam[keyvalue[0]] = urllib.unquote(keyvalue[1])
+            qparam = dict(parse_qsl(query.replace('?','')))
         return qparam 
         
 if __name__ == "__main__":
-    httpPort = int(setting('proxyPort'))
+    httpPort = int(control.setting('proxyPort'))
     server = SocketServer.TCPServer(('', httpPort), ProxyHandler)
 
     server_thread = threading.Thread(target=server.serve_forever)
     server_thread.start()
-    xbmc.log('[%s] Service: starting HTTP proxy server on port %s' % (AddonName, httpPort), level=xbmc.LOGNOTICE)
+    xbmc.log('[%s] Service: starting HTTP proxy server on port %s' % (control.addonInfo('name'), httpPort), level=xbmc.LOGNOTICE)
     
     monitor = xbmc.Monitor()
 
@@ -100,4 +101,4 @@ if __name__ == "__main__":
 
     server.shutdown()
     server_thread.join()
-    xbmc.log('[%s] - Service: stopping HTTP proxy server on port %s' % (AddonName, httpPort), level=xbmc.LOGNOTICE)
+    xbmc.log('[%s] - Service: stopping HTTP proxy server on port %s' % (control.addonInfo('name'), httpPort), level=xbmc.LOGNOTICE)

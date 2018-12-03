@@ -13,7 +13,7 @@
     <string id="50101">Advanced</string>
     <string id="50102">Menu settings</string>
     <string id="50103">Requests</string>
-    <string id="50104"></string>
+    <string id="50104">Use show logo</string>
     <string id="50105">Episodes per page</string>
     <string id="50106">Last version installed</string>
     <string id="50107">Display TFC.tv's website sections</string>
@@ -43,7 +43,7 @@
     <string id="50131">Default directory background image</string>
     <string id="50132">Streaming Proxy</string>
     <string id="50133">Use streaming proxy</string>
-    <string id="50134">Host URL format</string>
+    <string id="50134">Host</string>
     <string id="50135">Port</string>
     <string id="50136">Enable parental control</string>
     <string id="50137">Parental code</string>
@@ -52,7 +52,12 @@
     <string id="50140">Password</string>
     <string id="50141">Login Retries</string>
     <string id="50142">Account JSON</string>
-    <string id="50206">[Preview] %s</string>
+    <string id="50143">Proxy URL format</string>
+    <string id="50144">Proxy check URL</string>
+    <string id="50200">My List</string>
+    <string id="50201">By Category</string>
+    <string id="50202">My Account</string>
+    <string id="50203">Tools</string>
     <string id="50300">Add to my watchlist</string>
     <string id="50301">Remove from my watchlist</string>
     <string id="56001">TFC.tv My Account Information</string>
@@ -99,4 +104,9 @@ Enjoy!
     <string id="57024">Can't login to TFC website</string>
     <string id="57025">You are only allowed to watch a preview</string>
     <string id="57026">This feature is coming soon :)</string>
+    <string id="57027">Can't refresh catalog cache - an error occured</string>
+    <string id="57028">The streaming proxy is not active. You will not be able to watch videos. 
+Please reboot your Kodi system.
+    </string>
+    <string id="57029">The response is empty</string>
 </strings>
