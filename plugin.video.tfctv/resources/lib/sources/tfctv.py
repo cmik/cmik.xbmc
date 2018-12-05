@@ -78,7 +78,7 @@ def getMediaInfo(episodeId, title, thumbnail):
             'show' : mediaInfo['data']['show'],
             'image' : thumbnail,
             'fanart' : mediaInfo['data']['fanart'],
-            'episodenumber' : 1,
+            'episodenumber' : mediaInfo['data']['episodenumber'],
             'url' : mediaInfo['data']['url'],
             'description' : mediaInfo['data']['plot'],
             'shortdescription' : mediaInfo['data']['plot'],
@@ -86,6 +86,10 @@ def getMediaInfo(episodeId, title, thumbnail):
             'year' : mediaInfo['data']['year'],
             'parentalAdvisory' : mediaInfo['data']['parentalAdvisory']
             }
+        res = episodeDB.get(int(episodeId))
+        if len(res) == 1:
+            episode = res[0]
+            e['episodenumber'] = episode.get('episodenumber')
         episodeDB.set(e)
         
     return mediaInfo
@@ -215,7 +219,7 @@ def updateCatalogCache():
     cache.shortCache.cacheClean(True)
     
     # checkElaps = lambda x, y: x = time.time()-x if (time.time()-x) > y else x
-    # elaps = start = time.time()
+    elaps = start = time.time()
     
     try:
         # update sections cache
@@ -229,30 +233,50 @@ def updateCatalogCache():
         control.showNotification(control.lang(57014), control.lang(50005))
         # categories = cache.lCacheFunction(getCategories)
         categories = getCategories()
-        # nbCat = len(categories)
-        # t = i = j = k = 0
+        nbCat = len(categories)
+        i = 0
         for cat in categories:
             # subCategories = cache.lCacheFunction(getSubCategories, cat['id'])
-            subCategories = getSubCategories(cat['id'])
-            # nbSubCat = len(subCategories)
+            try: subCategories = getSubCategories(cat['id'])
+            except:
+                logger.logNotice('Can\'t update category %s' % cat['id'])
+                pass
+            nbSubCat = len(subCategories)
+            j = 0
             for sub in subCategories:
                 # shows = cache.sCacheFunction(getShows, sub['id'])
-                shows = getShows(sub['id'])
-                # nbShow = len(shows)
+                try: shows = getShows(sub['id'])
+                except: 
+                    logger.logNotice('Can\'t update subcategory %s' % sub['id'])
+                    pass
+                nbShow = len(shows)
+                k = 0
                 for s in shows:
                     # show = cache.lCacheFunction(getShow, s['id'])
-                    show = getShow(s['id'])
-                    # if checkElaps(elaps, 10):
-                        # total = nbShow
-                        # loaded = k
-                        # percent = min((100 / (nbSubCat-j) / (nbCat-i) / (nbShow)) * loaded / total)
-                        # logger.showNotification('Updating catalog... %s' % (str(percent)+'%'), title=control.lang(50005), time=10000)
+                    try: show = getShow(s['id'])
+                    except: 
+                        logger.logNotice('Can\'t update show %s' % s['id'])
+                        pass
+                    elaps = time.time()-start 
+                    if elaps > 5:
+                        start = time.time()
+                        catpercent = 100 * i / nbCat
+                        cat1percent = 100 * 1 / nbCat
+                        subcatpercent = 100 * j / nbSubCat
+                        subcat1percent = 100 * 1 / nbSubCat
+                        showpercent = 100 * k / nbShow
+                        percent = catpercent + (cat1percent * (subcatpercent + (cat1percent * showpercent / 100)) / 100)
+                        logger.logNotice('Updating catalog... %s' % (str(percent)+'%'))
+                        logger.logNotice(str(percent)+'%')
+                        control.infoDialog('Updating catalog... %s' % (str(percent)+'%'), heading=control.lang(50005), icon=control.addonIcon(), time=10000)
                     # if show:
                         # episodes = cache.sCacheFunction(getShowEpisodes, show['id'])
-                    # k++
-                # j++
-            # i++
-    except:
+                    k+=1
+                j+=1
+            i+=1
+            
+    except Exception as e:
+        logger.logNotice('Can\'t update the catalog %s' % (str(e)))
         return False
         
     return True
@@ -311,13 +335,13 @@ def getSubCategories(categoryId):
 def getMyListCategories():
     logger.logInfo('called function')
     url = config.uri.get('myList')
-    html = callServiceApi(url)
+    html = callServiceApi(url, useCache=False)
     return extractListCategories(html)
     
 def getMylistCategoryItems(id):
     logger.logInfo('called function')
     url = config.uri.get('myList')
-    html = callServiceApi(url)
+    html = callServiceApi(url, useCache=False)
     return extractListCategoryItems(html, id)
 
 def extractListCategoryItems(html, id):   
@@ -607,10 +631,10 @@ def extractShows(html):
     return data
 
 def getShow(showId):
-    logger.logInfo('called function with param %s' % (showId))
+    logger.logInfo('called function with param (%s)' % (showId))
     data = {}
     
-    html = callServiceApi(config.uri.get('showDetails') % showId)
+    html = callServiceApi(config.uri.get('showDetails') % showId, useCache=False)
     err = checkIfError(html)
     if err.get('error') == False:
         images = common.parseDOM(html, "div", attrs = { 'class' : 'hero-image-logo' })
@@ -676,7 +700,7 @@ def getShow(showId):
     return data
 
 def getEpisodesPerPage(showId, page=1, itemsPerPage=8):
-    logger.logInfo('called function')
+    logger.logInfo('called function with param (%s)' % (showId))
     data = []
     
     # max nb items per page that TFC website can provide
@@ -690,15 +714,14 @@ def getEpisodesPerPage(showId, page=1, itemsPerPage=8):
     showDetails = getShow(showId)
     if showDetails:
         for page in range(firstPage, lastPage+1, 1):
-            html = callServiceApi(paginationURL % (showId, page))
+            html = callServiceApi(paginationURL % (showId, page), useCache=False if page == 1 else True)
         
             # if page does not exist
             if page > 1 and html == '':
                 break
             # if no pagination, it's a movie or special
             elif page == 1 and html == '':
-                showDetailURL = config.uri.get('showDetails')
-                html = callServiceApi(showDetailURL % showId)
+                html = callServiceApi(config.uri.get('showDetails') % showId)
                 episodeId = int(re.compile('var dfp_e = "(.+)";', re.IGNORECASE).search(html).group(1))
                 data.append({
                     'id' : episodeId,
@@ -723,9 +746,15 @@ def getEpisodesPerPage(showId, page=1, itemsPerPage=8):
                 for e in episodes:
                     url = common.parseDOM(e, "a", ret = 'href')[0]
                     episodeId = int(re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1))
+                    episodeData = showDetails.get('episodes').get(episodeId)
                     res = episodeDB.get(episodeId)
                     if len(res) == 1:
-                        data.append(res[0])
+                        e = res[0]
+                        # Update title value with episode number
+                        if episodeData:
+                            e['title'] = episodeData.get('title')
+                            e['episodenumber'] = episodeData.get('episodenumber')
+                        data.append(e)
                     else:
                         image = common.parseDOM(e, "div", attrs = {'class' : 'show-cover'}, ret = 'data-src')[0]
                         title = common.replaceHTMLCodes(titles[i])
@@ -737,22 +766,21 @@ def getEpisodesPerPage(showId, page=1, itemsPerPage=8):
                         shortDescription = description
                         episodeNumber = 0
                         
-                        episodeData = showDetails.get('episodes').get(episodeId)
                         if episodeData:
                             title = episodeData.get('title')
                             episodeNumber = episodeData.get('episodenumber')
                         
                         e = {
                             'id' : episodeId,
-                            'title' : title.encode('utf8'),
+                            'title' : title,
                             'parentid' : int(showId),
                             'show' : showTitle,
                             'image' : image,
                             'fanart' : fanart,
                             'episodenumber' : episodeNumber,
                             'url' : image,
-                            'description' : description.encode('utf8'),
-                            'shortdescription' : shortDescription.encode('utf8'),
+                            'description' : description,
+                            'shortdescription' : shortDescription,
                             'dateaired' : dateAired,
                             'year' : year,
                             'parentalAdvisory' : ''
@@ -835,13 +863,13 @@ def getUserInfo():
     user = json.loads(control.setting('accountJSON')).get('profile')
     
     return {
-        'name' : name.encode('utf8'),
-        'firstName' : user.get('firstName', '').encode('utf8'),
-        'lastName' : user.get('lastName', '').encode('utf8'),
-        'email' : user.get('email', '').encode('utf8'),
-        'state' : state.encode('utf8'),
-        'country' : user.get('country', '').encode('utf8'),
-        'memberSince' : memberSince.replace('MEMBER SINCE ', '').encode('utf8')
+        'name' : name,
+        'firstName' : user.get('firstName', ''),
+        'lastName' : user.get('lastName', ''),
+        'email' : user.get('email', ''),
+        'state' : state,
+        'country' : user.get('country', ''),
+        'memberSince' : memberSince.replace('MEMBER SINCE ', '')
     }
     
 def getUserSubscription():
@@ -883,7 +911,7 @@ def getUserTransactions():
     header = []
     headers = common.parseDOM(common.parseDOM(transactionsHtml, 'thead'), 'th')
     for h in headers:
-        header.append(h.encode('utf8'))
+        header.append(h)
     
     for transaction in transactions:
         columns = common.parseDOM(transaction, 'td', attrs = {'class' : 'loader'})
@@ -897,26 +925,45 @@ def getUserTransactions():
         for c in columns:
             value = '-'
             if not TAG_HTML.search(c):
-                value = c.encode('utf8')
+                value = c
             t += "%s: %s\n" % (header[i], value)
             i+=1
         data.append(t)
                 
     return data
     
-def addToMyList(url, name, type):
-    logger.logInfo('called function')
+def addToMyList(id, name, type):
+    logger.logInfo('called function with param (%s, %s, %s)' % (id, name, type))
+    url = config.uri.get('addToList')
     logger.logDebug(url)
-    control.showNotification(control.lang(57026))
-    # url = config.uri.get('addToList')
-    # data = callJsonApi(url, params = {'CategoryId': 4894, 'EpisodeId': 167895, 'type': 'episode'}, useCache=False)
+    res = {}
+    if type == 'show':
+        res = logger.logNotice(callJsonApi(url, params = {'CategoryId': id, 'type': type}, useCache=False))
+    else:
+        e = episodeDB.get(id)
+        if 'parentid' in e:
+            res = callJsonApi(url, params = {'CategoryId': e.get('parentid'), 'EpisodeId': id, 'type': type}, useCache=False)
+    if 'StatusMessage' in res:
+        control.showNotification(res.get('StatusMessage'), name)
+    else:
+        control.showNotification(control.lang(57026))
 
-def removeFromMyList(url, name, type):
-    logger.logInfo('called function')
+def removeFromMyList(id, name, type):
+    logger.logInfo('called function with param (%s, %s, %s)' % (id, name, type))
+    url = config.uri.get('removeFromList')
     logger.logDebug(url)
-    control.showNotification(control.lang(57026))
-    # url = config.uri.get('removeFromList')
-    # data = callJsonApi(url, params = {'CategoryId': 4894, 'EpisodeId': 167895, 'type': 'episode'}, useCache=False)
+    res = {}
+    if type == 'show':
+        res = logger.logNotice(callJsonApi(url, params = {'CategoryId': id, 'type': type}, useCache=False))
+    else:
+        e = episodeDB.get(id)
+        if 'parentid' in e:
+            res = callJsonApi(url, params = {'CategoryId': e.get('parentid'), 'EpisodeId': id, 'type': type}, useCache=False)
+    if 'StatusMessage' in res:
+        control.showNotification(res.get('StatusMessage'), name)
+        control.refresh()
+    else:
+        control.showNotification(control.lang(57026))
     
 def checkAccountChange(forceSignIn=False):
     logger.logInfo('called function')
@@ -1319,7 +1366,7 @@ def checkIfError(html):
     return { 'error' : error, 'message' : message }
 
 def callServiceApi(path, params={}, headers=[], base_url=config.websiteUrl, useCache=True, jsonData=False, returnMessage=True):
-    logger.logInfo('called function')
+    logger.logInfo('called function with param (%s)' % (path))
     global cookieJar
     
     res = {}
@@ -1330,7 +1377,7 @@ def callServiceApi(path, params={}, headers=[], base_url=config.websiteUrl, useC
     if returnMessage == False:
         useCache = False
     
-    key = cache.generateHashKey(base_url + path + urllib.urlencode(params))
+    key = config.urlCachePrefix + cache.generateHashKey(base_url + path + urllib.urlencode(params))
     logger.logDebug('Key %s : %s - %s' % (key, base_url + path, params))
     
     if useCache == True:

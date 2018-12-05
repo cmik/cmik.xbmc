@@ -43,7 +43,6 @@ image = params.get('image')
 
 thumbnail = urllib.unquote_plus(params.get('thumbnail', ''))
 
-
 if mode == None:
     from resources.lib.indexers import navigator
     navigator.navigator().root()

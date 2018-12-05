@@ -57,10 +57,10 @@ class navigator:
                 else:
                     control.showNotification(control.lang(57017), control.lang(50002))
         elif control.setting('displayMyList') == 'true':
-            self.addDirectoryItem(control.lang(50200), '/', config.MYLIST, 'icon.png', isFolder=True, **self.formatMenu())
+            self.addDirectoryItem(control.lang(50200), '/', config.MYLIST, control.addonFolderIcon(control.lang(50200)), isFolder=True, **self.formatMenu())
         
         if control.setting('displayWebsiteSections') == 'true':
-            self.addDirectoryItem(control.lang(50201), '/', config.CATEGORIES, 'icon.png', isFolder=True, **self.formatMenu())
+            self.addDirectoryItem(control.lang(50201), '/', config.CATEGORIES, control.addonFolderIcon(control.lang(50201)), isFolder=True, **self.formatMenu())
         else:
             self.showCategories()
             
@@ -69,13 +69,13 @@ class navigator:
             # sections = cache.sCacheFunction(tfctv.getWebsiteHomeSections)
             sections = tfctv.getWebsiteHomeSections()
             for s in sections:
-                self.addDirectoryItem(s['name'].title(), str(s['id']), config.SECTIONCONTENT, 'icon.png', isFolder=True, **self.formatMenu())
+                self.addDirectoryItem(s['name'].title(), str(s['id']), config.SECTIONCONTENT, control.addonFolderIcon(s['name'].title()), isFolder=True, **self.formatMenu())
             
         if control.setting('displayMyAccountMenu') == 'true':    
-            self.addDirectoryItem(control.lang(50202), '/', config.MYACCOUNT, 'icon.png', isFolder=True, **self.formatMenu())
+            self.addDirectoryItem(control.lang(50202), '/', config.MYACCOUNT, control.addonFolderIcon(control.lang(50202)), isFolder=True, **self.formatMenu())
         
         if control.setting('displayTools') == 'true':
-            self.addDirectoryItem(control.lang(50203), '/', config.TOOLS, 'icon.png')
+            self.addDirectoryItem(control.lang(50203), '/', config.TOOLS, control.addonFolderIcon(control.lang(50203)))
             
         self.endDirectory()
 
@@ -86,7 +86,7 @@ class navigator:
     def showMyList(self):   
         categories = tfctv.getMyListCategories()
         for c in categories:
-            self.addDirectoryItem(c['name'], str(c['id']), config.LISTCATEGORY, 'icon.png', **self.formatMenu())
+            self.addDirectoryItem(c['name'], str(c['id']), config.LISTCATEGORY, control.addonFolderIcon(c['name']), **self.formatMenu())
         self.endDirectory()
 
     def showMyListCategory(self, url):   
@@ -103,7 +103,7 @@ class navigator:
         # categories = cache.lCacheFunction(tfctv.getCategories)
         categories = tfctv.getCategories()
         for c in categories:
-            self.addDirectoryItem(c['name'], str(c['id']), config.SUBCATEGORIES, 'icon.png', isFolder=True, **self.formatMenu())
+            self.addDirectoryItem(c['name'], str(c['id']), config.SUBCATEGORIES, control.addonFolderIcon(c['name']), isFolder=True, **self.formatMenu())
             
         if control.setting('displayWebsiteSections') == 'true':
             self.endDirectory()
@@ -112,7 +112,7 @@ class navigator:
         # subCategories = cache.lCacheFunction(tfctv.getSubCategories, categoryId)
         subCategories = tfctv.getSubCategories(categoryId)
         for s in subCategories:
-            self.addDirectoryItem(s['name'], str(s['id']), config.SUBCATEGORYSHOWS, 'menu_logo.png', isFolder=True, **self.formatMenu())
+            self.addDirectoryItem(s['name'], str(s['id']), config.SUBCATEGORYSHOWS, control.addonFolderIcon(s['name']), isFolder=True, **self.formatMenu())
         self.endDirectory()
        
     def showSubCategoryShows(self, subCategoryId):
@@ -166,8 +166,8 @@ class navigator:
             { 'name' : 'Transactions', 'url' : '/', 'mode' : config.MYTRANSACTIONS }
         ]
         for c in categories:
-            self.addDirectoryItem(c['name'], c['url'], c['mode'], 'icon.png')
-        self.addDirectoryItem('Logout', '/', config.LOGOUT, 'icon.png', isFolder = False)    
+            self.addDirectoryItem(c['name'], c['url'], c['mode'], control.addonFolderIcon(c['name']))
+        self.addDirectoryItem('Logout', '/', config.LOGOUT, control.addonFolderIcon('Logout'), isFolder = False)    
         self.endDirectory()
     
     def showMyInfo(self):
@@ -208,8 +208,8 @@ class navigator:
         control.showMessage(message, control.lang(56003))
             
     def showTools(self):
-        self.addDirectoryItem('Reload Catalog Cache', '/', config.RELOADLIBRARY, 'icon.png')
-        self.addDirectoryItem('Clean cookies file', '/', config.CLEANCOOKIES, 'icon.png')
+        self.addDirectoryItem('Reload Catalog Cache', '/', config.RELOADLIBRARY, control.addonFolderIcon('Reload Catalog Cache'))
+        self.addDirectoryItem('Clean cookies file', '/', config.CLEANCOOKIES, control.addonFolderIcon('Clean cookies file'))
         self.endDirectory()
             
     def formatMenu(self, bgImage=''):
@@ -220,8 +220,8 @@ class navigator:
         return data
         
     def formatShowInfo(self, info, addToList=True, options = {}):
-        add = { control.lang(50300) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info['id']), config.ADDTOLIST, info['name']) } 
-        remove = { control.lang(50301) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info['id']), config.REMOVEFROMLIST, info['name']) } 
+        add = { control.lang(50300) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info['id']), config.ADDTOLIST, info['name'], query='type=show') } 
+        remove = { control.lang(50301) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info['id']), config.REMOVEFROMLIST, info['name'], query='type=show') } 
         contextMenu = add if addToList == True else remove
         
         data = { 
@@ -234,8 +234,8 @@ class navigator:
         return data
             
     def formatVideoInfo(self, info, addToList=True, options = {}):
-        add = { control.lang(50300) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info['id']), config.ADDTOLIST, info['title']) } 
-        remove = { control.lang(50301) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info['id']), config.REMOVEFROMLIST, info['title']) } 
+        add = { control.lang(50300) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info['id']), config.ADDTOLIST, info['title'], query='type=episode') } 
+        remove = { control.lang(50301) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info['id']), config.REMOVEFROMLIST, info['title'], query='type=episode') } 
         contextMenu = add if addToList == True else remove
 
         data = { 
@@ -268,8 +268,8 @@ class navigator:
         # if not addonFanart == None: item.setProperty('Fanart_Image', addonFanart)
         # control.addItem(handle=int(sys.argv[1]), url=url, listitem=item, isFolder=isFolder)
             
-    def addDirectoryItem(self, name, url, mode, thumbnail, page=1, isFolder=True, **kwargs):
-        u = self.generateActionUrl(url, mode, name, thumbnail, page)
+    def addDirectoryItem(self, name, url, mode, thumbnail, page=1, isFolder=True, query='', **kwargs):
+        u = self.generateActionUrl(url, mode, name, thumbnail, page, query)
         liz = control.item(label=name, iconImage="DefaultFolder.png", thumbnailImage=thumbnail)
         liz.setInfo(type="Video", infoLabels={"Title": name})
         for k, v in kwargs.iteritems():
@@ -288,8 +288,8 @@ class navigator:
                 if len(menuItems) > 0: liz.addContextMenuItems(menuItems)
         return control.addItem(handle=thisPlugin, url=u, listitem=liz, isFolder=isFolder)
 
-    def generateActionUrl(self, url, mode, name=None, thumbnail='', page=1):
-        url = sysaddon + "?url=" + urllib.quote_plus(url) + "&mode=" + str(mode) 
+    def generateActionUrl(self, url, mode, name=None, thumbnail='', page=1, query=''):
+        url = sysaddon + "?url=" + urllib.quote_plus(url) + "&mode=" + str(mode)
         try: 
             if name != None: url += "&name=" + urllib.quote_plus(name)
         except: 
@@ -300,6 +300,10 @@ class navigator:
             pass
         try: 
             if thumbnail != '': url += "&thumbnail=" + urllib.quote_plus(thumbnail)
+        except: 
+            pass    
+        try: 
+            if query != '': url += "&" + query
         except: 
             pass
         return url   

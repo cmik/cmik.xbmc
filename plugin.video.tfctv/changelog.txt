@@ -2,6 +2,8 @@
     New reworked vesion
     Added databases favourite/show/episode library for cache and better exeperience
     Added proxy streaming check and alert
+    My List updates
+    Statitics (view)
 0.0.81
     Fixed playback error HTTP 403 when retrieving m3u8 segments
     Fixed force best stream linked to playback issue

@@ -41,7 +41,7 @@ class Model():
             for d in results:
                 items.append(self._getStructure(d))
         except (Exception) as e:
-            logger.logError(e)
+            logger.logError('Exception: %s for data %s' % (str(e), repr(mixed)))
             pass
 
         return items
@@ -51,7 +51,7 @@ class Model():
         try:            
             return self._save(data)
         except (Exception) as e:
-            logger.logError(e)
+            logger.logError('Exception: %s for data %s' % (str(e), repr(mixed)))
             return False
 
     def delete(self, mixed):

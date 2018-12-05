@@ -57,6 +57,7 @@ class Show(model.Model):
                 ids.append(str(data.get('id')))
         if len(ids) > 0:
             dbcur = self.getCursor()
+            dbcur.execute('PRAGMA encoding="UTF-8";')
             dbcur.execute(logger.logDebug("CREATE TABLE IF NOT EXISTS SHOW (\
                 ID INTEGER PRIMARY KEY, \
                 TITLE TEXT, \

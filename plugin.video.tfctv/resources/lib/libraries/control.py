@@ -112,6 +112,12 @@ sourcescacheFile = os.path.join(dataPath, 'sources.db')
 libcacheFile = os.path.join(dataPath, 'library.db')
 
 
+def addonFolderIcon(text):
+    appearance = setting('appearance').lower()
+    if appearance in ['-', '']: return addonInfo('icon')
+    else: return logger.logNotice(os.path.join(addonPath, 'resources', 'media', appearance, 'icon_%s.jpg' % (text.lower()[:1])))
+    
+            
 def addonIcon():
     appearance = setting('appearance').lower()
     if appearance in ['-', '']: return addonInfo('icon')
