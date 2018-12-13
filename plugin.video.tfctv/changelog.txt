@@ -1,9 +1,14 @@
 1.0.0-beta
     New reworked vesion
+    Added a little wizard installation at first startup
     Added databases favourite/show/episode library for cache and better exeperience
     Added proxy streaming check and alert
-    My List updates
-    Statitics (view)
+    Allow to export shows to library (needed to added 'library' directory (created in addon profile directory) as video source)
+    Can now add show/episode to my List 
+    Can now remove show/episode from my List 
+    Alerts when a media can't be played as some AES encrypted videos
+    Fixed home sections content
+    Fixed 
 0.0.81
     Fixed playback error HTTP 403 when retrieving m3u8 segments
     Fixed force best stream linked to playback issue

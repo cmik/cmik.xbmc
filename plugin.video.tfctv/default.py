@@ -54,7 +54,7 @@ elif mode == config.SUBCATEGORYSHOWS:
     navigator.navigator().showSubCategoryShows(url)
 elif mode == config.SHOWEPISODES:
     from resources.lib.indexers import navigator
-    navigator.navigator().showEpisodes(url, page)
+    navigator.navigator().showEpisodes(url, page, params.get('parentid', -1), params.get('year', ''))
 elif mode == config.PLAY:
     from resources.lib.sources import tfctv
     tfctv.playEpisode(url, name, thumbnail)
@@ -91,6 +91,21 @@ elif mode == config.ADDTOLIST:
 elif mode == config.REMOVEFROMLIST:
     from resources.lib.sources import tfctv
     tfctv.removeFromMyList(url, name, params.get('type'))
+elif mode == config.ADDTOLIBRARY:
+    from resources.lib.sources import tfctv
+    tfctv.addToLibrary(url, name, params.get('parentid', -1), params.get('year', ''))
+elif mode == config.ENTERCREDENTIALS:
+    from resources.lib.indexers import navigator
+    navigator.navigator().enterCredentials()
+elif mode == config.PERSONALIZESETTINGS:
+    from resources.lib.indexers import navigator
+    navigator.navigator().personalizeSettings()
+elif mode == config.OPTIMIZELIBRARY:
+    from resources.lib.indexers import navigator
+    navigator.navigator().optimizeLibrary()
+elif mode == config.ENDSETUP:
+    from resources.lib.indexers import navigator
+    navigator.navigator().endSetup()
 elif mode == config.TOOLS:
     from resources.lib.indexers import navigator
     navigator.navigator().showTools()

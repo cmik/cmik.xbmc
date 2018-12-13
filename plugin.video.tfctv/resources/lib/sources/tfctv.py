@@ -5,7 +5,7 @@
     Copyright (C) 2018 cmik
 '''
 
-import os,sys,re,urllib,urllib2,ssl,cookielib,json,time,hashlib
+import os,sys,re,urllib,urllib2,ssl,cookielib,json,datetime,time,hashlib
 from operator import itemgetter
 from resources import config
 from resources.lib.libraries import control
@@ -27,7 +27,7 @@ def playEpisode(url, name, thumbnail):
     
     if checkProxy() == True:
         # Check if logged in
-        if isLoggedIn() == False:
+        if control.setting('emailAddress') != '' and isLoggedIn() == False:
             control.showNotification(control.lang(57012), control.lang(50002))
             login()
             
@@ -39,12 +39,12 @@ def playEpisode(url, name, thumbnail):
                 # login()
                 
         episodeDetails = getMediaInfo(episode, name, thumbnail)
+        logger.logNotice(episodeDetails)
         if episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] == 0 and 'data' in episodeDetails:
             if 'preview' in episodeDetails['data'] and episodeDetails['data']['preview'] == True:
-                control.showNotification(control.lang(57025), control.lang(50002))
-            else:
-                if 'StatusMessage' in episodeDetails and episodeDetails['StatusMessage'] != '':
-                    control.showNotification(episodeDetails['StatusMessage'], control.lang(50009))
+                control.infoDialog(control.lang(57025), control.lang(50002), time=5000)
+            elif 'StatusMessage' in episodeDetails and episodeDetails['StatusMessage'] != '':
+                control.showNotification(episodeDetails['StatusMessage'], control.lang(50009))
             url = control.setting('proxyStreamingUrl') % (control.setting('proxyHost'), control.setting('proxyPort'), urllib.quote(episodeDetails['data']['uri'])) if (control.setting('useProxy') == 'true') else episodeDetails['data']['uri']
             plot = episodeDetails['data']['plot']
             fanart = episodeDetails['data']['fanart']
@@ -55,13 +55,12 @@ def playEpisode(url, name, thumbnail):
             try: 
                 return control.resolve(thisPlugin, True, liz)
             except: 
-                control.showNotification(control.lang(57020), control.lang(50004))
-        else:
-            if (not episodeDetails) or (episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] != 0):
-                if 'StatusMessage' in episodeDetails:
-                    control.showNotification(episodeDetails['StatusMessage'])
-                else:
-                    control.showNotification(control.lang(57001), control.lang(50009))
+                control.showNotification(control.lang(57032), control.lang(50004))
+        elif (not episodeDetails) or (episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] != 0):
+            if 'StatusMessage' in episodeDetails:
+                control.showNotification(episodeDetails['StatusMessage'], control.lang(50004))
+            else:
+                control.showNotification(control.lang(57001), control.lang(50009))
     return False
     
 def getMediaInfo(episodeId, title, thumbnail):
@@ -83,13 +82,10 @@ def getMediaInfo(episodeId, title, thumbnail):
             'description' : mediaInfo['data']['plot'],
             'shortdescription' : mediaInfo['data']['plot'],
             'dateaired' : mediaInfo['data']['dateaired'],
+            'date' : mediaInfo['data']['date'],
             'year' : mediaInfo['data']['year'],
             'parentalAdvisory' : mediaInfo['data']['parentalAdvisory']
             }
-        res = episodeDB.get(int(episodeId))
-        if len(res) == 1:
-            episode = res[0]
-            e['episodenumber'] = episode.get('episodenumber')
         episodeDB.set(e)
         
     return mediaInfo
@@ -153,7 +149,7 @@ def getMediaInfoFromWebsite(episodeId):
                 'pv': 'false', 
                 'sid' : sid
                 }
-            episodeDetails = callJsonApi(config.uri.get('mediaFetch'), params, headers=callHeaders, base_url=config.websiteSecuredUrl, useCache=False, jsonData=True)
+            episodeDetails = callJsonApi(config.uri.get('mediaFetch'), params, callHeaders, base_url=config.websiteSecuredUrl, useCache=False, jsonData=True)
             if episodeDetails and 'StatusCode' in episodeDetails:
                 mediaInfo['errorCode'] = episodeDetails['StatusCode']
                 if 'media' in episodeDetails and 'source' in episodeDetails['media'] and 'src' in episodeDetails['media']['source'][0] :
@@ -167,52 +163,71 @@ def getMediaInfoFromWebsite(episodeId):
                     if control.setting('streamServerModification') == 'true' and control.setting('streamServer') != '':
                         episodeDetails['media']['uri'] = episodeDetails['media']['uri'].replace('https://o2-i.', control.setting('streamServer'))                
                     
-                    # choose best stream quality
-                    if (control.setting('chooseBestStream') == 'true'):
-                        m3u8 = callServiceApi(episodeDetails['media']['uri'], base_url = '', headers=[])
-                        lines = m3u8.split('\n')
-                        i = 0
-                        bandwidth = 0
-                        choosedStream = ''
-                        for l in lines:
-                            match = re.compile('BANDWIDTH=([0-9]+)', re.IGNORECASE).search(lines[i])
-                            if match :
-                                if int(match.group(1)) > bandwidth:
-                                    bandwidth = int(match.group(1))
-                                    choosedStream = lines[i+1]
-                                i+=2
+                    if 'amssabscbn.akamaized.net' in episodeDetails['media']['uri']:
+                        mediaInfo['StatusMessage'] = control.lang(57032)
+                        mediaInfo['errorCode'] = 5
+                    else: 
+                        # choose best stream quality
+                        if (control.setting('chooseBestStream') == 'true'):
+                            m3u8 = callServiceApi(episodeDetails['media']['uri'], base_url = '', headers=[])
+                            if m3u8:
+                                lines = m3u8.split('\n')
+                                i = 0
+                                bandwidth = 0
+                                choosedStream = ''
+                                for l in lines:
+                                    match = re.compile('BANDWIDTH=([0-9]+)', re.IGNORECASE).search(lines[i])
+                                    if match :
+                                        if int(match.group(1)) > bandwidth:
+                                            bandwidth = int(match.group(1))
+                                            choosedStream = lines[i+1]
+                                        i+=2
+                                    else:
+                                        i+=1
+                                    if i >= len(lines):
+                                        break
+                                episodeDetails['media']['uri'] = choosedStream
                             else:
-                                i+=1
-                            if i >= len(lines):
-                                break
-                        episodeDetails['media']['uri'] = choosedStream
-                    
-                    show = getShow(mediaInfo['data']['showid'])
-                    mediaInfo['data'].update(episodeDetails['media'])
-                    mediaInfo['data']['show'] = show.get('name')
-                    mediaInfo['data']['plot'] = episodeData.get('description')
-                    mediaInfo['data']['fanart'] = show.get('fanart')
-                    mediaInfo['data']['type'] = episodeData.get('@type').lower()
-                    mediaInfo['data']['dateaired'] = episodeData.get('datePublished')
-                    mediaInfo['data']['year'] = episodeData.get('datePublished').split('-')[0]
-                    mediaInfo['data']['episodenumber'] = 0
-                    if mediaInfo['data']['type'] == 'movie':
-                        mediaInfo['data']['episodenumber'] = 1
-                    
-                if 'StatusMessage' in episodeDetails and episodeDetails['StatusMessage'] != '' and episodeDetails['StatusMessage'] != 'OK':
-                    mediaInfo['StatusMessage'] = episodeDetails['StatusMessage']
+                                mediaInfo['StatusMessage'] = control.lang(57032)
+                                mediaInfo['errorCode'] = 9
+                        
+                        res = showDB.get(sid)
+                        show = res[0] if len(res) == 1 else {}
+                        
+                        mediaInfo['data'].update(episodeDetails['media'])
+                        mediaInfo['data']['preview'] = episodeDetails['mediainfo']['preview']
+                        mediaInfo['data']['show'] = show.get('name', episodeData.get('name'))
+                        mediaInfo['data']['plot'] = episodeData.get('description')
+                        mediaInfo['data']['image'] = episodeData.get('thumbnailUrl')
+                        mediaInfo['data']['fanart'] = show.get('fanart', episodeData.get('image'))
+                        mediaInfo['data']['type'] = episodeData.get('@type').lower()
+                        try:
+                            datePublished = datetime.datetime.strptime(episodeData.get('datePublished'), '%Y-%m-%d')
+                        except TypeError:
+                            datePublished = datetime.datetime(*(time.strptime(episodeData.get('datePublished'), '%Y-%m-%d')[0:6]))
+                        mediaInfo['data']['dateaired'] = datePublished.strftime('%b %d, %Y')
+                        mediaInfo['data']['date'] = datePublished.strftime('%Y-%m-%d')
+                        mediaInfo['data']['year'] = datePublished.strftime('%Y')
+                        mediaInfo['data']['episodenumber'] = 1 if type == 'movie' else episodeData.get('episodeNumber')
+                            
+                    logger.logDebug(mediaInfo)
+                        
+                    if 'StatusMessage' in episodeDetails and episodeDetails['StatusMessage'] != '' and episodeDetails['StatusMessage'] != 'OK':
+                        mediaInfo['StatusMessage'] = episodeDetails['StatusMessage']
                 
     return mediaInfo
         
 def reloadCatalogCache():
     logger.logInfo('called function')
-    res = updateCatalogCache()
-    if res is True:
+    updateEpisodes = False
+    if (control.confirm(control.lang(50402), line1=control.lang(57035))):
+        updateEpisodes = True
+    if updateCatalogCache(updateEpisodes) is True:
         control.showNotification(control.lang(57003), control.lang(50001))
     else:
         control.showNotification(control.lang(57027), control.lang(50004))
     
-def updateCatalogCache():
+def updateCatalogCache(loadEpisodes=False):
     logger.logInfo('called function')
     control.showNotification(control.lang(57015), control.lang(50005))
     cache.longCache.cacheClean(True)
@@ -235,49 +250,53 @@ def updateCatalogCache():
         categories = getCategories()
         nbCat = len(categories)
         i = 0
-        for cat in categories:
-            # subCategories = cache.lCacheFunction(getSubCategories, cat['id'])
-            try: subCategories = getSubCategories(cat['id'])
-            except:
-                logger.logNotice('Can\'t update category %s' % cat['id'])
-                pass
-            nbSubCat = len(subCategories)
-            j = 0
-            for sub in subCategories:
-                # shows = cache.sCacheFunction(getShows, sub['id'])
-                try: shows = getShows(sub['id'])
-                except: 
-                    logger.logNotice('Can\'t update subcategory %s' % sub['id'])
-                    pass
-                nbShow = len(shows)
-                k = 0
-                for s in shows:
-                    # show = cache.lCacheFunction(getShow, s['id'])
-                    try: show = getShow(s['id'])
-                    except: 
-                        logger.logNotice('Can\'t update show %s' % s['id'])
-                        pass
-                    elaps = time.time()-start 
-                    if elaps > 5:
-                        start = time.time()
-                        catpercent = 100 * i / nbCat
-                        cat1percent = 100 * 1 / nbCat
-                        subcatpercent = 100 * j / nbSubCat
-                        subcat1percent = 100 * 1 / nbSubCat
-                        showpercent = 100 * k / nbShow
-                        percent = catpercent + (cat1percent * (subcatpercent + (cat1percent * showpercent / 100)) / 100)
-                        logger.logNotice('Updating catalog... %s' % (str(percent)+'%'))
-                        logger.logNotice(str(percent)+'%')
-                        control.infoDialog('Updating catalog... %s' % (str(percent)+'%'), heading=control.lang(50005), icon=control.addonIcon(), time=10000)
-                    # if show:
-                        # episodes = cache.sCacheFunction(getShowEpisodes, show['id'])
-                    k+=1
-                j+=1
-            i+=1
-            
     except Exception as e:
-        logger.logNotice('Can\'t update the catalog %s' % (str(e)))
+        logger.logNotice('Can\'t update the catalog : %s' % (str(e)))
         return False
+        
+    for cat in categories:
+        nbSubCat = 0
+        try: 
+            subCategories = getSubCategories(cat['id'])
+            nbSubCat = len(subCategories)
+        except Exception as ce:
+            logger.logNotice('Can\'t update category %s : %s' % (cat['id'], str(ce)))
+            continue
+        j = 0
+        for sub in subCategories:
+            nbShow = 0
+            try: 
+                shows = getShows(sub['id'])
+                nbShow = len(shows)
+            except Exception as sce: 
+                logger.logNotice('Can\'t update subcategory %s : %s' % (sub['id'], str(sce)))
+                j+=1
+                continue
+            k = 0
+            for s in shows:
+                try: 
+                    if loadEpisodes: episodes = getEpisodesPerPage(s['id'], sub['id'], s['year'], 1, 999)
+                    else: show = getShow(s['id'], sub['id'], s['year'])
+                except Exception as se: 
+                    logger.logNotice('Can\'t update show %s : %s' % (s['id'], str(se)))
+                    k+=1
+                    continue
+                k+=1
+                
+                elaps = time.time()-start 
+                if elaps > 5:
+                    start = time.time()
+                    catpercent = 100 * i / nbCat
+                    cat1percent = 100 * 1 / nbCat
+                    subcatpercent = 100 * j / nbSubCat
+                    subcat1percent = 100 * 1 / nbSubCat
+                    showpercent = 100 * k / nbShow
+                    percent = catpercent + (cat1percent * (subcatpercent + (cat1percent * showpercent / 100)) / 100)
+                    logger.logNotice('Updating catalog... %s' % (str(percent)+'%'))
+                    logger.logNotice(str(percent)+'%')
+                    control.infoDialog('Updating catalog... %s' % (str(percent)+'%'), heading=control.lang(50005), icon=control.addonIcon(), time=10000)
+            j+=1
+        i+=1
         
     return True
     
@@ -359,7 +378,7 @@ def extractListCategoryItems(html, id):
             elif '/episode/' in url:
                 data.append(extracMyListEpisodeData(url, item))
     
-    return data
+    return sorted(data, key=lambda item: item['title'] if 'title' in item else item['name'], reverse=False)
     
 def extractMyListShowData(url, html):
     logger.logInfo('called function')
@@ -376,7 +395,7 @@ def extractMyListShowData(url, html):
             'id' : int(showId),
             'parentid' : -1,
             'parentname' : '',
-            'name' : common.replaceHTMLCodes(showName).encode('utf8'),
+            'name' : common.replaceHTMLCodes(showName),
             'logo' : image,
             'image' : image,
             'fanart' : image,
@@ -406,19 +425,25 @@ def extracMyListEpisodeData(url, html):
         if dateAired and len(dateAired) > 0:
             episodeName = dateAired[0].replace('AIRED:', '')
             year = episodeName.split(', ')[1]
+            
+        try:
+            datePublished = datetime.datetime.strptime(episodeName, '%b %d, %Y')
+        except TypeError:
+            datePublished = datetime.datetime(*(time.strptime(episodeName, '%b %d, %Y')[0:6]))
         
         return {
             'id' : int(episodeId), 
             'parentid' : -1,
             'parentname' : '',
-            'title' : common.replaceHTMLCodes('%s - %s' % (showName, episodeName)).encode('utf8'), 
-            'show' : showName.encode('utf8'), 
+            'title' : common.replaceHTMLCodes('%s - %s' % (showName, episodeName)), 
+            'show' : showName, 
             'image' : image, 
             'episodenumber' : episodeNumber,
             'url' : url, 
             'description' : '',
             'shortdescription' : '',
-            'dateaired' : episodeName.encode('utf8'),
+            'dateaired' : episodeName,
+            'date' : datePublished.strftime('%Y-%m-%d'),
             'year' : year,
             'fanart' : image,
             'type' : 'episode'
@@ -462,9 +487,9 @@ def getWebsiteHomeSections():
         if len(header):
             sectionName = common.stripTags(common.replaceHTMLCodes(header[0])).strip()
             exceptSections = [
-                'CONTINUE WATCHING', 
-                'MY LIST', 
-                'IWANT ORIGINALS - EXCLUSIVE FOR PREMIUM'
+                'CONTINUE WATCHING'
+                ,'MY LIST'
+                # ,'IWANT ORIGINALS - EXCLUSIVE FOR PREMIUM'
                 ]
             if sectionName not in exceptSections:
                 data.append({'id' : str(i), 'name' : sectionName}) #, 'url' : '/', 'fanart' : ''})
@@ -483,6 +508,7 @@ def getWebsiteSectionContent(sectionId, page=1, itemsPerPage=8):
     items = common.parseDOM(section, "a", attrs = { 'data-category' : 'CTA_Sections' })
     
     index = itemsPerPage * page
+    containsShows = False
     i = 0
     for s in items:
         i += 1
@@ -491,13 +517,24 @@ def getWebsiteSectionContent(sectionId, page=1, itemsPerPage=8):
 
             if '/show/' in url:
                 data.append(extractWebsiteSectionShowData(url, s))
+                containsShows = True
             elif '/episode/' in url:
                 data.append(extractWebsiteSectionEpisodeData(url, s))
                 
         if i >= (index + itemsPerPage):
             break
+   
     # episodeDB.get([d.get('id') for d in data])
-    return data
+    return removeDuplicates(sorted(data, key=lambda item: item['dateaired'] if item.get('type') == 'episode' else item['name'], reverse=True if containsShows == False else False))
+    
+def removeDuplicates(list):
+    newList = []
+    uniq = {}
+    for d in list:
+        key = '%s_%s'% (d.get('type'), str(d.get('id')))
+        if key not in uniq: newList.append(d)
+        uniq[key]=1
+    return newList
     
 def extractWebsiteSectionShowData(url, html):
     logger.logInfo('called function')
@@ -516,7 +553,7 @@ def extractWebsiteSectionShowData(url, html):
             'id' : int(showId),
             'parentid' : -1,
             'parentname' : '',
-            'name' : common.replaceHTMLCodes(showName).encode('utf8'),
+            'name' : common.replaceHTMLCodes(showName),
             'logo' : image,
             'image' : image,
             'fanart' : image,
@@ -546,19 +583,25 @@ def extractWebsiteSectionEpisodeData(url, html):
         if dateAired and len(dateAired) > 0:
             episodeName = dateAired[0]
             year = episodeName.split(', ')[1]
-        
+
+        try:
+            datePublished = datetime.datetime.strptime(episodeName, '%b %d, %Y')
+        except TypeError:
+            datePublished = datetime.datetime(*(time.strptime(episodeName, '%b %d, %Y')[0:6]))
+            
         return {
             'id' : int(episodeId), 
             'parentid' : -1,
             'parentname' : '',
-            'title' : common.replaceHTMLCodes('%s - %s' % (showName, episodeName)).encode('utf8'), 
-            'show' : showName.encode('utf8'), 
+            'title' : common.replaceHTMLCodes('%s - %s' % (showName, episodeName)), 
+            'show' : showName, 
             'image' : image, 
             'episodenumber' : episodeNumber,
             'url' : url, 
             'description' : '',
             'shortdescription' : '',
-            'dateaired' : episodeName.encode('utf8'),
+            'dateaired' : episodeName,
+            'date' : datePublished.strftime('%Y-%m-%d'),
             'year' : year,
             'fanart' : image,
             'type' : 'episode'
@@ -585,12 +628,16 @@ def getShows(subCategoryId, page = 1):
                 dateAired = d['dateairedstr'] if 'dateairedstr' in d else ''
                 res = showDB.get(int(d['id']))
                 if len(res) == 1:
-                    data.append(res[0])
+                    show = res[0]
+                    show['parentid'] = int(subCategoryId)
+                    show['parentname'] = d['parentname']
+                    show['year'] = d['year']
+                    data.append(show)
                 else:
                     data.append({
                         'id' : int(d['id']),
                         'name' : d['name'],
-                        'parentid' : d['parentid'],
+                        'parentid' : int(subCategoryId),
                         'parentname' : d['parentname'],
                         'logo' : d['image'].replace(' ', '%20'),
                         'image' : d['image'].replace(' ', '%20'),
@@ -599,7 +646,7 @@ def getShows(subCategoryId, page = 1):
                         'url' : d['url'],
                         'description' : d['description'],
                         'shortdescription' : d['shortdescription'],
-                        'year' : dateAired
+                        'year' : d['year']
                         })
                 
     return data
@@ -609,12 +656,18 @@ def extractShows(html):
     data = []
     list = common.parseDOM(html, "ul", attrs = { 'id' : 'og-grid' })[0]
     shows = common.parseDOM(list, "li", attrs = { 'class' : 'og-grid-item-o' })
+    dateaired = common.parseDOM(list, "li", attrs = { 'class' : 'og-grid-item-o' }, ret = 'data-aired')
+    i = 0
     for show in shows:
         name = common.parseDOM(show, "h2")[0]
         aired = common.parseDOM(show, "h3")[0]
         image = common.parseDOM(show, "img", ret = 'src')[0]
         url = common.parseDOM(show, "a", ret = 'href')[0]
-        id = re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1)
+        id = re.compile('/([0-9]+)/').search(url).group(1)
+        try: year = re.compile('^([0-9]{4})').search(dateaired[i]).group(1)
+        except:
+            try: year = aired.replace('AIRED: ', '').split(' ')[1]
+            except: pass
         
         data.append({
             'id' : id,
@@ -625,18 +678,26 @@ def extractShows(html):
             'image' : image,
             'description' : '',
             'shortdescription' : '',
-            'dateairedstr' : aired.replace('AIRED: ', '')
+            'dateairedstr' : aired.replace('AIRED: ', ''),
+            'year' : year
             })
-            
+        i+=1    
     return data
 
-def getShow(showId):
-    logger.logInfo('called function with param (%s)' % (showId))
+def getShow(showId, parentId=-1, year=''):
+    logger.logInfo('called function with param (%s, %s, %s)' % (showId, str(parentId), year))
     data = {}
     
     html = callServiceApi(config.uri.get('showDetails') % showId, useCache=False)
     err = checkIfError(html)
     if err.get('error') == False:
+    
+        res = showDB.get(int(showId))
+        show = res[0] if len(res) == 1 else []
+        
+        if parentId == -1: parentId = show.get('parentid', parentId)
+        if year == '': year = show.get('year', year)
+        
         images = common.parseDOM(html, "div", attrs = { 'class' : 'hero-image-logo' })
         t = common.parseDOM(html, "link", attrs = { 'rel' : 'image_src' }, ret = 'href')
         image = t[0] if len(t) > 0 else ''
@@ -681,7 +742,7 @@ def getShow(showId):
         data = {
             'id' : int(showId),
             'name' : common.replaceHTMLCodes(name),
-            'parentid' : -1,
+            'parentid' : int(parentId),
             'parentname' : common.replaceHTMLCodes(genre),
             'logo' : logo,
             'image' : image,
@@ -690,17 +751,17 @@ def getShow(showId):
             'url' : url,
             'description' : common.replaceHTMLCodes(description),
             'shortdescription' : common.replaceHTMLCodes(description),
-            'year' : '',
+            'year' : year,
             'episodes' : episodes,
             'type': 'show'
             }
         showDB.set(data)
     else:
-        logger.logWarning('Error on show %s: %s' % (showId, get('message')))
+        logger.logWarning('Error on show %s: %s' % (showId, err.get('message')))
     return data
 
-def getEpisodesPerPage(showId, page=1, itemsPerPage=8):
-    logger.logInfo('called function with param (%s)' % (showId))
+def getEpisodesPerPage(showId, parentId, year, page=1, itemsPerPage=8):
+    logger.logInfo('called function with param (%s, %s, %s, %s, %s)' % (showId, parentId, year, page, itemsPerPage))
     data = []
     
     # max nb items per page that TFC website can provide
@@ -711,7 +772,7 @@ def getEpisodesPerPage(showId, page=1, itemsPerPage=8):
     
     paginationURL = config.uri.get('episodePagination')
     # showDetails = cache.sCacheFunction(getShow, showId)
-    showDetails = getShow(showId)
+    showDetails = getShow(showId, parentId, year)
     if showDetails:
         for page in range(firstPage, lastPage+1, 1):
             html = callServiceApi(paginationURL % (showId, page), useCache=False if page == 1 else True)
@@ -721,75 +782,96 @@ def getEpisodesPerPage(showId, page=1, itemsPerPage=8):
                 break
             # if no pagination, it's a movie or special
             elif page == 1 and html == '':
-                html = callServiceApi(config.uri.get('showDetails') % showId)
+                html = callServiceApi(config.uri.get('showDetails') % showId, useCache=False)
                 episodeId = int(re.compile('var dfp_e = "(.+)";', re.IGNORECASE).search(html).group(1))
+                episodeData = json.loads(re.compile('var ldj = (\{.+\})', re.IGNORECASE).search(html).group(1))
+                try:
+                    datePublished = datetime.datetime.strptime(episodeData.get('datePublished'), '%Y-%m-%d')
+                except TypeError:
+                    datePublished = datetime.datetime(*(time.strptime(episodeData.get('datePublished'), '%Y-%m-%d')[0:6]))
+        
                 data.append({
                     'id' : episodeId,
-                    'title' : showDetails.get('name'),
-                    'show' : showDetails.get('name'),
-                    'image' : showDetails.get('image'),
+                    'title' : episodeData.get('name'),
+                    'show' : showDetails.get('name', episodeData.get('name')),
+                    'image' : episodeData.get('thumbnailUrl',  episodeData.get('image')),
                     'episodenumber' : 1,
-                    'description' : showDetails.get('description'),
-                    'shortdescription' : showDetails.get('description'),
-                    'dateaired' : '',
-                    'year' : showDetails.get('year'),
-                    'fanart' : showDetails.get('fanart')
+                    'description' : episodeData.get('description'),
+                    'shortdescription' : episodeData.get('description'),
+                    'dateaired' : datePublished.strftime('%b %d, %Y'),
+                    'date' : datePublished.strftime('%Y-%m-%d'),
+                    'year' : datePublished.strftime('%Y'),
+                    'fanart' : showDetails.get('fanart'),
+                    'showObj' : showDetails,
+                    'type' : 'episode'
                     })
                     
                 break
             else:
                 i = 0
                 episodes = common.parseDOM(html, 'li', attrs = {'class' : 'og-grid-item'})
-                descriptions = common.parseDOM(html, 'li', attrs = {'class' : 'og-grid-item'}, ret = 'data-show-description')
-                titles = common.parseDOM(html, 'li', attrs = {'class' : 'og-grid-item'}, ret = 'data-aired')
+                if len(episodes) > 0:
                 
-                for e in episodes:
-                    url = common.parseDOM(e, "a", ret = 'href')[0]
-                    episodeId = int(re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1))
-                    episodeData = showDetails.get('episodes').get(episodeId)
-                    res = episodeDB.get(episodeId)
-                    if len(res) == 1:
-                        e = res[0]
-                        # Update title value with episode number
-                        if episodeData:
-                            e['title'] = episodeData.get('title')
-                            e['episodenumber'] = episodeData.get('episodenumber')
-                        data.append(e)
-                    else:
-                        image = common.parseDOM(e, "div", attrs = {'class' : 'show-cover'}, ret = 'data-src')[0]
-                        title = common.replaceHTMLCodes(titles[i])
-                        dateAired = title
-                        showTitle = showDetails.get('name')
-                        fanart = showDetails.get('fanart')
-                        year = title.split(', ').pop()
-                        description = common.replaceHTMLCodes(descriptions[i])
-                        shortDescription = description
-                        episodeNumber = 0
+                    descriptions = common.parseDOM(html, 'li', attrs = {'class' : 'og-grid-item'}, ret = 'data-show-description')
+                    titles = common.parseDOM(html, 'li', attrs = {'class' : 'og-grid-item'}, ret = 'data-aired')
                         
-                        if episodeData:
-                            title = episodeData.get('title')
-                            episodeNumber = episodeData.get('episodenumber')
-                        
-                        e = {
-                            'id' : episodeId,
-                            'title' : title,
-                            'parentid' : int(showId),
-                            'show' : showTitle,
-                            'image' : image,
-                            'fanart' : fanart,
-                            'episodenumber' : episodeNumber,
-                            'url' : image,
-                            'description' : description,
-                            'shortdescription' : shortDescription,
-                            'dateaired' : dateAired,
-                            'year' : year,
-                            'parentalAdvisory' : ''
-                            }
-                        episodeDB.set(e)
-                        data.append(e)
-                        
-                    i += 1
-            
+                    for e in episodes:
+                        url = common.parseDOM(e, "a", ret = 'href')[0]
+                        episodeId = int(re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1))
+                        episodeData = showDetails.get('episodes').get(episodeId)
+                        res = episodeDB.get(episodeId)
+                        if len(res) == 1:
+                            e = res[0]
+                            # Update title value with episode number
+                            if episodeData:
+                                e['title'] = episodeData.get('title')
+                                e['episodenumber'] = episodeData.get('episodenumber')
+                                e['showObj'] = showDetails
+                            data.append(e)
+                        else:
+                            image = common.parseDOM(e, "div", attrs = {'class' : 'show-cover'}, ret = 'data-src')[0]
+                            title = common.replaceHTMLCodes(titles[i])
+                            dateAired = title
+                            showTitle = showDetails.get('name')
+                            fanart = showDetails.get('fanart')
+                            year = title.split(', ').pop()
+                            description = common.replaceHTMLCodes(descriptions[i])
+                            shortDescription = description
+                            episodeNumber = 0
+                            
+                            if episodeData:
+                                title = episodeData.get('title')
+                                episodeNumber = episodeData.get('episodenumber')
+                            
+                            try:
+                                datePublished = datetime.datetime.strptime(dateAired, '%b %d, %Y')
+                            except TypeError:
+                                datePublished = datetime.datetime(*(time.strptime(dateAired, '%b %d, %Y')[0:6]))
+                            
+                            e = {
+                                'id' : episodeId,
+                                'title' : title,
+                                'parentid' : int(showId),
+                                'show' : showTitle,
+                                'image' : image,
+                                'fanart' : fanart,
+                                'episodenumber' : episodeNumber,
+                                'url' : image,
+                                'description' : description,
+                                'shortdescription' : shortDescription,
+                                'dateaired' : dateAired,
+                                'date' : datePublished.strftime('%Y-%m-%d'),
+                                'year' : year,
+                                'parentalAdvisory' : '',
+                                'showObj' : showDetails,
+                                'type' : 'episode'
+                                }
+                            episodeDB.set(e)
+                            data.append(e)
+                            
+                        i += 1
+                else: 
+                    break
     # return sorted(data, key=lambda episode: episode['title'], reverse=True)
     return data
       
@@ -809,34 +891,52 @@ def getEpisodesPerPage(showId, page=1, itemsPerPage=8):
             # e['dateaired'] = e.get('DateAired').split('T')[0]
             # data[e.get('EpisodeId')] = e
     # return data
-      
-# def getEpisodeDataByShow(showId, episodeId):
-    # data = {}
-    # episodes = cache.sCacheFunction(getShowEpisodes, showId)
-    # if episodes and episodeId in episodes:
-        # data = episodes[episodeId]
-    # else:
-        # episode = cache.lCacheFunction(getEpisodeData, episodeId)
-        # if episode:
-            # episode['title'] = episode.get('dateaired')
-            # episode['description'] = episode.get('synopsis')
-            # data = episode
-    # return data
+          
+def getEpisode(episodeId):
+    logger.logInfo('called function with param (%s)' % episodeId)
+    data = {}
     
-# def getEpisodeData(episodeId):
-    # logger.logInfo('called function')
-    # html = callServiceApi(config.uri.get('episodeDetails') % episodeId, base_url = config.websiteUrl, useCache=False)
-    # body = common.parseDOM(html, 'body')
-    # episodeData = json.loads(re.compile('var ldj = (\{.+\})', re.IGNORECASE).search(html).group(1))
-    # if 'statusCode' in res and res['statusCode'] == 1:
-        # data = res['episode']
-        # data['title'] = data['streamInfo']['streamTitle']
-        # data['url'] = data['streamInfo']['streamURL']
-        # data['dateaired'] = data['dateAired'].split('T')[1]
-        # data['year'] = data['dateAired'].split('-')[0]
-        # data['description'] = data['synopsis']
-        # data['image'] = data['image']['video']
-    # return data
+    html = callServiceApi(config.uri.get('episodeDetails') % episodeId, base_url = config.websiteUrl, useCache=False)
+    err = checkIfError(html)
+    if err.get('error') == False:
+        url = common.parseDOM(html, "link", attrs = { 'rel' : 'canonical' }, ret = 'href')[0] 
+        episodeData = json.loads(re.compile('var ldj = (\{.+\})', re.IGNORECASE).search(html).group(1))
+        showId = re.compile('media/fetch.+sid: (\d+),', re.IGNORECASE).search(html).group(1)
+        res = showDB.get(showId)
+        show = res[0] if len(res) == 1 else {}
+        parentalAdvisory = 'true' if re.compile('var dfp_c = ".*2900.*";', re.IGNORECASE).search(html) else 'false'
+        plot = episodeData.get('description')
+        showName = show.get('name', episodeData.get('name'))
+        thumbnail = episodeData.get('thumbnailUrl')
+        fanart = show.get('fanart', episodeData.get('image'))
+        type = episodeData.get('@type').lower()
+        try:
+            datePublished = datetime.datetime.strptime(episodeData.get('datePublished'), '%Y-%m-%d')
+        except TypeError:
+            datePublished = datetime.datetime(*(time.strptime(episodeData.get('datePublished'), '%Y-%m-%d')[0:6]))
+        dateAired = datePublished.strftime('%b %d, %Y')
+        year = datePublished.strftime('%Y')
+        episodeNumber = 1 if type == 'movie' else episodeData.get('episodeNumber')
+                
+        data = {
+            'id' : int(episodeId),
+            'title' : 'Ep. %s - %s' %(episodeNumber, dateAired),
+            'parentid' : showId,
+            'show' : showName,
+            'image' : thumbnail,
+            'fanart' : fanart,
+            'episodenumber' : episodeNumber,
+            'url' : url,
+            'description' : plot,
+            'shortdescription' : plot,
+            'dateaired' : dateAired,
+            'date' : datePublished.strftime('%Y-%m-%d'),
+            'year' : year,
+            'parentalAdvisory' : parentalAdvisory,
+            'type' : 'episode'
+            }
+                
+    return data
     
 # def getEpisodeVideo(episodeId):
     # data = {}
@@ -894,7 +994,7 @@ def getUserSubscription():
                     details += "%s: %s\n" % (label, value)
             details += "\n"
     return {
-            'Details' : details
+            'details' : details
         }
     
 def getUserTransactions():
@@ -940,9 +1040,10 @@ def addToMyList(id, name, type):
     if type == 'show':
         res = logger.logNotice(callJsonApi(url, params = {'CategoryId': id, 'type': type}, useCache=False))
     else:
-        e = episodeDB.get(id)
+        episodes = episodeDB.get(id)
+        e = episodes[0] if len(episodes) == 1 else getEpisode(id)
         if 'parentid' in e:
-            res = callJsonApi(url, params = {'CategoryId': e.get('parentid'), 'EpisodeId': id, 'type': type}, useCache=False)
+            res = logger.logNotice(callJsonApi(url, params = {'CategoryId': e.get('parentid'), 'EpisodeId': id, 'type': type}, useCache=False))                    
     if 'StatusMessage' in res:
         control.showNotification(res.get('StatusMessage'), name)
     else:
@@ -956,14 +1057,108 @@ def removeFromMyList(id, name, type):
     if type == 'show':
         res = logger.logNotice(callJsonApi(url, params = {'CategoryId': id, 'type': type}, useCache=False))
     else:
-        e = episodeDB.get(id)
+        episodes = episodeDB.get(id)
+        e = episodes[0] if len(episodes) == 1 else getEpisode(id)
         if 'parentid' in e:
-            res = callJsonApi(url, params = {'CategoryId': e.get('parentid'), 'EpisodeId': id, 'type': type}, useCache=False)
+            res = logger.logNotice(callJsonApi(url, params = {'CategoryId': e.get('parentid'), 'EpisodeId': id, 'type': type}, useCache=False))
     if 'StatusMessage' in res:
         control.showNotification(res.get('StatusMessage'), name)
         control.refresh()
     else:
         control.showNotification(control.lang(57026))
+    
+def addToLibrary(id, name, parentId=-1, year=''):
+    from resources.lib.indexers import navigator
+    status = True
+    logger.logInfo('called function with param (%s, %s, %s, %s)' % (id, name, parentId, year))
+    episodes = getEpisodesPerPage(id, parentId, year, page=1, itemsPerPage=8)
+    
+    i = 0
+    for e in episodes:
+        # first loop create path and nfo
+        if i == 0:
+            path = os.path.join(control.showsLibPath, name)
+            control.makePath(path)
+            # Main NFO file
+            try: control.writeFile(logger.logNotice(os.path.join(path, 'tvshow.nfo')), generateShowNFO(show, path).encode('utf-8'))
+            except Exception as e:
+                logger.logError(e)
+                status = False
+                break
+                
+        filePath = os.path.join(path, '%s.strm' % e.get('title'))
+        show = e.get('showObj')
+
+        try:
+            # Episode STRM / NFO files
+            control.writeFile(logger.logNotice(os.path.join(path, '%s.nfo' % e.get('title'))), generateEpisodeNFO(e, path, filePath).encode('utf-8'))
+            control.writeFile(logger.logNotice(filePath), navigator.navigator().generateActionUrl(str(e.get('id')), config.PLAY, '%s - %s' % (e.get('show'), e.get('dateaired')), e.get('image')))
+        except Exception as e:
+            logger.logError(e)
+            status = False
+            break
+        i+=1
+    if status == True: control.showNotification(control.lang(57034) % name, control.lang(50010))
+    else: control.showNotification(control.lang(57033), control.lang(50004))
+    return status
+
+def generateShowNFO(info, path):
+    logger.logInfo('called function')
+    nfoString = ''
+    nfoString += '<title>%s</title>' % info.get('name')
+    nfoString += '<sorttitle>%s</sorttitle>' % info.get('name')
+    nfoString += '<episode>%s</episode>' % len(info.get('episodes'))
+    nfoString += '<plot>%s</plot>' % info.get('description')
+    nfoString += '<plot>%s</plot>' % info.get('description')
+    nfoString += '<aired>%s</aired>' % info.get('dateaired')
+    nfoString += '<year>%s</year>' % info.get('year')
+    nfoString += '<thumb aspect="poster">%s</thumb>' % info.get('image')
+    nfoString += '<fanart url=""><thumb dim="1280x720" colors="" preview="%s">%s</thumb></fanart>' % (info.get('fanart'), info.get('fanart'))
+    nfoString += '<genre>%s</genre>' % info.get('parentname')
+    nfoString += '<path>%s</path>' % path
+    nfoString += '<filenameandpath></filenameandpath>'
+    nfoString += '<basepath>%s</basepath>' % path
+    
+    return u'<?xml version="1.0" encoding="UTF-8" standalone="yes"?> \
+<!-- created on %s - by TFC.tv addon --> \
+<tvshow> \
+    %s \
+</tvshow>' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), nfoString)
+    
+def generateEpisodeNFO(info, path, filePath):
+    logger.logInfo('called function')
+    nfoString = ''
+    nfoString += '<title>%s</title>' % info.get('title')
+    nfoString += '<showtitle>%s</showtitle>' % info.get('show')
+    nfoString += '<sorttitle>%s</sorttitle>' % info.get('dateaired')
+    nfoString += '<episode>%s</episode>' % info.get('episodenumber')
+    nfoString += '<plot>%s</plot>' % info.get('description')
+    nfoString += '<aired>%s</aired>' % info.get('dateaired')
+    nfoString += '<year>%s</year>' % info.get('year')
+    nfoString += '<thumb>%s</thumb>' % info.get('image')
+    nfoString += '<art><banner>%s</banner><fanart>%s</fanart></art>' % (info.get('fanart'), info.get('fanart'))
+    nfoString += '<path>%s</path>' % path
+    nfoString += '<filenameandpath>%s</filenameandpath>' % filePath
+    nfoString += '<basepath>%s</basepath>' % filePath
+    nfoString += '<studio>TFC</studio>'
+    
+    return u'<?xml version="1.0" encoding="UTF-8" standalone="yes"?> \
+<!-- created on %s - by TFC.tv addon --> \
+<episodedetails> \
+    %s \
+</episodedetails>' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), nfoString)
+    
+def enterCredentials():
+    email = control.inputText(control.lang(50400), control.setting('emailAddress'))
+    password = ''
+    i = 1
+    while i < 3 and password == '':
+        password = control.inputPassword(control.lang(50401))
+        i+=1
+    logger.logNotice('%s - %s' % (email, password))
+    control.setSetting('emailAddress', email)
+    control.setSetting('password', password)
+    return login()
     
 def checkAccountChange(forceSignIn=False):
     logger.logInfo('called function')
@@ -993,6 +1188,7 @@ def checkAccountChange(forceSignIn=False):
         logged = True
     
     if logged:
+        cleanCookies(False)
         loginSuccess = login()
         if loginSuccess == True and os.path.exists(control.dataPath):
             with open(hashFile, 'w') as f:
@@ -1010,7 +1206,7 @@ def login(quiet=False):
     
 def isLoggedIn():
     logger.logInfo('called function')
-    html = callServiceApi(config.uri.get('profile'), headers=[('Referer', config.websiteSecuredUrl+'/')    ], base_url=config.websiteSecuredUrl, useCache=False)
+    html = callServiceApi(config.uri.get('profile'), headers=[('Referer', config.websiteSecuredUrl+'/')], base_url=config.websiteSecuredUrl, useCache=False)
     return False if 'TfcTvId' not in html else True
     
 def loginToWebsite(quiet=False): 
@@ -1349,12 +1545,12 @@ def logout(quiet=True):
     cookieJar.clear()
     if quiet == False and isLoggedIn() == False:
         control.showNotification(control.lang(57010))
-        control.execute("XBMC.Container.Update(path,replace)")
+        control.exit()
 
 def checkIfError(html):
     error = False
     message = ''
-    if html == '':
+    if html == '' or html == None:
         error = True
         message = control.lang(57029)
     else:
@@ -1426,16 +1622,24 @@ def callServiceApi(path, params={}, headers=[], base_url=config.websiteUrl, useC
             logger.logError(e)
             message = '%s : %s' % (e, base_url + path)
             # message = "Connection timeout : " + base_url + path
-            logger.logError(message)
-            control.showNotification(message)
+            logger.logSevere(message)
+            control.showNotification(message, control.lang(50004))
+            # No internet connection error
+            if 'Errno 11001' in message:
+                control.showNotification(control.lang(57031), control.lang(50004), time=5000)
             toCache = False
+            pass
         
         if toCache == True and res:
             cache.shortCache.set(key, repr(res.get('message')))
             logger.logDebug('Stored in cache (%s) : %s' % (key, res))
     
+    # Clear headers
+    headers[:] = []
+    
     if returnMessage == True:
         return res.get('message')
+        
     return res
 
 def callJsonApi(path, params={}, headers=[('X-Requested-With', 'XMLHttpRequest')], base_url=config.webserviceUrl, useCache=True, jsonData=False):

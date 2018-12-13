@@ -81,6 +81,8 @@ openFile = xbmcvfs.File
 
 makeFile = xbmcvfs.mkdir
 
+makePath = xbmcvfs.mkdirs
+
 deleteFile = xbmcvfs.delete
 
 listDir = xbmcvfs.listdir
@@ -97,7 +99,7 @@ homePath = xbmc.translatePath('special://home')
 
 settingsFile = os.path.join(dataPath, 'settings.xml')
 
-databaseFile = os.path.join(dataPath, 'settings.db')
+libraryFile = os.path.join(dataPath, 'library.db')
 
 categoriesFile = os.path.join(dataPath, 'categories.db')
 
@@ -111,11 +113,17 @@ sourcescacheFile = os.path.join(dataPath, 'sources.db')
 
 libcacheFile = os.path.join(dataPath, 'library.db')
 
+libraryPath = os.path.join(dataPath, 'library')
+
+showsLibPath = os.path.join(libraryPath, 'shows')
+
+moviesLibPath = os.path.join(libraryPath, 'movies')
+
 
 def addonFolderIcon(text):
     appearance = setting('appearance').lower()
     if appearance in ['-', '']: return addonInfo('icon')
-    else: return logger.logNotice(os.path.join(addonPath, 'resources', 'media', appearance, 'icon_%s.jpg' % (text.lower()[:1])))
+    else: return os.path.join(addonPath, 'resources', 'media', appearance, 'icon_%s.jpg' % (text.lower()[:1]))
     
             
 def addonIcon():
@@ -199,8 +207,14 @@ def alert(message, line1='', line2='', title=lang(50001)):
         return
     return dialog.ok(title, message, line1, line2)
     
-def showNotification(message, title=lang(50001)):
-    infoDialog(message, title)
+def inputText(title, defaultValue=''):
+    return dialog.input(title, defaultValue, xbmcgui.INPUT_ALPHANUM)
+    
+def inputPassword(title, defaultValue=''):
+    return dialog.input(title, defaultValue, xbmcgui.INPUT_ALPHANUM, xbmcgui.ALPHANUM_HIDE_INPUT)
+    
+def showNotification(message, title=lang(50001), time=3000):
+    infoDialog(message, title, addonIcon(), time)
     # xbmc.executebuiltin('Notification(%s, %s)' % (title, message))
 
 def version():
@@ -213,21 +227,23 @@ def version():
     return int(num)
 
 
+def exit():
+    return execute("XBMC.Container.Update(path,replace)")
+
 def refresh():
     return execute('Container.Refresh')
 
-
+def loading():
+    return execute("ActivateWindow(busydialog)")
+    
 def idle():
     return execute('Dialog.Close(busydialog)')
-
 
 def queueItem():
     return execute('Action(Queue)')
 
-
 def openPlaylist():
     return execute('ActivateWindow(VideoPlaylist)')
-
 
 def openSettings(query=None, id=addonInfo('id')):
     try:
@@ -240,8 +256,7 @@ def openSettings(query=None, id=addonInfo('id')):
     except:
         return
     
-def readFile(name):
-    filePath = os.path.join(control.dataPath, name)
+def readFile(filePath):
     if os.path.exists(filePath):
         with open(filePath) as f:
             content = f.read()
@@ -249,10 +264,9 @@ def readFile(name):
             return content
     return False
     
-def writeFile(name, string):
-    filePath = os.path.join(control.dataPath, name)
+def writeFile(filePath, content):
     with open(filePath, 'w') as f:
-        f.write(string)
+        f.write(content)
         f.close()
     if os.path.exists(filePath):
         return True

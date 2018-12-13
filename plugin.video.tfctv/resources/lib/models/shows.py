@@ -89,12 +89,19 @@ class Show(model.Model):
             return self._dbcon.commit()
         return False
 
-    def _remove(mixed):
+    def _remove(self, mixed):
         dbcur = self.getCursor()
         try: 
             dbcur.execute("DELETE FROM EPISODE WHERE id = '%s'" % (content, meta['imdb']))
             return self._dbcon.commit()
         except: 
             return False
+            
+    def getStatistics(self):
+        stats = {}
+        dbcur = self.getCursor()
+        dbcur.execute(logger.logDebug("SELECT COUNT(*) FROM SHOW"))
+        stats['count'] = dbcur.fetchone()
+        return stats
 
 

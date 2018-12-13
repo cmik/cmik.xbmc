@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <strings>
+    <!-- message types -->
     <string id="50001">Message</string>
     <string id="50002">Information</string>
     <string id="50003">Parental Advisory</string>
@@ -9,6 +10,8 @@
     <string id="50007">Login successful</string>
     <string id="50008">Loading</string>
     <string id="50009">Media Error</string>
+    <string id="50010">Success</string>
+    <!-- settings -->
     <string id="50100">General</string>
     <string id="50101">Advanced</string>
     <string id="50102">Menu settings</string>
@@ -54,15 +57,37 @@
     <string id="50142">Account JSON</string>
     <string id="50143">Proxy URL format</string>
     <string id="50144">Proxy check URL</string>
+    <string id="50145">Show welcome message</string>
+    <string id="50146">Show enter credentials</string>
+    <string id="50147">Show personalize</string>
+    <string id="50148">Show update catalog</string>
+    <!-- Menu -->
     <string id="50200">My List</string>
     <string id="50201">By Category</string>
     <string id="50202">My Account</string>
     <string id="50203">Tools</string>
     <string id="50300">Add to my watchlist</string>
     <string id="50301">Remove from my watchlist</string>
+    <string id="50302">Add to library</string>
+    <string id="50400">Enter your Kapamilya ID</string>
+    <string id="50401">Enter your password</string>
+    <string id="50402">Update catalog</string>
     <string id="56001">TFC.tv My Account Information</string>
     <string id="56002">TFC.tv My Subscriptions</string>
     <string id="56003">TFC.tv My Transactions</string>
+    <string id="56004">My info</string>
+    <string id="56005">My subscription</string>
+    <string id="56006">Transactions</string>
+    <string id="56007">Logout</string>
+    <string id="56008">Next >></string>
+    <string id="56009">Reload Catalog Cache</string>
+    <string id="56010">Clean cookies files</string>
+    <string id="56011">[%s] Enter your credentials</string>
+    <string id="56012">[%s] Personalize your settings</string>
+    <string id="56013">[%s] Optimize your catalog cache</string>
+    <string id="56014">&gt; %s &lt;</string>
+    <string id="56015">Skip the setup</string>
+    <string id="56016">Enjoy TFC</string>
     <!-- notifications / messages -->
     <string id="57000">Logging out in progress...</string>
     <string id="57001">Subscription is already expired or the item is not part of your subscription</string>
@@ -80,18 +105,24 @@
     <string id="57013">Retrieving home sections...</string>
     <string id="57014">Retrieving categories, shows and episodes...</string>
     <string id="57015">Cleaning caches...</string>
-    <string id="57016">Thank you for using this non official TFC.tv addon!
-    
-Watch your favorite online Pinoy shows, movies, news and live channels directly from your KODI plateform!
-IMPORTANT: A subscription to TFC.tv website (http://tfc.tv) is required.
+    <string id="57016">Thank you for using this TFC.tv addon!
 
+Watch your favorite online Pinoy shows, movies, news and live channels directly from your KODI plateform!
+
+This addon uses your TFC.tv account to access and display TFC.tv website contents:
+ - Manage your favorite shows and episodes. 
+ - Easy access to the different category contents.
+
+For better experience, a subscription to TFC.tv website (http://tfc.tv) is required to enjoy TFC.tv website catalog.
+ 
 Enjoy!
+
+PS: This add-on is not officially released or supported by TFC.tv. Please report directly to KODI forum or cmik.xbmc Github repository if you have any issues.
     </string>
-    <string id="57017">You're actually not connected</string>
+    <string id="57017">You're actually not connected. You are only able to watch previews.</string>
     <string id="57018">Welcome Kapamilya!</string>
     <string id="57019">Login into TFC.tv...</string>
     <string id="57020">Preparing menu...</string>
-    <string id="57020">Can't play the selected item</string>
     <string id="57021">Please enter your parental code</string>
     <string id="57022">You are not allowed to watch this video</string>
     <string id="57023">Your TFC.tv addon has been updated to version %s.
@@ -109,4 +140,10 @@ Enjoy!
 Please reboot your Kodi system.
     </string>
     <string id="57029">The response is empty</string>
+    <string id="57030">Do you want to open the addon settings?</string>
+    <string id="57031">Please check your Internet connection</string>
+    <string id="57032">Can't play the selected item</string>
+    <string id="57033">Can't add to library - an error occured</string>
+    <string id="57034">Last episode(s) of %s has been added to library</string>
+    <string id="57035">Do you want to load episodes data(this will take some time)?</string>
 </strings>

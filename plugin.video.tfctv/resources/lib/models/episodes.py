@@ -7,6 +7,7 @@
 
 from resources.lib.models import model
 from resources.lib.libraries import control
+from datetime import datetime
 
 logger = control.logger
 
@@ -27,7 +28,8 @@ class Episode(model.Model):
                 'url' : data[7], 
                 'description' : data[8],
                 'shortdescription' : data[9],
-                'dateaired' : data[10],
+                'dateaired' : datetime.strptime(data[10], '%Y-%m-%d').strftime('%b %d, %Y'),
+                'date' : data[10],
                 'year' : data[11],
                 'parentalAdvisory' : data[12],
                 'type' : 'episode'
@@ -89,7 +91,7 @@ class Episode(model.Model):
                     data.get('url'), 
                     data.get('description').replace('\'', '\'\''), 
                     data.get('shortdescription').replace('\'', '\'\''), 
-                    data.get('dateaired'), 
+                    data.get('date'), 
                     data.get('year'), 
                     data.get('parentalAdvisory'))))
             return self._dbcon.commit()
