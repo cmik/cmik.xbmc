@@ -145,5 +145,6 @@ Please reboot your Kodi system.
     <string id="57032">Can't play the selected item</string>
     <string id="57033">Can't add to library - an error occured</string>
     <string id="57034">Last episode(s) of %s has been added to library</string>
-    <string id="57035">Do you want to load episodes data(this will take some time)?</string>
+    <string id="57035">Do you want to load episodes data?</string>
+    <string id="57036">(take a break 'cause this will take some time)</string>
 </strings>

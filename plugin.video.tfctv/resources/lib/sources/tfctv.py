@@ -46,11 +46,19 @@ def playEpisode(url, name, thumbnail):
             elif 'StatusMessage' in episodeDetails and episodeDetails['StatusMessage'] != '':
                 control.showNotification(episodeDetails['StatusMessage'], control.lang(50009))
             url = control.setting('proxyStreamingUrl') % (control.setting('proxyHost'), control.setting('proxyPort'), urllib.quote(episodeDetails['data']['uri'])) if (control.setting('useProxy') == 'true') else episodeDetails['data']['uri']
-            plot = episodeDetails['data']['plot']
-            fanart = episodeDetails['data']['fanart']
             liz = control.item(name, path=url, thumbnailImage=thumbnail, iconImage="DefaultVideo.png")
-            liz.setInfo(type='Video', infoLabels={'Title': name, 'Plot': plot})
-            liz.setProperty('fanart_image', fanart)
+            liz.setInfo(type='video', infoLabels={
+                'title': name, 
+                'sorttitle' : episodeDetails['data']['dateaired'],
+                'tvshowtitle' : episodeDetails['data']['show'],
+                'episode' : episodeDetails['data']['episodenumber'],
+                'tracknumber' : episodeDetails['data']['episodenumber'],
+                'plot' : episodeDetails['data']['plot'],
+                'aired' : episodeDetails['data']['dateaired'],
+                'year' : episodeDetails['data']['year'],
+                'mediatype' : episodeDetails['data']['type'] 
+                })
+            liz.setProperty('fanart_image', episodeDetails['data']['fanart'])
             liz.setProperty('IsPlayable', 'true')
             try: 
                 return control.resolve(thisPlugin, True, liz)
@@ -197,6 +205,7 @@ def getMediaInfoFromWebsite(episodeId):
                         mediaInfo['data'].update(episodeDetails['media'])
                         mediaInfo['data']['preview'] = episodeDetails['mediainfo']['preview']
                         mediaInfo['data']['show'] = show.get('name', episodeData.get('name'))
+                        mediaInfo['data']['show'] = show.get('parentname', episodeData.get('genre', ''))
                         mediaInfo['data']['plot'] = episodeData.get('description')
                         mediaInfo['data']['image'] = episodeData.get('thumbnailUrl')
                         mediaInfo['data']['fanart'] = show.get('fanart', episodeData.get('image'))
@@ -723,6 +732,16 @@ def getShow(showId, parentId=-1, year=''):
         genres = common.parseDOM(html, "a", attrs = { 'class' : 'text-primary genre-deets' })
         genre = '' if len(genres) == 0 else genres[0]
         
+        actors = []
+        casts = common.parseDOM(html, "casts")
+        i = 1
+        for cast in casts:
+            castName = common.stripTags(cast)
+            castUrl = config.websiteUrl + common.parseDOM(cast, "a", ret = "href")[0]
+            castImage = common.parseDOM(cast, "img", ret = "src")[0]
+            actors.append({'name': castName, 'thumbnail': castImage, 'order': i, 'url': castUrl})
+            i+=1
+        
         # Check episode list
         episodes = {}
         episodeList = common.parseDOM(html, "select", attrs = { 'id' : 'show_episode_list' })
@@ -753,6 +772,7 @@ def getShow(showId, parentId=-1, year=''):
             'shortdescription' : common.replaceHTMLCodes(description),
             'year' : year,
             'episodes' : episodes,
+            'casts' : actors,
             'type': 'show'
             }
         showDB.set(data)
@@ -1118,6 +1138,8 @@ def generateShowNFO(info, path):
     nfoString += '<path>%s</path>' % path
     nfoString += '<filenameandpath></filenameandpath>'
     nfoString += '<basepath>%s</basepath>' % path
+    for c in info.get('casts', []):
+        nfoString += '<actor><name>%s</name><order>%d</order><thumb>%s</thumb></actor>' % (c.get('name'), c.get('order'), c.get('thumbnail'))
     
     return u'<?xml version="1.0" encoding="UTF-8" standalone="yes"?> \
 <!-- created on %s - by TFC.tv addon --> \

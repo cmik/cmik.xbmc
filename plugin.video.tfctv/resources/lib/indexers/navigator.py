@@ -263,10 +263,19 @@ class navigator:
         data = { 
             'listArts' : { 'clearlogo' : info.get('logo'), 'fanart' : info.get('fanart'), 'banner' : info.get('banner') }, 
             'listInfos' : { 
-                'video' : { 'plot' : info.get('description'), 'year' : info.get('year') } 
+                'video' : { 
+                    'sorttitle': info.get('name'),
+                    'plot' : info.get('description'), 
+                    'year' : info.get('year'),
+                    'mediatype' : 'tvshow' 
+                    } 
                 },
             'contextMenu' : contextMenu
             }
+            
+        if info.get('cast'):    
+            data['listCasts'] = info.get('cast')
+            
         return data
             
     def formatVideoInfo(self, info, addToList=True, options = {}):
@@ -279,12 +288,14 @@ class navigator:
             'listProperties' : { 'IsPlayable' : 'true' } , 
             'listInfos' : { 
                 'video' : { 
+                    'sorttitle' : info.get('dateaired'), 
                     'tvshowtitle' : info.get('show'), 
                     'episode' : info.get('episodenumber'), 
                     'tracknumber' : info.get('episodenumber'), 
                     'plot' : info.get('description'), 
                     'aired' : info.get('dateaired'), 
-                    'year' : info.get('year') 
+                    'year' : info.get('year'), 
+                    'mediatype' : info.get('type') 
                     } 
                 },
             'contextMenu' : contextMenu
@@ -317,6 +328,8 @@ class navigator:
                     liz.setInfo(listInfoKey, listInfoValue)
             if k == 'listArts':
                 liz.setArt(v)
+            if k == 'listCasts':
+                liz.setCast(v)
             if k == 'contextMenu':
                 menuItems = []
                 for label, action in v.iteritems():

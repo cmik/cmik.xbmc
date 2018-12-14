@@ -107,6 +107,8 @@ showsFile = os.path.join(dataPath, 'shows.db')
 
 episodesFile = os.path.join(dataPath, 'episodes.db')
 
+celebritiesFile = os.path.join(dataPath, 'celebrities.db')
+
 favouritesFile = os.path.join(dataPath, 'favourites.db')
 
 sourcescacheFile = os.path.join(dataPath, 'sources.db')
