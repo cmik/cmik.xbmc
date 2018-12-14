@@ -1076,6 +1076,7 @@ def addToLibrary(id, name, parentId=-1, year=''):
     i = 0
     for e in episodes:
         # first loop create path and nfo
+        show = e.get('showObj')
         if i == 0:
             path = os.path.join(control.showsLibPath, name)
             control.makePath(path)
@@ -1087,7 +1088,6 @@ def addToLibrary(id, name, parentId=-1, year=''):
                 break
                 
         filePath = os.path.join(path, '%s.strm' % e.get('title'))
-        show = e.get('showObj')
 
         try:
             # Episode STRM / NFO files
