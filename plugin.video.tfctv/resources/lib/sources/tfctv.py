@@ -220,17 +220,17 @@ def getMediaInfoFromWebsite(episodeId):
 def reloadCatalogCache():
     logger.logInfo('called function')
     updateEpisodes = False
-    if (control.confirm(control.lang(50402), line1=control.lang(57035))):
+    if (control.confirm(control.lang(57035), line1=control.lang(57035), title=control.lang(50402))):
         updateEpisodes = True
     if updateCatalogCache(updateEpisodes) is True:
-        control.showNotification(control.lang(57003), control.lang(50001))
+        control.showNotification(control.lang(57003), control.lang(50010))
     else:
         control.showNotification(control.lang(57027), control.lang(50004))
     
 def updateCatalogCache(loadEpisodes=False):
     logger.logInfo('called function')
     control.showNotification(control.lang(57015), control.lang(50005))
-    cache.longCache.cacheClean(True)
+    cache.longCache.cacheClean(True) 
     cache.shortCache.cacheClean(True)
     
     # checkElaps = lambda x, y: x = time.time()-x if (time.time()-x) > y else x
@@ -693,7 +693,7 @@ def getShow(showId, parentId=-1, year=''):
     if err.get('error') == False:
     
         res = showDB.get(int(showId))
-        show = res[0] if len(res) == 1 else []
+        show = res[0] if len(res) == 1 else {}
         
         if parentId == -1: parentId = show.get('parentid', parentId)
         if year == '': year = show.get('year', year)
