@@ -13,6 +13,8 @@ logger = control.logger
 class Show(model.Model):
     
     def _getStructure(self, data):
+        logger.logDebug(len(data))
+        logger.logDebug(data)
         if len(data) == 12:
             return {
                 'id' : int(data[0]),

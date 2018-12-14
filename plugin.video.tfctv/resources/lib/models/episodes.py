@@ -8,6 +8,7 @@
 from resources.lib.models import model
 from resources.lib.libraries import control
 from datetime import datetime
+import time
 
 logger = control.logger
 
@@ -15,7 +16,12 @@ class Episode(model.Model):
     
     def _getStructure(self, data):
         logger.logDebug(len(data))
+        logger.logDebug(data)
         if len(data) == 13:
+            try:
+                dateaired = datetime.strptime(data[10], '%Y-%m-%d')
+            except TypeError:
+                dateaired = datetime(*(time.strptime(data[10], '%Y-%m-%d')[0:6]))
             return {
                 'id' : int(data[0]), 
                 'title' : data[1], 
@@ -28,7 +34,7 @@ class Episode(model.Model):
                 'url' : data[7], 
                 'description' : data[8],
                 'shortdescription' : data[9],
-                'dateaired' : datetime.strptime(data[10], '%Y-%m-%d').strftime('%b %d, %Y'),
+                'dateaired' : dateaired.strftime('%b %d, %Y'),
                 'date' : data[10],
                 'year' : data[11],
                 'parentalAdvisory' : data[12],
@@ -97,7 +103,7 @@ class Episode(model.Model):
             return self._dbcon.commit()
         return False
 
-    def _remove(mixed):
+    def _remove(self, mixed):
         dbcur = self.getCursor()
         try: 
             dbcur.execute("DELETE FROM EPISODE WHERE id = '%s'" % (content, meta['imdb']))
@@ -105,4 +111,10 @@ class Episode(model.Model):
         except: 
             return False
 
+    def getStatistics(self):
+        stats = {}
+        dbcur = self.getCursor()
+        dbcur.execute(logger.logDebug("SELECT COUNT(*) FROM EPISODE"))
+        stats['count'] = dbcur.fetchone()
+        return stats
 
