@@ -51,6 +51,7 @@ def playEpisode(url, name, thumbnail):
                 'title': name, 
                 'sorttitle' : episodeDetails['data']['dateaired'],
                 'tvshowtitle' : episodeDetails['data']['show'],
+                'genre' : episodeDetails['data']['parentname'],
                 'episode' : episodeDetails['data']['episodenumber'],
                 'tracknumber' : episodeDetails['data']['episodenumber'],
                 'plot' : episodeDetails['data']['plot'],
@@ -205,7 +206,7 @@ def getMediaInfoFromWebsite(episodeId):
                         mediaInfo['data'].update(episodeDetails['media'])
                         mediaInfo['data']['preview'] = episodeDetails['mediainfo']['preview']
                         mediaInfo['data']['show'] = show.get('name', episodeData.get('name'))
-                        mediaInfo['data']['show'] = show.get('parentname', episodeData.get('genre', ''))
+                        mediaInfo['data']['parentname'] = show.get('parentname', episodeData.get('genre', ''))
                         mediaInfo['data']['plot'] = episodeData.get('description')
                         mediaInfo['data']['image'] = episodeData.get('thumbnailUrl')
                         mediaInfo['data']['fanart'] = show.get('fanart', episodeData.get('image'))
