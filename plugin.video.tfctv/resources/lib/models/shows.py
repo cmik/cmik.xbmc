@@ -33,6 +33,23 @@ class Show(model.Model):
                 }
         return {}
          
+    def _retrieveAll(self):
+        dbcur = self.getCursor()
+        dbcur.execute(logger.logDebug("SELECT ID, \
+            TITLE, \
+            PARENTID, \
+            PARENTNAME, \
+            THUMBNAIL, \
+            IMAGE, \
+            FANART, \
+            BANNER, \
+            URL, \
+            DESCRIPTION, \
+            SHORTDESCRIPTION, \
+            YEAR \
+            FROM SHOW"))
+        return logger.logDebug(dbcur.fetchall())
+         
     def _retrieve(self, mixed):
         dbcur = self.getCursor()
         dbcur.execute(logger.logDebug("SELECT ID, \

@@ -16,7 +16,7 @@
     <extension point="xbmc.service" library="service.py" start="startup"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">TFC Pinoy TV</summary>
-        <description lang="en">Enjoy TFC's Pinoy TV shows, movies, news and live channels! This is a non official TFC.tv addon. A subscription to TFC.tv website (http://tfc.tv) is required to enjoy TFC's catalog.</description>
+        <description lang="en">Enjoy TFC's Pinoy TV shows, movies, news and live channels! This is not an official TFC.tv addon. A subscription to TFC.tv website (http://tfc.tv) is required to enjoy TFC's catalog.</description>
         <disclaimer lang="en">No warranty here</disclaimer>
         <language>en</language>
         <platform>all</platform>
@@ -24,9 +24,16 @@
         <forum>https://forum.kodi.tv/showthread.php?tid=317008</forum>
         <source>https://github.com/cmik/cmik.xbmc</source>
         <news>v1.0.0 (XX/01/2019)
-          [new] Reworked vesion
+          [new] New reworked vesion
+          [new] Added a little wizard installation at first startup
           [new] Added databases favourite/show/episode library for cache and better exeperience
           [new] Added proxy streaming check and alert
+          [new] Allow to export shows to library (needed to added 'library' directory (created in addon profile directory) as video source)
+          [new] Added a service to check exported library updates
+          [new] Can now add show/episode to my List 
+          [new] Can now remove show/episode from my List 
+          [new] Alerts when a media can't be played as some AES encrypted videos
+          [fix] Fixed home sections content
         </news>
         <assets>
             <icon>resources/icon.jpg</icon>

@@ -12,11 +12,13 @@ from resources.lib.libraries import control
 from resources.lib.libraries import cache
 from resources.lib.models import episodes
 from resources.lib.models import shows
+from resources.lib.models import library
 
 common = control.common
 logger = control.logger
 episodeDB = episodes.Episode(control.episodesFile)
 showDB = shows.Show(control.showsFile)
+libraryDB = library.Library(control.libraryFile)
 
 #---------------------- FUNCTIONS ----------------------------------------                  
 
@@ -1088,47 +1090,77 @@ def removeFromMyList(id, name, type):
     else:
         control.showNotification(control.lang(57026))
     
-def addToLibrary(id, name, parentId=-1, year=''):
+def addToLibrary(id, name, parentId=-1, year='', updateOnly=False):
     from resources.lib.indexers import navigator
     status = True
+    updated = False
+    nbUpdated = 0
     logger.logInfo('called function with param (%s, %s, %s, %s)' % (id, name, parentId, year))
     episodes = getEpisodesPerPage(id, parentId, year, page=1, itemsPerPage=8)
     
-    i = 0
-    for e in episodes:
-        # first loop create path and nfo
-        show = e.get('showObj')
-        if i == 0:
-            path = os.path.join(control.showsLibPath, name)
-            control.makePath(path)
-            # Main NFO file
-            try: control.writeFile(logger.logNotice(os.path.join(path, 'tvshow.nfo')), generateShowNFO(show, path).encode('utf-8'))
-            except Exception as e:
-                logger.logError(e)
-                status = False
-                break
-                
-        filePath = os.path.join(path, '%s.strm' % e.get('title'))
-
-        try:
-            # Episode STRM / NFO files
-            control.writeFile(logger.logNotice(os.path.join(path, '%s.nfo' % e.get('title'))), generateEpisodeNFO(e, path, filePath).encode('utf-8'))
-            control.writeFile(logger.logNotice(filePath), navigator.navigator().generateActionUrl(str(e.get('id')), config.PLAY, '%s - %s' % (e.get('show'), e.get('dateaired')), e.get('image')))
-        except Exception as e:
-            logger.logError(e)
+    if len(episodes) > 0:
+    
+        path = os.path.join(control.showsLibPath, name)
+        control.makePath(path)
+        
+        # Show NFO file
+        try: 
+            e = episodes[0]
+            show = e.get('showObj')
+            res = libraryDB.get(show.get('id'))
+            lib = res[0] if len(res) == 1 else {}
+            control.writeFile(logger.logNotice(os.path.join(path, 'tvshow.nfo')), generateShowNFO(show, path).encode('utf-8'))
+        except Exception as err:
+            logger.logError(err)
             status = False
-            break
-        i+=1
-    if status == True: control.showNotification(control.lang(57034) % name, control.lang(50010))
-    else: control.showNotification(control.lang(57033), control.lang(50004))
-    return status
+        
+        if status == True:
+            
+            mostRecentDate = lastDate = lib.get('date', datetime.datetime(1900, 1, 1))
+            lastCheck = lib.get('lastCheck', datetime.datetime(1900, 1, 1))
+            logger.logNotice('last check date : %s' % lastCheck.strftime('%Y-%m-%d %H:%M:%S'))
+            for e in sorted(episodes, key=lambda item: item['date'], reverse=False):
+                filePath = os.path.join(path, '%s.strm' % e.get('title'))
+
+                logger.logNotice('episode date : %s' % e.get('date'))
+                try:
+                    episodeDate = datetime.datetime.strptime(e.get('date'), '%Y-%m-%d')
+                except TypeError:
+                    episodeDate = datetime.datetime(*(time.strptime(e.get('date'), '%Y-%m-%d')[0:6]))
+                
+                if lastDate.date() < episodeDate.date():
+                    updated = True
+                    nbUpdated += 1
+                    if mostRecentDate.date() < episodeDate.date(): mostRecentDate = episodeDate
+                    
+                if not updateOnly or updated:
+                    try:
+                        # Episode STRM / NFO files
+                        control.writeFile(logger.logNotice(os.path.join(path, '%s.nfo' % e.get('title'))), generateEpisodeNFO(e, path, filePath).encode('utf-8'))
+                        control.writeFile(logger.logNotice(filePath), navigator.navigator().generateActionUrl(str(e.get('id')), config.PLAY, '%s - %s' % (e.get('show'), e.get('dateaired')), e.get('image')))
+                    except Exception as err:
+                        logger.logError(err)
+                        status = False
+                        break
+            
+    if status == True: 
+        if not updateOnly: control.showNotification(control.lang(57034) % name, control.lang(50010))
+        libraryDB.set({'id' : int(show.get('id')), 
+            'name' : show.get('name'), 
+            'parentid' : int(show.get('parentid')),
+            'year' : show.get('year'),
+            'date' : mostRecentDate.strftime('%Y-%m-%d')
+            })
+    else: 
+        if not updateOnly: control.showNotification(control.lang(57033), control.lang(50004))
+    return {'status': status, 'updated': updated, 'nb': nbUpdated}
 
 def generateShowNFO(info, path):
     logger.logInfo('called function')
     nfoString = ''
     nfoString += '<title>%s</title>' % info.get('name')
     nfoString += '<sorttitle>%s</sorttitle>' % info.get('name')
-    nfoString += '<episode>%s</episode>' % len(info.get('episodes'))
+    nfoString += '<episode>%s</episode>' % max([e.get('episodenumber') for k, e in info.get('episodes').iteritems()])
     nfoString += '<plot>%s</plot>' % info.get('description')
     nfoString += '<plot>%s</plot>' % info.get('description')
     nfoString += '<aired>%s</aired>' % info.get('dateaired')
@@ -1170,6 +1202,18 @@ def generateEpisodeNFO(info, path, filePath):
 <episodedetails> \
     %s \
 </episodedetails>' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), nfoString)
+
+def checkLibraryUpdates():
+    items = libraryDB.getAll()
+    for show in items:
+        logger.logNotice('check for update for show %s' % show.get('name'))
+        result = addToLibrary(show.get('id'), show.get('name'), show.get('parentid'), show.get('year'), updateOnly=True)
+        if result.get('updated') == True:
+            logger.logNotice('Updated %s episodes' % str(result.get('nb')))
+            control.showNotification(control.lang(57037) % (str(result.get('nb')), show.get('name')), control.lang(50011))
+        else:
+            logger.logNotice('No updates for show %s' % show.get('name'))
+    return True
     
 def enterCredentials():
     email = control.inputText(control.lang(50400), control.setting('emailAddress'))
@@ -1676,12 +1720,13 @@ def callJsonApi(path, params={}, headers=[('X-Requested-With', 'XMLHttpRequest')
     return data
     
 def checkProxy():
-    url = control.setting('proxyCheckUrl') % (control.setting('proxyHost'), control.setting('proxyPort'))
-    response = callServiceApi(url, base_url = '', useCache=False, returnMessage=False)
-    logger.logDebug(response)    
-    if response.get('status', '') != 200:
-        control.alert(control.lang(57028), title=control.lang(50004))
-        return False
+    if (control.setting('useProxy') == 'true'):
+        url = control.setting('proxyCheckUrl') % (control.setting('proxyHost'), control.setting('proxyPort'))
+        response = callServiceApi(url, base_url = '', useCache=False, returnMessage=False)
+        logger.logDebug(response)    
+        if response.get('status', '') != 200:
+            control.alert(control.lang(57028), title=control.lang(50004))
+            return False
     return True
             
 # This function is a workaround to fix an issue on cookies conflict between live stream and shows episodes

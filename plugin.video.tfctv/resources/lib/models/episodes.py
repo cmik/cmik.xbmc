@@ -42,6 +42,24 @@ class Episode(model.Model):
                 }
         return {}
          
+    def _retrieveAll(self):
+        dbcur = self.getCursor()
+        dbcur.execute(logger.logDebug("SELECT ID, \
+            TITLE, \
+            SHOWID, \
+            SHOWNAME, \
+            THUMBNAIL, \
+            FANART, \
+            EPISODENUMBER, \
+            URL, \
+            DESCRIPTION, \
+            SHORTDESCRIPTION, \
+            DATEAIRED, \
+            YEAR, \
+            PARENTALADVISORY \
+            FROM EPISODE"))
+        return logger.logDebug(dbcur.fetchall())
+         
     def _retrieve(self, mixed):
         dbcur = self.getCursor()
         dbcur.execute(logger.logDebug("SELECT ID, \
@@ -60,7 +78,6 @@ class Episode(model.Model):
             FROM EPISODE \
             WHERE ID IN (%s)" % ','.join(str(v) for v in mixed)))
         return logger.logDebug(dbcur.fetchall())
-        # return []
         
     def _save(self, mixed):
         ids = []

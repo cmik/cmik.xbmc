@@ -109,9 +109,12 @@ elif mode == config.ENDSETUP:
 elif mode == config.TOOLS:
     from resources.lib.indexers import navigator
     navigator.navigator().showTools()
-elif mode == config.RELOADLIBRARY:
+elif mode == config.RELOADCATALOG:
     from resources.lib.sources import tfctv
     tfctv.reloadCatalogCache()
+elif mode == config.CHECKLIBRARYUPDATES:
+    from resources.lib.sources import tfctv
+    tfctv.checkLibraryUpdates()
 elif mode == config.CLEANCOOKIES:
     from resources.lib.sources import tfctv
     tfctv.cleanCookies()

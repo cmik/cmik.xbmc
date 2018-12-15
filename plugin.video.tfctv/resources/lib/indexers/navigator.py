@@ -209,7 +209,8 @@ class navigator:
         control.showMessage(message, control.lang(56003))
             
     def showTools(self):
-        self.addDirectoryItem(control.lang(56009), config.uri.get('base'), config.RELOADLIBRARY, control.addonFolderIcon(control.lang(56009)))
+        self.addDirectoryItem(control.lang(56009), config.uri.get('base'), config.RELOADCATALOG, control.addonFolderIcon(control.lang(56009)))
+        self.addDirectoryItem(control.lang(56017), config.uri.get('base'), config.CHECKLIBRARYUPDATES, control.addonFolderIcon(control.lang(56017)))
         self.addDirectoryItem(control.lang(56010), config.uri.get('base'), config.CLEANCOOKIES, control.addonFolderIcon(control.lang(56010)))
         self.endDirectory()
             
@@ -257,8 +258,10 @@ class navigator:
             contextMenu.update(add)
         else:
             contextMenu.update(remove)
-        addToLibrary = { control.lang(50302) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info.get('id')), config.ADDTOLIBRARY, info.get('name'), query='parentid=%s&year=%s&type=show' % (str(info.get('parentid')), info.get('year'))) }
-        contextMenu.update(addToLibrary)
+        
+        if control.setting('exportToLibrary') == 'true':
+            addToLibrary = { control.lang(50302) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info.get('id')), config.ADDTOLIBRARY, info.get('name'), query='parentid=%s&year=%s&type=show' % (str(info.get('parentid')), info.get('year'))) }
+            contextMenu.update(addToLibrary)
         
         data = { 
             'listArts' : { 'clearlogo' : info.get('logo'), 'fanart' : info.get('fanart'), 'banner' : info.get('banner') }, 

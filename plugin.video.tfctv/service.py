@@ -6,7 +6,7 @@
     Copyright (C) 2018 cmik
 '''
 
-import SocketServer,re,shutil,threading,urllib,urllib2,ssl,cookielib
+import SocketServer,re,shutil,threading,urllib,urllib2,ssl,cookielib,time
 import xbmc,xbmcaddon
 
 from SimpleHTTPServer import SimpleHTTPRequestHandler
@@ -85,6 +85,20 @@ class ProxyHandler(SimpleHTTPRequestHandler):
             qparam = dict(parse_qsl(query.replace('?','')))
         return qparam 
         
+
+class LibraryChecker():
+    _status = True
+    _scheduled = 60 * int(control.setting('librayCheckSchedule'))
+        
+    def checkLibraryUpdates(self):
+        while self._status:
+            builtin = 'RunPlugin(plugin://plugin.video.tfctv/?mode=%s)'
+            xbmc.executebuiltin(builtin % (config.CHECKLIBRARYUPDATES))
+            time.sleep(self._scheduled)
+            
+    def shutdown(self):
+        self._status = False
+        
 if __name__ == "__main__":
     httpPort = int(control.setting('proxyPort'))
     server = SocketServer.TCPServer(('', httpPort), ProxyHandler)
@@ -93,12 +107,26 @@ if __name__ == "__main__":
     server_thread.start()
     xbmc.log('[%s] Service: starting HTTP proxy server on port %s' % (control.addonInfo('name'), httpPort), level=xbmc.LOGNOTICE)
     
+    libActive = True if control.setting('libraryAutoUpdate') == 'true' else False
+    
+    if libActive == True:
+        libChecker = LibraryChecker()
+        libSchedTask = threading.Thread(target=libChecker.checkLibraryUpdates)
+        libSchedTask.start()
+        xbmc.log('[%s] Service: starting TFC.tv library checker' % control.addonInfo('name'), level=xbmc.LOGNOTICE)
+    
     monitor = xbmc.Monitor()
 
-    # XBMC loop
-    while not monitor.waitForAbort(10):
-        pass
+    while not monitor.abortRequested():
+        # Sleep/wait for abort for 10 seconds
+        if monitor.waitForAbort(10):
+            # Abort was requested while waiting. We should exit
+            break
 
     server.shutdown()
     server_thread.join()
     xbmc.log('[%s] - Service: stopping HTTP proxy server on port %s' % (control.addonInfo('name'), httpPort), level=xbmc.LOGNOTICE)
+    if libActive == True: 
+        libChecker.shutdown()
+        libSchedTask.join()
+        xbmc.log('[%s] - Service: stopping TFC.tv library checker' % control.addonInfo('name'), level=xbmc.LOGNOTICE)

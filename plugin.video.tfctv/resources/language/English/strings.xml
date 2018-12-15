@@ -11,6 +11,7 @@
     <string id="50008">Loading</string>
     <string id="50009">Media Error</string>
     <string id="50010">Success</string>
+    <string id="50011">Library</string>
     <!-- settings -->
     <string id="50100">General</string>
     <string id="50101">Advanced</string>
@@ -61,6 +62,13 @@
     <string id="50146">Show enter credentials</string>
     <string id="50147">Show personalize</string>
     <string id="50148">Show update catalog</string>
+    <string id="50149">Wizard installation</string>
+    <string id="50150">Export to Library</string>
+    <string id="50151">Enable context menu</string>
+    <string id="50152">Automatic update</string>
+    <string id="50153">Check schedule (every x minutes)</string>
+    <string id="50154">Last nb episodes to export</string>
+    <string id="50199">Other settings</string>
     <!-- Menu -->
     <string id="50200">My List</string>
     <string id="50201">By Category</string>
@@ -88,6 +96,7 @@
     <string id="56014">&gt; %s &lt;</string>
     <string id="56015">Skip the setup</string>
     <string id="56016">Enjoy TFC</string>
+    <string id="56017">Check library updates</string>
     <!-- notifications / messages -->
     <string id="57000">Logging out in progress...</string>
     <string id="57001">Subscription is already expired or the item is not part of your subscription</string>
@@ -110,8 +119,14 @@
 Watch your favorite online Pinoy shows, movies, news and live channels directly from your KODI plateform!
 
 This addon uses your TFC.tv account to access and display TFC.tv website contents:
- - Manage your favorite shows and episodes. 
- - Easy access to the different category contents.
+ - Easily access to the different shows categories
+ - Manage your favorite shows and episodes through your watchlist.
+ - Have a overview of your TFC.tv account
+ 
+With the TFC.tv addon v1.0:
+ - Have a better experience with new icons and fanarts
+ - Add into/remove from your TFC.tv watchlist
+ - Export show's expisodes to your Kodi library (still needs TFC.tv addon for playback)
 
 For better experience, a subscription to TFC.tv website (http://tfc.tv) is required to enjoy TFC.tv website catalog.
  
@@ -147,4 +162,5 @@ Please reboot your Kodi system.
     <string id="57034">Last episode(s) of %s has been added to library</string>
     <string id="57035">Do you want to load episodes data?</string>
     <string id="57036">(take a break 'cause this will take some time)</string>
+    <string id="57037">%s episode(s) of %s added to library</string>
 </strings>
