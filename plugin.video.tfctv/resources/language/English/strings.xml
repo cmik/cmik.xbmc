@@ -66,7 +66,7 @@
     <string id="50150">Export to Library</string>
     <string id="50151">Enable context menu</string>
     <string id="50152">Automatic update</string>
-    <string id="50153">Check schedule (every x minutes)</string>
+    <string id="50153">Check schedule (minutes) (reboot required)</string>
     <string id="50154">Last nb episodes to export</string>
     <string id="50199">Other settings</string>
     <!-- Menu -->
@@ -163,4 +163,5 @@ Please reboot your Kodi system.
     <string id="57035">Do you want to load episodes data?</string>
     <string id="57036">(take a break 'cause this will take some time)</string>
     <string id="57037">%s episode(s) of %s added to library</string>
+    <string id="57038">This type of media is not supported</string>
 </strings>

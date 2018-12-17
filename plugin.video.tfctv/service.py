@@ -91,10 +91,16 @@ class LibraryChecker():
     _scheduled = 60 * int(control.setting('librayCheckSchedule'))
         
     def checkLibraryUpdates(self):
+        first = True
+        start = time.time()
         while self._status:
-            builtin = 'RunPlugin(plugin://plugin.video.tfctv/?mode=%s)'
-            xbmc.executebuiltin(builtin % (config.CHECKLIBRARYUPDATES))
-            time.sleep(self._scheduled)
+            if ((time.time()-start) > int(self._scheduled)) or first:
+                first = False
+                start = time.time()
+                builtin = 'RunPlugin(plugin://plugin.video.tfctv/?mode=%s)'
+                xbmc.executebuiltin(builtin % (config.CHECKLIBRARYUPDATES))
+                time.sleep(10)
+            
             
     def shutdown(self):
         self._status = False

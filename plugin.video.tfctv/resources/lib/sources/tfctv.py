@@ -47,7 +47,7 @@ def playEpisode(url, name, thumbnail):
                 control.infoDialog(control.lang(57025), control.lang(50002), time=5000)
             elif 'StatusMessage' in episodeDetails and episodeDetails['StatusMessage'] != '':
                 control.showNotification(episodeDetails['StatusMessage'], control.lang(50009))
-            url = control.setting('proxyStreamingUrl') % (control.setting('proxyHost'), control.setting('proxyPort'), urllib.quote(episodeDetails['data']['uri'])) if (control.setting('useProxy') == 'true') else episodeDetails['data']['uri']
+            url = control.setting('proxyStreamingUrl') % (control.setting('proxyHost'), control.setting('proxyPort'), urllib.quote(episodeDetails['data']['uri'])) if not episodeDetails.get('useDash', False) and (control.setting('useProxy') == 'true') else episodeDetails['data']['uri']
             liz = control.item(name, path=url, thumbnailImage=thumbnail, iconImage="DefaultVideo.png")
             liz.setInfo(type='video', infoLabels={
                 'title': name, 
@@ -61,6 +61,12 @@ def playEpisode(url, name, thumbnail):
                 'year' : episodeDetails['data']['year'],
                 'mediatype' : episodeDetails['data']['type'] 
                 })
+            if episodeDetails.get('useDash', False):
+                liz.setProperty('inputstreamaddon','inputstream.adaptive')
+                liz.setProperty('inputstream.adaptive.manifest_type','mpd')
+                liz.setProperty('inputstream.adaptive.stream_headers', episodeDetails['dash']['headers'])
+                liz.setProperty('inputstream.adaptive.license_type', episodeDetails['dash']['type'])
+                liz.setProperty('inputstream.adaptive.license_key', episodeDetails['dash']['key'])
             liz.setProperty('fanart_image', episodeDetails['data']['fanart'])
             liz.setProperty('IsPlayable', 'true')
             try: 
@@ -174,9 +180,28 @@ def getMediaInfoFromWebsite(episodeId):
                     if control.setting('streamServerModification') == 'true' and control.setting('streamServer') != '':
                         episodeDetails['media']['uri'] = episodeDetails['media']['uri'].replace('https://o2-i.', control.setting('streamServer'))                
                     
+                    # check if amssabscbn.akamaized.net to use inputstream.adaptive
                     if 'amssabscbn.akamaized.net' in episodeDetails['media']['uri']:
-                        mediaInfo['StatusMessage'] = control.lang(57032)
+                        mediaInfo['StatusMessage'] = control.lang(57038)
                         mediaInfo['errorCode'] = 5
+                        mediaInfo['useDash'] = True
+                        if 'com.widevine.alpha' in episodeDetails['media']['keys']:
+                            mediaInfo['dash'] = {
+                                'type': 'com.widevine.alpha',
+                                'headers': episodeDetails['media']['keys']['com.widevine.alpha']['httpRequestHeaders']['Authorization'],
+                                'key': episodeDetails['media']['keys']['com.widevine.alpha']['serverURL']
+                                }
+                        elif 'com.microsoft.playready' in episodeDetails['media']['keys']:
+                            mediaInfo['dash'] = {
+                                'type': 'com.microsoft.playready',
+                                'headers': episodeDetails['media']['keys']['com.microsoft.playready']['httpRequestHeaders']['Authorization'],
+                                'key': episodeDetails['media']['keys']['com.microsoft.playready']['serverURL']
+                                }
+                        # elif 'com.apple.fps.1_0' in episodeDetails['media']['keys']:
+                            # mediaInfo['dash'] = {
+                                # 'header': episodeDetails['media']['keys']['com.widevine.alpha']['httpRequestHeaders'],
+                                # 'key': episodeDetails['media']['keys']['com.widevine.alpha']['httpRequestHeaders']
+                                # }
                     else: 
                         # choose best stream quality
                         if (control.setting('chooseBestStream') == 'true'):
@@ -202,30 +227,30 @@ def getMediaInfoFromWebsite(episodeId):
                                 mediaInfo['StatusMessage'] = control.lang(57032)
                                 mediaInfo['errorCode'] = 9
                         
-                        res = showDB.get(sid)
-                        show = res[0] if len(res) == 1 else {}
+                    res = showDB.get(sid)
+                    show = res[0] if len(res) == 1 else {}
+                    
+                    mediaInfo['data'].update(episodeDetails['media'])
+                    mediaInfo['data']['preview'] = episodeDetails['mediainfo']['preview']
+                    mediaInfo['data']['show'] = show.get('name', episodeData.get('name'))
+                    mediaInfo['data']['parentname'] = show.get('parentname', episodeData.get('genre', ''))
+                    mediaInfo['data']['plot'] = episodeData.get('description')
+                    mediaInfo['data']['image'] = episodeData.get('thumbnailUrl')
+                    mediaInfo['data']['fanart'] = show.get('fanart', episodeData.get('image'))
+                    mediaInfo['data']['type'] = episodeData.get('@type').lower()
+                    try:
+                        datePublished = datetime.datetime.strptime(episodeData.get('datePublished'), '%Y-%m-%d')
+                    except TypeError:
+                        datePublished = datetime.datetime(*(time.strptime(episodeData.get('datePublished'), '%Y-%m-%d')[0:6]))
+                    mediaInfo['data']['dateaired'] = datePublished.strftime('%b %d, %Y')
+                    mediaInfo['data']['date'] = datePublished.strftime('%Y-%m-%d')
+                    mediaInfo['data']['year'] = datePublished.strftime('%Y')
+                    mediaInfo['data']['episodenumber'] = 1 if type == 'movie' else episodeData.get('episodeNumber')
                         
-                        mediaInfo['data'].update(episodeDetails['media'])
-                        mediaInfo['data']['preview'] = episodeDetails['mediainfo']['preview']
-                        mediaInfo['data']['show'] = show.get('name', episodeData.get('name'))
-                        mediaInfo['data']['parentname'] = show.get('parentname', episodeData.get('genre', ''))
-                        mediaInfo['data']['plot'] = episodeData.get('description')
-                        mediaInfo['data']['image'] = episodeData.get('thumbnailUrl')
-                        mediaInfo['data']['fanart'] = show.get('fanart', episodeData.get('image'))
-                        mediaInfo['data']['type'] = episodeData.get('@type').lower()
-                        try:
-                            datePublished = datetime.datetime.strptime(episodeData.get('datePublished'), '%Y-%m-%d')
-                        except TypeError:
-                            datePublished = datetime.datetime(*(time.strptime(episodeData.get('datePublished'), '%Y-%m-%d')[0:6]))
-                        mediaInfo['data']['dateaired'] = datePublished.strftime('%b %d, %Y')
-                        mediaInfo['data']['date'] = datePublished.strftime('%Y-%m-%d')
-                        mediaInfo['data']['year'] = datePublished.strftime('%Y')
-                        mediaInfo['data']['episodenumber'] = 1 if type == 'movie' else episodeData.get('episodeNumber')
-                            
-                    logger.logDebug(mediaInfo)
-                        
-                    if 'StatusMessage' in episodeDetails and episodeDetails['StatusMessage'] != '' and episodeDetails['StatusMessage'] != 'OK':
-                        mediaInfo['StatusMessage'] = episodeDetails['StatusMessage']
+                logger.logDebug(mediaInfo)
+                    
+                if 'StatusMessage' in episodeDetails and episodeDetails['StatusMessage'] != '' and episodeDetails['StatusMessage'] != 'OK':
+                    mediaInfo['StatusMessage'] = episodeDetails['StatusMessage']
                 
     return mediaInfo
         
@@ -263,7 +288,7 @@ def updateCatalogCache(loadEpisodes=False):
         nbCat = len(categories)
         i = 0
     except Exception as e:
-        logger.logNotice('Can\'t update the catalog : %s' % (str(e)))
+        logger.logError('Can\'t update the catalog : %s' % (str(e)))
         return False
         
     for cat in categories:
@@ -272,7 +297,7 @@ def updateCatalogCache(loadEpisodes=False):
             subCategories = getSubCategories(cat['id'])
             nbSubCat = len(subCategories)
         except Exception as ce:
-            logger.logNotice('Can\'t update category %s : %s' % (cat['id'], str(ce)))
+            logger.logError('Can\'t update category %s : %s' % (cat['id'], str(ce)))
             continue
         j = 0
         for sub in subCategories:
@@ -281,7 +306,7 @@ def updateCatalogCache(loadEpisodes=False):
                 shows = getShows(sub['id'])
                 nbShow = len(shows)
             except Exception as sce: 
-                logger.logNotice('Can\'t update subcategory %s : %s' % (sub['id'], str(sce)))
+                logger.logError('Can\'t update subcategory %s : %s' % (sub['id'], str(sce)))
                 j+=1
                 continue
             k = 0
@@ -290,7 +315,7 @@ def updateCatalogCache(loadEpisodes=False):
                     if loadEpisodes: episodes = getEpisodesPerPage(s['id'], sub['id'], s['year'], 1, 999)
                     else: show = getShow(s['id'], sub['id'], s['year'])
                 except Exception as se: 
-                    logger.logNotice('Can\'t update show %s : %s' % (s['id'], str(se)))
+                    logger.logError('Can\'t update show %s : %s' % (s['id'], str(se)))
                     k+=1
                     continue
                 k+=1
@@ -1091,11 +1116,11 @@ def removeFromMyList(id, name, type):
         control.showNotification(control.lang(57026))
     
 def addToLibrary(id, name, parentId=-1, year='', updateOnly=False):
+    logger.logInfo('called function with param (%s, %s, %s, %s)' % (id, name, parentId, year))
     from resources.lib.indexers import navigator
     status = True
     updated = False
     nbUpdated = 0
-    logger.logInfo('called function with param (%s, %s, %s, %s)' % (id, name, parentId, year))
     episodes = getEpisodesPerPage(id, parentId, year, page=1, itemsPerPage=8)
     
     if len(episodes) > 0:
@@ -1142,6 +1167,8 @@ def addToLibrary(id, name, parentId=-1, year='', updateOnly=False):
                         logger.logError(err)
                         status = False
                         break
+    else: 
+        status = False
             
     if status == True: 
         if not updateOnly: control.showNotification(control.lang(57034) % name, control.lang(50010))
@@ -1204,6 +1231,7 @@ def generateEpisodeNFO(info, path, filePath):
 </episodedetails>' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), nfoString)
 
 def checkLibraryUpdates():
+    logger.logInfo('called function')
     items = libraryDB.getAll()
     for show in items:
         logger.logNotice('check for update for show %s' % show.get('name'))
@@ -1216,6 +1244,7 @@ def checkLibraryUpdates():
     return True
     
 def enterCredentials():
+    logger.logInfo('called function')
     email = control.inputText(control.lang(50400), control.setting('emailAddress'))
     password = ''
     i = 1
