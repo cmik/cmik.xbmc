@@ -257,7 +257,7 @@ def getMediaInfoFromWebsite(episodeId):
 def reloadCatalogCache():
     logger.logInfo('called function')
     updateEpisodes = False
-    if (control.confirm(control.lang(57035), line1=control.lang(57035), title=control.lang(50402))):
+    if (control.confirm(control.lang(57035), line1=control.lang(57036), title=control.lang(50402))):
         updateEpisodes = True
     if updateCatalogCache(updateEpisodes) is True:
         control.showNotification(control.lang(57003), control.lang(50010))
@@ -574,7 +574,7 @@ def removeDuplicates(list):
     return newList
     
 def extractWebsiteSectionShowData(url, html):
-    logger.logInfo('called function')
+    logger.logInfo('called function with param (%s, %s)' % (url, html))
     
     showId = re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1)
     filter = 'port-cover-thumb-title' if 'port-cover-thumb-title' in html else 'show-cover-thumb-title-mobile'
@@ -602,14 +602,14 @@ def extractWebsiteSectionShowData(url, html):
             }
 
 def extractWebsiteSectionEpisodeData(url, html):
-    logger.logInfo('called function')
+    logger.logInfo('called function with param (%s, %s)' % (url, html))
     episodeId = re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1)
     res = episodeDB.get(episodeId)
     if len(res) == 1:
         return res[0]
     else:
         showName = common.replaceHTMLCodes(common.parseDOM(html, "h3", attrs = { 'class' : 'show-cover-thumb-title-mobile' })[0])
-        image = common.parseDOM(html, "div", attrs = { 'class' : 'show-cover' }, ret = 'data-src')[0]
+        image = common.parseDOM(html, "div", attrs = { 'class' : 'show-cover lazy' }, ret = 'data-src')[0]
         dateAired = common.parseDOM(html, "h4", attrs = { 'class' : 'show-cover-thumb-aired-mobile' })
         
         year = ''
@@ -732,6 +732,14 @@ def getShow(showId, parentId=-1, year=''):
         res = showDB.get(int(showId))
         show = res[0] if len(res) == 1 else {}
         
+        if year == '':
+            showData = json.loads(re.compile('var ldj = (\{.+\})', re.IGNORECASE).search(html).group(1))
+            try:
+                datePublished = datetime.datetime.strptime(showData.get('datePublished'), '%Y-%m-%d')
+            except TypeError:
+                datePublished = datetime.datetime(*(time.strptime(showData.get('datePublished'), '%Y-%m-%d')[0:6]))
+            year = datePublished.strftime('%Y')
+
         if parentId == -1: parentId = show.get('parentid', parentId)
         if year == '': year = show.get('year', year)
         
