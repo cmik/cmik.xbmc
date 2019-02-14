@@ -9,6 +9,9 @@
     Can now remove show/episode from my List 
     Alerts when a media can't be played as some AES encrypted videos
     Fixed home sections content
+0.0.83
+    Fixed login error (again after TFC.tv rollback on their changes)
+    Fixed error when displaying Latest Show Episodes section
 0.0.82
     Fixed login error
 0.0.81
