@@ -609,7 +609,7 @@ def extractWebsiteSectionShowData(url, html):
 def extractWebsiteSectionEpisodeData(url, html):
     episodeId = re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1)
     showName = common.replaceHTMLCodes(common.parseDOM(html, "h3", attrs = { 'class' : 'show-cover-thumb-title-mobile' })[0])
-    image = common.parseDOM(html, "div", attrs = { 'class' : 'show-cover' }, ret = 'data-src')[0]
+    image = common.parseDOM(html, "div", attrs = { 'class' : 'show-cover lazy' }, ret = 'data-src')[0]
     dateAired = common.parseDOM(html, "h4", attrs = { 'class' : 'show-cover-thumb-aired-mobile' })
     
     year = ''
@@ -1301,7 +1301,7 @@ def loginToWebsite(quiet=False):
                         base_url = gigyaSocializeUrl,
                         useCache = False
                         )
-                    UUID = re.compile('UUID=([a-zA-Z0-9.]+)\';').search(SSOGateway).group(1)
+                    UUID = re.compile('UUID=([a-zA-Z0-9.]+)[\'|"];').search(SSOGateway).group(1)
                     
                     # gltAPIToken = urllib.urlencode({ 'glt_' + apikey : loginToken + '|UUID=' + UUID })
                     cookieJar.set_cookie(cookielib.Cookie(version=0, name='glt_' + apikey, value=loginToken + '|UUID=' + UUID, port=None, port_specified=False, domain='.tfc.tv', domain_specified=False, domain_initial_dot=False, path='/', path_specified=True, secure=False, expires=None, discard=True, comment=None, comment_url=None, rest={'HttpOnly': None}, rfc2109=False))
