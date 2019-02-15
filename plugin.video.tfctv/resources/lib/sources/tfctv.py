@@ -935,7 +935,8 @@ def getEpisodesPerPage(showId, parentId, year, page=1, itemsPerPage=8):
                                 'year' : year,
                                 'parentalAdvisory' : '',
                                 'showObj' : showDetails,
-                                'type' : showDetails.get('type', 'episode')
+                                'ltype' : showDetails.get('ltype'),
+                                'type' : 'episode'
                                 }
                             episodeDB.set(e)
                             data.append(e)
