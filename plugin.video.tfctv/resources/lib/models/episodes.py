@@ -17,7 +17,7 @@ class Episode(model.Model):
     def _getStructure(self, data):
         logger.logDebug(len(data))
         logger.logDebug(data)
-        if len(data) == 13:
+        if len(data) == 14:
             try:
                 dateaired = datetime.strptime(data[10], '%Y-%m-%d')
             except TypeError:
@@ -38,6 +38,7 @@ class Episode(model.Model):
                 'date' : data[10],
                 'year' : data[11],
                 'parentalAdvisory' : data[12],
+                'ltype' : data[13],
                 'type' : 'episode'
                 }
         return {}
@@ -56,7 +57,8 @@ class Episode(model.Model):
             SHORTDESCRIPTION, \
             DATEAIRED, \
             YEAR, \
-            PARENTALADVISORY \
+            PARENTALADVISORY, \
+            TYPE \
             FROM EPISODE"))
         return logger.logDebug(dbcur.fetchall())
          
@@ -74,7 +76,8 @@ class Episode(model.Model):
             SHORTDESCRIPTION, \
             DATEAIRED, \
             YEAR, \
-            PARENTALADVISORY \
+            PARENTALADVISORY, \
+            TYPE \
             FROM EPISODE \
             WHERE ID IN (%s)" % ','.join(str(v) for v in mixed)))
         return logger.logDebug(dbcur.fetchall())
@@ -100,10 +103,11 @@ class Episode(model.Model):
                 SHORTDESCRIPTION TEXT, \
                 DATEAIRED TEXT, \
                 YEAR TEXT, \
-                PARENTALADVISORY TEXT)"))
+                PARENTALADVISORY TEXT, \
+                TYPE TEXT)"))
             dbcur.execute(logger.logDebug("DELETE FROM EPISODE WHERE ID in (%s)" % ','.join(ids)))
             for data in mixed:
-                dbcur.execute(logger.logDebug("INSERT INTO EPISODE VALUES (%d, '%s', %d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (
+                dbcur.execute(logger.logDebug("INSERT INTO EPISODE VALUES (%d, '%s', %d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (
                     data.get('id'), 
                     data.get('title').replace('\'', '\'\''), 
                     data.get('parentid'), 
@@ -116,14 +120,29 @@ class Episode(model.Model):
                     data.get('shortdescription').replace('\'', '\'\''), 
                     data.get('date'), 
                     data.get('year'), 
-                    data.get('parentalAdvisory'))))
+                    data.get('parentalAdvisory'), 
+                    data.get('ltype'))))
             return self._dbcon.commit()
         return False
 
     def _remove(self, mixed):
+        ids = []
+        logger.logDebug(mixed)
+        for data in mixed:
+            if 'id' in data:
+                ids.append(str(data.get('id')))
+        if len(ids) > 0:
+            dbcur = self.getCursor()
+            try: 
+                dbcur.execute(logger.logDebug("DELETE FROM EPISODE WHERE ID in (%s)" % ','.join(ids)))
+                return self._dbcon.commit()
+            except: 
+                return False
+
+    def _drop(self):
         dbcur = self.getCursor()
         try: 
-            dbcur.execute("DELETE FROM EPISODE WHERE id = '%s'" % (content, meta['imdb']))
+            dbcur.execute(logger.logDebug("DROP TABLE EPISODE"))
             return self._dbcon.commit()
         except: 
             return False

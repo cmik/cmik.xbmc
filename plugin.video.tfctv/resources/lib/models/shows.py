@@ -15,7 +15,7 @@ class Show(model.Model):
     def _getStructure(self, data):
         logger.logDebug(len(data))
         logger.logDebug(data)
-        if len(data) == 12:
+        if len(data) == 13:
             return {
                 'id' : int(data[0]),
                 'name' : data[1],
@@ -29,6 +29,7 @@ class Show(model.Model):
                 'description' : data[9],
                 'shortdescription' : data[10],
                 'year' : data[11],
+                'ltype' : data[12],
                 'type' : 'show'
                 }
         return {}
@@ -46,7 +47,8 @@ class Show(model.Model):
             URL, \
             DESCRIPTION, \
             SHORTDESCRIPTION, \
-            YEAR \
+            YEAR, \
+            TYPE \
             FROM SHOW"))
         return logger.logDebug(dbcur.fetchall())
          
@@ -63,7 +65,8 @@ class Show(model.Model):
             URL, \
             DESCRIPTION, \
             SHORTDESCRIPTION, \
-            YEAR \
+            YEAR, \
+            TYPE \
             FROM SHOW \
             WHERE ID IN (%s)" % ','.join(str(v) for v in mixed)))
         return logger.logDebug(dbcur.fetchall())
@@ -89,10 +92,11 @@ class Show(model.Model):
                 URL TEXT, \
                 DESCRIPTION TEXT, \
                 SHORTDESCRIPTION TEXT, \
-                YEAR TEXT)"))
+                YEAR TEXT, \
+                TYPE TEXT)"))
             dbcur.execute(logger.logDebug("DELETE FROM SHOW WHERE ID in (%s)" % ','.join(ids)))
             for data in mixed:
-                dbcur.execute(logger.logDebug("INSERT INTO SHOW VALUES (%d, '%s', %d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (
+                dbcur.execute(logger.logDebug("INSERT INTO SHOW VALUES (%d, '%s', %d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (
                     data.get('id'), 
                     data.get('name').replace('\'', '\'\''), 
                     data.get('parentid'), 
@@ -104,14 +108,29 @@ class Show(model.Model):
                     data.get('url'), 
                     data.get('description').replace('\'', '\'\''), 
                     data.get('shortdescription').replace('\'', '\'\''), 
-                    data.get('year'))))
+                    data.get('year'), 
+                    data.get('ltype'))))
             return self._dbcon.commit()
         return False
 
     def _remove(self, mixed):
+        ids = []
+        logger.logDebug(mixed)
+        for data in mixed:
+            if 'id' in data:
+                ids.append(str(data.get('id')))
+        if len(ids) > 0:
+            dbcur = self.getCursor()
+            try: 
+                dbcur.execute(logger.logDebug("DELETE FROM SHOW WHERE ID in (%s)" % ','.join(ids)))
+                return self._dbcon.commit()
+            except: 
+                return False
+
+    def _drop(self):
         dbcur = self.getCursor()
         try: 
-            dbcur.execute("DELETE FROM EPISODE WHERE id = '%s'" % (content, meta['imdb']))
+            dbcur.execute(logger.logDebug("DROP TABLE SHOW"))
             return self._dbcon.commit()
         except: 
             return False

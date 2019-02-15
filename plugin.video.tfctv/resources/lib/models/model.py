@@ -77,6 +77,19 @@ class Model():
             return False
             
     def drop(self):
-        return False
+        try:
+            return self._drop()
+        except:
+            return False
+
+    def upgrade(self, mixed):
+        queries = mixed if isinstance(mixed, list) else [mixed]
+        try: 
+            dbcur = self.getCursor()
+            for query in queries:
+                dbcur.execute(logger.logDebug(query))
+            return self._dbcon.commit()
+        except: 
+                return False 
 
 

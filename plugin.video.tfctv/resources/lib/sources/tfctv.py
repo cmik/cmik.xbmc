@@ -61,7 +61,7 @@ def playEpisode(url, name, thumbnail):
                 'plot' : episodeDetails['data']['plot'],
                 'aired' : episodeDetails['data']['dateaired'],
                 'year' : episodeDetails['data']['year'],
-                'mediatype' : episodeDetails['data']['type'] 
+                'mediatype' : episodeDetails['data']['ltype'] 
                 })
             if episodeDetails.get('useDash', False):
                 liz.setProperty('inputstreamaddon','inputstream.adaptive')
@@ -103,9 +103,11 @@ def getMediaInfo(episodeId, title, thumbnail):
             'dateaired' : mediaInfo['data']['dateaired'],
             'date' : mediaInfo['data']['date'],
             'year' : mediaInfo['data']['year'],
-            'parentalAdvisory' : mediaInfo['data']['parentalAdvisory']
+            'parentalAdvisory' : mediaInfo['data']['parentalAdvisory'],
+            'ltype' : mediaInfo['data']['ltype'],
+            'type' : 'episode'
             }
-        episodeDB.set(e)
+        episodeDB.set(logger.logInfo(e))    
         
     return mediaInfo
     
@@ -239,7 +241,7 @@ def getMediaInfoFromWebsite(episodeId):
                     mediaInfo['data']['plot'] = episodeData.get('description')
                     mediaInfo['data']['image'] = episodeData.get('thumbnailUrl')
                     mediaInfo['data']['fanart'] = show.get('fanart', episodeData.get('image'))
-                    mediaInfo['data']['type'] = episodeData.get('@type').lower()
+                    mediaInfo['data']['ltype'] = 'episode' if episodeData.get('@type', 'episode').lower() not in ('episode','movie') else episodeData.get('@type', 'episode').lower()
                     try:
                         datePublished = datetime.datetime.strptime(episodeData.get('datePublished'), '%Y-%m-%d')
                     except TypeError:
@@ -256,6 +258,13 @@ def getMediaInfoFromWebsite(episodeId):
                 
     return mediaInfo
         
+def resetCatalogCache():
+    logger.logInfo('called function')
+    episodeDB.drop()
+    showDB.drop()
+    control.showNotification(control.lang(57039), control.lang(50010))
+    reloadCatalogCache()
+
 def reloadCatalogCache():
     logger.logInfo('called function')
     updateEpisodes = False
@@ -733,9 +742,9 @@ def getShow(showId, parentId=-1, year=''):
     
         res = showDB.get(int(showId))
         show = res[0] if len(res) == 1 else {}
-        
+        showData = json.loads(re.compile('var ldj = (\{.+\})', re.IGNORECASE).search(html).group(1))
+
         if year == '':
-            showData = json.loads(re.compile('var ldj = (\{.+\})', re.IGNORECASE).search(html).group(1))
             try:
                 datePublished = datetime.datetime.strptime(showData.get('datePublished'), '%Y-%m-%d')
             except TypeError:
@@ -796,6 +805,7 @@ def getShow(showId, parentId=-1, year=''):
                     }})
                 i+=1
         
+        type = 'show' if showData.get('@type' ,'show').lower() not in ('show','movie') else showData.get('@type' ,'show').lower()
         data = {
             'id' : int(showId),
             'name' : common.replaceHTMLCodes(name),
@@ -811,6 +821,7 @@ def getShow(showId, parentId=-1, year=''):
             'year' : year,
             'episodes' : episodes,
             'casts' : actors,
+            'ltype' : type,
             'type': 'show'
             }
         showDB.set(data)
@@ -848,6 +859,7 @@ def getEpisodesPerPage(showId, parentId, year, page=1, itemsPerPage=8):
                 except TypeError:
                     datePublished = datetime.datetime(*(time.strptime(episodeData.get('datePublished'), '%Y-%m-%d')[0:6]))
         
+                type = 'episode' if episodeData.get('@type' ,'episode').lower() not in ('episode','movie') else episodeData.get('@type' ,'episode').lower()
                 data.append({
                     'id' : episodeId,
                     'title' : episodeData.get('name'),
@@ -861,6 +873,7 @@ def getEpisodesPerPage(showId, parentId, year, page=1, itemsPerPage=8):
                     'year' : datePublished.strftime('%Y'),
                     'fanart' : showDetails.get('fanart'),
                     'showObj' : showDetails,
+                    'ltype' : type,
                     'type' : 'episode'
                     })
                     
@@ -922,7 +935,7 @@ def getEpisodesPerPage(showId, parentId, year, page=1, itemsPerPage=8):
                                 'year' : year,
                                 'parentalAdvisory' : '',
                                 'showObj' : showDetails,
-                                'type' : 'episode'
+                                'type' : showDetails.get('type', 'episode')
                                 }
                             episodeDB.set(e)
                             data.append(e)
@@ -967,7 +980,7 @@ def getEpisode(episodeId):
         showName = show.get('name', episodeData.get('name'))
         thumbnail = episodeData.get('thumbnailUrl')
         fanart = show.get('fanart', episodeData.get('image'))
-        type = episodeData.get('@type').lower()
+        type = 'episode' if episodeData.get('@type' ,'episode').lower() not in ('episode','movie') else episodeData.get('@type' ,'episode').lower()
         try:
             datePublished = datetime.datetime.strptime(episodeData.get('datePublished'), '%Y-%m-%d')
         except TypeError:
@@ -991,6 +1004,7 @@ def getEpisode(episodeId):
             'date' : datePublished.strftime('%Y-%m-%d'),
             'year' : year,
             'parentalAdvisory' : parentalAdvisory,
+            'ltype' : type,
             'type' : 'episode'
             }
                 

@@ -112,6 +112,9 @@ elif mode == config.TOOLS:
 elif mode == config.RELOADCATALOG:
     from resources.lib.sources import tfctv
     tfctv.reloadCatalogCache()
+elif mode == config.RESETCATALOG:
+    from resources.lib.sources import tfctv
+    tfctv.resetCatalogCache()
 elif mode == config.CHECKLIBRARYUPDATES:
     from resources.lib.sources import tfctv
     tfctv.checkLibraryUpdates()
@@ -122,5 +125,7 @@ elif mode == config.CLEANCOOKIES:
     # cookieJar.clear()
 
 if control.setting('lastVersion') != control.addonInfo('version'):
+    from resources import upgrade
     control.showMessage(control.lang(57023) % control.addonInfo('version'), control.lang(50002))
+    upgrade.upgradeDB()
     control.setSetting('lastVersion', control.addonInfo('version'))
