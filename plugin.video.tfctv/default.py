@@ -87,10 +87,10 @@ elif mode == config.LISTCATEGORY:
     navigator.navigator().showMyListCategory(url)
 elif mode == config.ADDTOLIST:
     from resources.lib.sources import tfctv
-    tfctv.addToMyList(url, name, params.get('type'))
+    tfctv.addToMyList(url, name, params.get('ltype'), params.get('type'))
 elif mode == config.REMOVEFROMLIST:
     from resources.lib.sources import tfctv
-    tfctv.removeFromMyList(url, name, params.get('type'))
+    tfctv.removeFromMyList(url, name, params.get('ltype'), params.get('type'))
 elif mode == config.ADDTOLIBRARY:
     from resources.lib.sources import tfctv
     tfctv.addToLibrary(url, name, params.get('parentid', -1), params.get('year', ''))

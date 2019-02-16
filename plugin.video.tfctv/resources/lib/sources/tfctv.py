@@ -1105,35 +1105,35 @@ def getUserTransactions():
                 
     return data
     
-def addToMyList(id, name, type):
-    logger.logInfo('called function with param (%s, %s, %s)' % (id, name, type))
+def addToMyList(id, name, ltype, type):
+    logger.logInfo('called function with param (%s, %s, %s, %s)' % (id, name, ltype, type))
     url = config.uri.get('addToList')
     logger.logDebug(url)
     res = {}
     if type == 'show':
-        res = logger.logNotice(callJsonApi(url, params = {'CategoryId': id, 'type': type}, useCache=False))
+        res = logger.logNotice(callJsonApi(url, params = {'CategoryId': id, 'type': ltype}, useCache=False))
     else:
         episodes = episodeDB.get(id)
         e = episodes[0] if len(episodes) == 1 else getEpisode(id)
         if 'parentid' in e:
-            res = logger.logNotice(callJsonApi(url, params = {'CategoryId': e.get('parentid'), 'EpisodeId': id, 'type': type}, useCache=False))                    
+            res = logger.logNotice(callJsonApi(url, params = {'CategoryId': e.get('parentid'), 'EpisodeId': id, 'type': ltype}, useCache=False))                    
     if 'StatusMessage' in res:
         control.showNotification(res.get('StatusMessage'), name)
     else:
         control.showNotification(control.lang(57026))
 
-def removeFromMyList(id, name, type):
-    logger.logInfo('called function with param (%s, %s, %s)' % (id, name, type))
+def removeFromMyList(id, name, ltype, type):
+    logger.logInfo('called function with param (%s, %s, %s, %s)' % (id, name, ltype, type))
     url = config.uri.get('removeFromList')
     logger.logDebug(url)
     res = {}
     if type == 'show':
-        res = logger.logNotice(callJsonApi(url, params = {'CategoryId': id, 'type': type}, useCache=False))
+        res = logger.logNotice(callJsonApi(url, params = {'CategoryId': id, 'type': ltype}, useCache=False))
     else:
         episodes = episodeDB.get(id)
         e = episodes[0] if len(episodes) == 1 else getEpisode(id)
         if 'parentid' in e:
-            res = logger.logNotice(callJsonApi(url, params = {'CategoryId': e.get('parentid'), 'EpisodeId': id, 'type': type}, useCache=False))
+            res = logger.logNotice(callJsonApi(url, params = {'CategoryId': e.get('parentid'), 'EpisodeId': id, 'type': ltype}, useCache=False))
     if 'StatusMessage' in res:
         control.showNotification(res.get('StatusMessage'), name)
         control.refresh()
