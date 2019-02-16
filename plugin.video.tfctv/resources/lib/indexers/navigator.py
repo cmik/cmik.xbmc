@@ -276,9 +276,9 @@ class navigator:
                 },
             'contextMenu' : contextMenu
             }
-            
-        if info.get('cast'):    
-            data['listCasts'] = info.get('cast')
+        
+        if info.get('casts', False):    
+            data['listCasts'] = info.get('casts')
             
         return data
             
@@ -304,6 +304,10 @@ class navigator:
                 },
             'contextMenu' : contextMenu
             }
+
+        if info.get('showObj', False) and info.get('showObj').get('casts', False):    
+            data['listCasts'] = info.get('showObj').get('casts')
+
         return data
             
             

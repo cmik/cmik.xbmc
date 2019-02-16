@@ -783,10 +783,11 @@ def getShow(showId, parentId=-1, year=''):
         casts = common.parseDOM(html, "casts")
         i = 1
         for cast in casts:
+            castId = common.parseDOM(cast, "cast-name", ret = "data-id")[0]
             castName = common.stripTags(cast)
             castUrl = config.websiteUrl + common.parseDOM(cast, "a", ret = "href")[0]
             castImage = common.parseDOM(cast, "img", ret = "src")[0]
-            actors.append({'name': castName, 'thumbnail': castImage, 'order': i, 'url': castUrl})
+            actors.append({'id': castId, 'name': castName, 'role': '', 'thumbnail': castImage, 'order': i, 'url': castUrl})
             i+=1
         
         # Check episode list
