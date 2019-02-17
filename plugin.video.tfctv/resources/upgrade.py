@@ -19,7 +19,7 @@ def upgradeDB():
     libraryDB = library.Library(control.libraryFile)
 
     # DB upgrades per version
-    if control.addonInfo('lastVersion') == '1.0.0-beta' and control.addonInfo('version') == '1.0.0':
+    if control.setting('lastVersion') == '1.0.0-beta' and control.addonInfo('version') == '1.0.0':
     	control.showNotification('Upgrading databases...', control.lang(50002))
     	logger.logDebug(episodeDB.upgrade([
     		'ALTER TABLE `EPISODE` ADD COLUMN `TYPE` TEXT',
