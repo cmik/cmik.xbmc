@@ -124,12 +124,14 @@ elif mode == config.CHECKLIBRARYUPDATES:
 elif mode == config.CLEANCOOKIES:
     from resources.lib.sources import tfctv
     tfctv.cleanCookies()
+elif mode == config.IMPORTSHOWDB:
+    from resources.lib.libraries import tools
+    tools.importShowDB()
+elif mode == config.IMPORTEPISODEDB:
+    from resources.lib.libraries import tools
+    tools.importEpisodeDB()
 # elif mode == 99:
     # cookieJar.clear()
-try:
-    lastVersion = control.setting('lastVersion')
-except:
-    control.setSetting('lastVersion', '0.0.xx')
 
 if control.setting('lastVersion') != control.addonInfo('version'):
     from resources import upgrade

@@ -132,7 +132,7 @@ def getMediaInfoFromWebsite(episodeId):
         if re.compile('var dfp_c = ".*2900.*";', re.IGNORECASE).search(html):
             mediaInfo['data']['parentalAdvisory'] = 'true'
             if control.setting('parentalAdvisoryCheck') == 'true':
-                alert(control.lang(57011),title=control.lang(50003))
+                control.alert(control.lang(57011),title=control.lang(50003))
             if control.setting('parentalControl') == 'true':
                 code = control.numpad(control.lang(57021))
                 if code != control.setting('parentalCode'):

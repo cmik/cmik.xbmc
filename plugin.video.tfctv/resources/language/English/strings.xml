@@ -90,7 +90,6 @@
     <string id="56008">Next >></string>
     <string id="56009">Reload Catalog Cache</string>
     <string id="56010">Clean cookies files</string>
-    <string id="56011">Reset Catalog Cache</string>
     <string id="56011">[%s] Enter your credentials</string>
     <string id="56012">[%s] Personalize your settings</string>
     <string id="56013">[%s] Optimize your catalog cache</string>
@@ -98,6 +97,9 @@
     <string id="56015">Skip the setup</string>
     <string id="56016">Enjoy TFC</string>
     <string id="56017">Check library updates</string>
+    <string id="56018">Reset Catalog Cache</string>
+    <string id="56019">Import shows database file</string>
+    <string id="56020">Import episodes database file</string>
     <!-- notifications / messages -->
     <string id="57000">Logging out in progress...</string>
     <string id="57001">Subscription is already expired or the item is not part of your subscription</string>
@@ -166,4 +168,5 @@ Please reboot your Kodi system.
     <string id="57037">%s episode(s) of %s added to library</string>
     <string id="57038">This type of media is not supported</string>
     <string id="57039">Catalog cache is now empty</string>
+    <string id="57040">The file was loaded successfully</string>
 </strings>

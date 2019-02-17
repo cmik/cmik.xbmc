@@ -209,6 +209,9 @@ def alert(message, line1='', line2='', title=lang(50001)):
         return
     return dialog.ok(title, message, line1, line2)
     
+def browse(type, title, shares='files', mask='', useThumbs=False, treatAsFolder=False, defaultt='', enableMultiple=False):
+    return dialog.browse(type, title, shares, mask, useThumbs, treatAsFolder, defaultt, enableMultiple)
+
 def inputText(title, defaultValue=''):
     return dialog.input(title, defaultValue, xbmcgui.INPUT_ALPHANUM)
     

@@ -18,7 +18,7 @@ class Model():
     _dbcon = None
 
     def __init__(self, databasePath):
-        self._dbcon = database.connect(databasePath)
+        self._dbcon = database.connect(logger.logDebug(databasePath))
         return None
         
     def _getStructure(self, data):
