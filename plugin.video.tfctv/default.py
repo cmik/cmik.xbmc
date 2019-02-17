@@ -14,8 +14,11 @@ from resources.lib.libraries import control
 logger = control.logger 
 if control.setting('debug') == 'true':
     logger.enable(True)
-    exec('newLevel = logger.LOG%s' %(control.setting('debugLevel')))
-    logger.setLevel(newLevel)
+    try:
+        exec('newLevel = logger.LOG%s' %(control.setting('debugLevel')))
+        logger.setLevel(newLevel)
+    except:
+        pass
     
 params = dict(urlparse.parse_qsl(sys.argv[2].replace('?','')))
 
@@ -123,6 +126,10 @@ elif mode == config.CLEANCOOKIES:
     tfctv.cleanCookies()
 # elif mode == 99:
     # cookieJar.clear()
+try:
+    lastVersion = control.setting('lastVersion')
+except:
+    control.setSetting('lastVersion', '0.0.xx')
 
 if control.setting('lastVersion') != control.addonInfo('version'):
     from resources import upgrade
