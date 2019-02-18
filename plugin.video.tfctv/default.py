@@ -130,6 +130,12 @@ elif mode == config.IMPORTSHOWDB:
 elif mode == config.IMPORTEPISODEDB:
     from resources.lib.libraries import tools
     tools.importEpisodeDB()
+elif mode == config.IMPORTALLDB:
+    from resources.lib.libraries import tools
+    tools.importDBFiles()
+elif mode == config.FIRSTINSTALL:
+    from resources.lib.indexers import navigator
+    navigator.navigator().firstInstall()
 # elif mode == 99:
     # cookieJar.clear()
 

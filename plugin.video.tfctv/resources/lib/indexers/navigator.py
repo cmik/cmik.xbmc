@@ -215,12 +215,13 @@ class navigator:
         self.addDirectoryItem(control.lang(56020), config.uri.get('base'), config.IMPORTEPISODEDB, control.addonFolderIcon(control.lang(56020)))
         self.addDirectoryItem(control.lang(56017), config.uri.get('base'), config.CHECKLIBRARYUPDATES, control.addonFolderIcon(control.lang(56017)))
         self.addDirectoryItem(control.lang(56010), config.uri.get('base'), config.CLEANCOOKIES, control.addonFolderIcon(control.lang(56010)))
+        self.addDirectoryItem('Quick setup', config.uri.get('base'), config.FIRSTINSTALL, control.addonFolderIcon('Quick setup'))
         self.endDirectory()
             
     def firstInstall(self):
         self.addDirectoryItem(control.lang(56011) % (' ' if control.setting('showEnterCredentials') == 'true' else 'x'), config.uri.get('base'), config.ENTERCREDENTIALS, control.addonFolderIcon(control.lang(56011)))
         self.addDirectoryItem(control.lang(56012) % (' ' if control.setting('showPersonalize') == 'true' else 'x'), config.uri.get('base'), config.PERSONALIZESETTINGS, control.addonFolderIcon(control.lang(56012)))
-        self.addDirectoryItem(control.lang(56013) % (' ' if control.setting('showUpdateCatalog') == 'true' else 'x'), config.uri.get('base'), config.OPTIMIZELIBRARY, control.addonFolderIcon(control.lang(56013)))
+        self.addDirectoryItem(control.lang(56013) % (' ' if control.setting('showUpdateCatalog') == 'true' else 'x'), config.uri.get('base'), config.IMPORTALLDB, control.addonFolderIcon(control.lang(56013)))
         self.addDirectoryItem(control.lang(56014) % (control.lang(56015) if control.setting('showEnterCredentials') == 'true' or control.setting('showPersonalize') == 'true' or control.setting('showUpdateCatalog') == 'true' else control.lang(56016)), config.uri.get('base'), config.ENDSETUP, control.addonFolderIcon('Skip'))
         self.endDirectory()
         if control.setting('showWelcomeMessage') == 'true':

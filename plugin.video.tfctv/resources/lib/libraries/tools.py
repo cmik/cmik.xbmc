@@ -24,3 +24,18 @@ def importEpisodeDB():
     if (fileSource != ''):
         logger.logInfo(xbmcvfs.copy(fileSource, control.episodesFile))
         control.showNotification(control.lang(57040), control.lang(50010))
+
+def importDBFiles():
+    import xbmcvfs
+    status = True
+    dBImportURL = control.setting('databaseImportURL')
+    # Show DB file
+    fileSource = dBImportURL + 'shows.db' 
+    status = True if status is True and logger.logInfo(xbmcvfs.copy(fileSource, control.episodesFile)) != 0 else False
+    fileSource = dBImportURL + 'episodes.db' 
+    status = True if status is True and logger.logInfo(xbmcvfs.copy(fileSource, control.episodesFile)) != 0 else False
+    if status is True:
+        control.showNotification(control.lang(57003), control.lang(50010))
+    else:
+        control.showNotification(control.lang(57027), control.lang(50004))
+    return status

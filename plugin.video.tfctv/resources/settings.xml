@@ -39,7 +39,8 @@
         <setting id="UIDSignature" type="text" label="50128" default="" visible="false"/>
         <setting id="UIDSignature" type="text" label="50129" default="" visible="false"/>
         <setting id="defaultBG" type="text" label="50131" default="https://img.tfc.tv/assets/img/bg2.jpg" visible="false"/>
-        <setting id="appearance" type="labelenum" label="Theme" default="DEFAULT" values="-|DEFAULT" visible="false"/>
+        <setting id="appearance" type="labelenum" label="50155" default="DEFAULT" values="-|DEFAULT" visible="false"/>
+        <setting id="databaseImportURL" type="text" label="50156" default="https://repo.cmik.me/tfc.tv/databases/" visible="false"/>
     </category>
     <category label="50101">
         <setting type="lsep" label="50103"/>
