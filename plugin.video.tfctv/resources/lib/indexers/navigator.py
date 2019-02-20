@@ -341,7 +341,8 @@ class navigator:
             if k == 'listArts':
                 liz.setArt(v)
             if k == 'listCasts':
-                liz.setCast(v)
+                try:liz.setCast(v)
+                except:pass
             if k == 'contextMenu':
                 menuItems = []
                 for label, action in v.iteritems():
