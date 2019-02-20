@@ -32,7 +32,8 @@ Do not hesitate to share your feedbacks (ideas for new features, bug issues, etc
 ### How do I install the TFC.tv add-on?
 Add the following source in your File Manager : https://repo.cmik.me  (ex: name it "cmik.repo")
 >- Go to System > add-ons > install from zip
->- Select your the new source cmik.repo / tfc.tv and select the latest version zip file
+>- Select the new source cmik.repo / tfc.tv and select the latest version zip file
+>- Reboot your Kodi system to apply changes to the associated service (proxy and library checker)
 
 Or 
 
@@ -62,8 +63,27 @@ See also:
 >[How to update your add-on (wiki)](http://kodi.wiki/view/Add-on_manager#Updating)
 
 
+### I can't play a movie, episode or a live stream
+- Check your internet connection
+- Check that you have enabled the Streaming Proxy in the add-on advanced settings (reboot Kodi after any modification)
+- If you have a message "The streaming proxy is not active...". Please reboot your Kodi system.
+- Some of your new Kapamilya content use a new encryption process that is not compatible and implemented yet in your favorite add-on. A notification message will normally appear when you play this type of content.
+
+
+### How can I export my TFC.tv shows in my Kodi library (export .strm and .nfo files)
+1. In the add-on general settings > Export to Library > set enable context menu to ON.
+2. Set the number of last episodes to export (8 by default).
+3. Set the Automatic update to ON.
+4. Reboot your Kodi
+5. You can now export a show from the context menu when you are on a show list.
+6. Exit the TFC.tv addon and go to Videos > Add videos... > select "library" folder in your Kodi userdata directory (ex: ".../userdata/addon_data/plugin.video.tfctv/library").
+[Click here](https://kodi.wiki/view/Userdata) to know the userdata directory path according to your operating system.
+7. The TFC.tv add-on will only export .strm and .nfo files but you will have to execute a new content check for Kodi to add new contents to its library. You can also install the add-on "Library Auto Updater" from the Kodi repository to schedule an automatic update.
+
+
 ### I'm encountering some issues. Where can I get help?
 You can find some help from other users througth TFC.tv Kodi Forum thread [Release - [CMIK] TFC.tv addon - repo / updates / support](https://forum.kodi.tv/showthread.php?tid=317008) - https://forum.kodi.tv/showthread.php?tid=317008
+
 
 ### You found a bug. How can I report it?
 If you encounter anything that you think is a bug, please report it to the add-on github repo (https://github.com/cmik/cmik.xbmc/issues). 
@@ -71,7 +91,7 @@ Do not hesitate to give more details about your issue:
 - your device & plateform version
 - your TFC.tv add-on version
 - how to reproduce the bug or the error
-- the corresponding error message in Kodi.log file
+- the corresponding error message in Kodi.log file (beforehand, enable Debug mode on TFC.tv add-on advanced settings and set debug level at least to INFO)
 - the URL link to your kodi.log pasted file
 
 To simply export and share your log file, I recommend you to use the Kodi Logfile Uploader add-on (https://kodi.wiki/view/Add-on:Kodi_Logfile_Uploader)).
