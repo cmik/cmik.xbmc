@@ -38,4 +38,5 @@ def importDBFiles():
         control.showNotification(control.lang(57003), control.lang(50010))
     else:
         control.showNotification(control.lang(57027), control.lang(50004))
+    control.setSetting('showUpdateCatalog', 'false')
     return status
