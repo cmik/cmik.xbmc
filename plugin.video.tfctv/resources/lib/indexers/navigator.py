@@ -286,8 +286,9 @@ class navigator:
         return data
             
     def formatVideoInfo(self, info, addToList=True, options = {}):
-        add = { control.lang(50300) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info.get('id')), config.ADDTOLIST, info.get('title'), query='type='+info.get('ltype')) } 
-        remove = { control.lang(50301) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info.get('id')), config.REMOVEFROMLIST, info.get('title'), query='type='+info.get('ltype')) } 
+        logger.logInfo(info)
+        add = { control.lang(50300) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info.get('id')), config.ADDTOLIST, info.get('title'), query='type=%s' % (info.get('ltype',))) } 
+        remove = { control.lang(50301) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info.get('id')), config.REMOVEFROMLIST, info.get('title'), query='type=%s' % (info.get('ltype'))) } 
         contextMenu = add if addToList == True else remove
 
         data = { 

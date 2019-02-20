@@ -494,6 +494,7 @@ def extracMyListEpisodeData(url, html):
             'date' : datePublished.strftime('%Y-%m-%d'),
             'year' : year,
             'fanart' : image,
+            'ltype' : 'episode',
             'type' : 'episode'
             }
     
@@ -598,6 +599,7 @@ def extractWebsiteSectionShowData(url, html):
     else:
         return {
             'type' : 'show',
+            'ltype' : 'show',
             'id' : int(showId),
             'parentid' : -1,
             'parentname' : '',
@@ -652,6 +654,7 @@ def extractWebsiteSectionEpisodeData(url, html):
             'date' : datePublished.strftime('%Y-%m-%d'),
             'year' : year,
             'fanart' : image,
+            'ltype' : 'episode',
             'type' : 'episode'
             }
 
