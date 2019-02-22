@@ -236,7 +236,7 @@ def version():
 
 
 def run(mode, caller='addon'):
-    return execute('RunPlugin(plugin://%s/?mode=%s&from=%s)' % (addonInfo('id'), mode, caller))
+    return execute('RunPlugin(plugin://%s/?mode=%s&caller=%s)' % (addonInfo('id'), mode, caller))
 
 def exit():
     return execute("XBMC.Container.Update(path,replace)")
