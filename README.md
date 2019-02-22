@@ -72,11 +72,12 @@ See also:
 
 ### How can I export my TFC.tv shows in my Kodi library (export .strm and .nfo files)
 1. In the add-on general settings > Export to Library > set enable context menu to ON.
-2. Set the number of last episodes to export (8 by default).
-3. Set the Automatic update to ON.
-4. Reboot your Kodi
-5. You can now export a show from the context menu when you are on a show list.
-6. Exit the TFC.tv addon and go to Videos > Add videos... > select "library" folder in your Kodi userdata directory (ex: ".../userdata/addon_data/plugin.video.tfctv/library").
+2. Choose your personnal export path or leave it blank (it will export in the addon userdata folder by default)
+3. Set the number of last episodes to check & export (8 last episodes by default).
+4. Set the Automatic update to ON.
+5. Reboot your Kodi
+6. You can now export a show from the context menu when you are on a show list.
+7. Exit the TFC.tv addon and go to Videos > Add videos... > select your "library" folder or by default the Kodi userdata directory (ex: ".../userdata/addon_data/plugin.video.tfctv/library").
 [Click here](https://kodi.wiki/view/Userdata) to know the userdata directory path according to your operating system.
 7. The TFC.tv add-on will only export .strm and .nfo files but you will have to execute a new content check for Kodi to add new contents to its library. You can also install the add-on "Library Auto Updater" from the Kodi repository to schedule an automatic update.
 
