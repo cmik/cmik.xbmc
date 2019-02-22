@@ -20,6 +20,8 @@ if control.setting('debug') == 'true':
     except:
         pass
     
+logger.logInfo(sys.argv[2])
+
 params = dict(urlparse.parse_qsl(sys.argv[2].replace('?','')))
 
 action = params.get('action')

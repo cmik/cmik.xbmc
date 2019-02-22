@@ -541,7 +541,7 @@ def getWebsiteHomeSections():
                 # ,'IWANT ORIGINALS - EXCLUSIVE FOR PREMIUM'
                 ]
             if sectionName not in exceptSections:
-                data.append({'id' : str(i), 'name' : sectionName}) #, 'url' : '/', 'fanart' : ''})
+                data.append({'id' : cache.generateHashKey(sectionName), 'name' : sectionName}) #, 'url' : '/', 'fanart' : ''})
         i += 1
     return data
     
@@ -552,7 +552,11 @@ def getWebsiteSectionContent(sectionId, page=1, itemsPerPage=8):
     
     html = getWebsiteHomeHtml()
     sections = common.parseDOM(html, "div", attrs = { 'class' : 'main-container-xl main-container-xl-mobile' })
-    section = sections[int(sectionId)-1]
+    for section in sections:
+        header = common.parseDOM(section, "a", attrs = { 'class' : 'h2 heading-slider first' })
+        if len(header):
+            sectionName = common.stripTags(common.replaceHTMLCodes(header[0])).strip()
+            if cache.generateHashKey(sectionName) == sectionId: break
     links = common.parseDOM(section, "a", attrs = { 'data-category' : 'CTA_Sections' }, ret = 'href')
     items = common.parseDOM(section, "a", attrs = { 'data-category' : 'CTA_Sections' })
     
@@ -586,7 +590,7 @@ def removeDuplicates(list):
     return newList
     
 def extractWebsiteSectionShowData(url, html):
-    logger.logInfo('called function with param (%s, %s)' % (url, html))
+    logger.logInfo('called function with param (%s)' % (url))
     
     showId = re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1)
     filter = 'port-cover-thumb-title' if 'port-cover-thumb-title' in html else 'show-cover-thumb-title-mobile'
