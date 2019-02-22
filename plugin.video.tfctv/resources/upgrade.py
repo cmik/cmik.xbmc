@@ -5,6 +5,7 @@
     Copyright (C) 2018 cmik
 '''
 
+from resources import config
 from resources.lib.libraries import control
 from resources.lib.models import episodes
 from resources.lib.models import shows
@@ -17,6 +18,10 @@ def upgradeDB():
     episodeDB = episodes.Episode(control.episodesFile)
     showDB = shows.Show(control.showsFile)
     libraryDB = library.Library(control.libraryFile)
+
+    if control.setting('showUpdateCatalog') == 'true':
+        control.run(config.IMPORTALLDB)
+        control.setSetting('showUpdateCatalog', 'false')
 
     # DB upgrades per version
     if control.setting('lastVersion') == '1.0.0-beta' and control.addonInfo('version') == '1.0.0':

@@ -221,8 +221,8 @@ class navigator:
     def firstInstall(self):
         self.addDirectoryItem(control.lang(56011) % (' ' if control.setting('showEnterCredentials') == 'true' else 'x'), config.uri.get('base'), config.ENTERCREDENTIALS, control.addonFolderIcon(control.lang(56011)))
         self.addDirectoryItem(control.lang(56012) % (' ' if control.setting('showPersonalize') == 'true' else 'x'), config.uri.get('base'), config.PERSONALIZESETTINGS, control.addonFolderIcon(control.lang(56012)))
-        self.addDirectoryItem(control.lang(56013) % (' ' if control.setting('showUpdateCatalog') == 'true' else 'x'), config.uri.get('base'), config.IMPORTALLDB, control.addonFolderIcon(control.lang(56013)))
-        self.addDirectoryItem(control.lang(56014) % (control.lang(56015) if control.setting('showEnterCredentials') == 'true' or control.setting('showPersonalize') == 'true' or control.setting('showUpdateCatalog') == 'true' else control.lang(56016)), config.uri.get('base'), config.ENDSETUP, control.addonFolderIcon('Skip'))
+        # self.addDirectoryItem(control.lang(56013) % (' ' if control.setting('showUpdateCatalog') == 'true' else 'x'), config.uri.get('base'), config.IMPORTALLDB, control.addonFolderIcon(control.lang(56013)))
+        self.addDirectoryItem(control.lang(56014) % (control.lang(56015) if control.setting('showEnterCredentials') == 'true' or control.setting('showPersonalize') == 'true' else control.lang(56016)), config.uri.get('base'), config.ENDSETUP, control.addonFolderIcon('Skip'))
         self.endDirectory()
         if control.setting('showWelcomeMessage') == 'true':
             control.showMessage(control.lang(57016), control.lang(57018))
@@ -244,6 +244,7 @@ class navigator:
         control.refresh()
         
     def endSetup(self):
+        control.run(config.IMPORTALLDB)
         control.setSetting('addonNewInstall', 'false')
         control.refresh()
         
@@ -286,7 +287,6 @@ class navigator:
         return data
             
     def formatVideoInfo(self, info, addToList=True, options = {}):
-        logger.logInfo(info)
         add = { control.lang(50300) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info.get('id')), config.ADDTOLIST, info.get('title'), query='type=%s' % (info.get('ltype',))) } 
         remove = { control.lang(50301) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info.get('id')), config.REMOVEFROMLIST, info.get('title'), query='type=%s' % (info.get('ltype'))) } 
         contextMenu = add if addToList == True else remove
@@ -351,17 +351,17 @@ class navigator:
         return control.addItem(handle=thisPlugin, url=u, listitem=liz, isFolder=isFolder)
 
     def generateActionUrl(self, url, mode, name=None, thumbnail='', page=1, query=''):
-        url = sysaddon + "?url=" + urllib.quote_plus(url) + "&mode=" + str(mode)
+        url = '%s?url=%s&mode=%s' % (sysaddon, urllib.quote_plus(url), str(mode))
         try: 
-            if name != None: url += "&name=" + urllib.quote_plus(name)
+            if name != None: url += '&name=%s' % urllib.quote_plus(name)
         except: 
             pass
         try: 
-            if int(page) >= 0: url += "&page=" + str(page)
+            if int(page) >= 0: url += '&page=%s' % str(page)
         except: 
             pass
         try: 
-            if thumbnail != '': url += "&thumbnail=" + urllib.quote_plus(thumbnail)
+            if thumbnail != '': url += '&thumbnail=%s' % urllib.quote_plus(thumbnail)
         except: 
             pass    
         try: 

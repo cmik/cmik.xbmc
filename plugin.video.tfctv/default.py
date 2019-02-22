@@ -44,6 +44,8 @@ url = params.get('url')
 
 image = params.get('image')
 
+caller = params.get('caller', 'addon')
+
 thumbnail = urllib.unquote_plus(params.get('thumbnail', ''))
 
 if mode == None:
@@ -139,7 +141,7 @@ elif mode == config.FIRSTINSTALL:
 # elif mode == 99:
     # cookieJar.clear()
 
-if control.setting('lastVersion') != control.addonInfo('version'):
+if caller == 'addon' and control.setting('lastVersion') != control.addonInfo('version'):
     from resources import upgrade
     control.showMessage(control.lang(57023) % control.addonInfo('version'), control.lang(50002))
     upgrade.upgradeDB()

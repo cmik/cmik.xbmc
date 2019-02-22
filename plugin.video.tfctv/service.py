@@ -97,8 +97,7 @@ class LibraryChecker():
             if ((time.time()-start) > int(self._scheduled)) or first:
                 first = False
                 start = time.time()
-                builtin = 'RunPlugin(plugin://plugin.video.tfctv/?mode=%s)'
-                xbmc.executebuiltin(builtin % (config.CHECKLIBRARYUPDATES))
+                control.run(config.CHECKLIBRARYUPDATES, 'service')
                 time.sleep(10)
             
             

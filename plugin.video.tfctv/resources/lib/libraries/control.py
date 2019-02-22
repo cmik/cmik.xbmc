@@ -115,7 +115,10 @@ sourcescacheFile = os.path.join(dataPath, 'sources.db')
 
 libcacheFile = os.path.join(dataPath, 'library.db')
 
-libraryPath = os.path.join(dataPath, 'library')
+if setting('exportLibraryPath') != '' and os.path.exists(setting('exportLibraryPath')): 
+    libraryPath = setting('exportLibraryPath')
+else: 
+    libraryPath = os.path.join(dataPath, 'library')
 
 showsLibPath = os.path.join(libraryPath, 'shows')
 
@@ -231,6 +234,9 @@ def version():
         else: break
     return int(num)
 
+
+def run(mode, caller='addon'):
+    return execute('RunPlugin(plugin://%s/?mode=%s&from=%s)' % (addonInfo('id'), mode, caller))
 
 def exit():
     return execute("XBMC.Container.Update(path,replace)")
