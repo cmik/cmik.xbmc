@@ -1,3 +1,14 @@
+1.0.0
+    New reworked vesion
+    Added a little wizard installation at first startup
+    Added databases favourite/show/episode library for cache and better exeperience
+    Added proxy streaming check and alert
+    Allow to export shows to library (needed to added 'library' directory (created in addon profile directory) as video source)
+    Added a service to check exported library updates
+    Can now add show/episode to my List 
+    Can now remove show/episode from my List 
+    Alerts when a media can't be played as some AES encrypted videos
+    Fixed home sections content
 0.0.83
     Fixed login error (again after TFC.tv rollback on their changes)
     Fixed error when displaying Latest Show Episodes section
