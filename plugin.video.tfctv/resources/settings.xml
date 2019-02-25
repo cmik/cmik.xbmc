@@ -22,9 +22,10 @@
         <setting type="sep"/>
         <setting type="lsep" label="50150"/>
         <setting id="exportToLibrary" type="bool" label="50151" default="false" visible="true"/>
-        <setting id="exportLastNbEpisodes" type="labelenum" label="50154" default="8" values="1|8|16|32|64|128" enable="eq(-1,true)" visible="true"/>
-        <setting id="libraryAutoUpdate" type="bool" label="50152" default="false" enable="eq(-2,true)" visible="true"/>
-        <setting id="librayCheckSchedule" type="number" label="50153" default="60" enable="eq(-3,true)" visible="true"/>
+        <setting id="exportLibraryPath" type="folder" label="50157" default="" source="" option="writeable" enable="eq(-1,true)" visible="true"/>
+        <setting id="exportLastNbEpisodes" type="labelenum" label="50154" default="8" values="1|8|16|32|64|128" enable="eq(-2,true)" visible="true"/>
+        <setting id="libraryAutoUpdate" type="bool" label="50152" default="false" enable="eq(-3,true)" visible="true"/>
+        <setting id="librayCheckSchedule" type="number" label="50153" default="60" enable="eq(-4,true)" visible="true"/>
         <setting type="sep" visible="false"/>
         <setting type="lsep" label="50149" visible="false"/>
         <setting id="addonNewInstall" type="bool" label="50126" default="true" visible="false"/>

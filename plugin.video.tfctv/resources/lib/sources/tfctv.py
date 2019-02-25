@@ -24,7 +24,8 @@ libraryDB = library.Library(control.libraryFile)
 
 #---------------------- FUNCTIONS ----------------------------------------                  
 
-def playEpisode(url, name, thumbnail):    
+def playEpisode(url, name, thumbnail):
+    logger.logInfo('called function')
     errorCode = -1
     episodeDetails = {}
     episode = url.split('/')[0]
@@ -43,7 +44,7 @@ def playEpisode(url, name, thumbnail):
                 # login()
                 
         episodeDetails = getMediaInfo(episode, name, thumbnail)
-        logger.logNotice(episodeDetails)
+        logger.logDebug(episodeDetails)
         if episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] == 0 and 'data' in episodeDetails:
             if 'preview' in episodeDetails['data'] and episodeDetails['data']['preview'] == True:
                 control.infoDialog(control.lang(57025), control.lang(50002), time=5000)
@@ -64,11 +65,15 @@ def playEpisode(url, name, thumbnail):
                 'mediatype' : episodeDetails['data']['ltype'] 
                 })
             if episodeDetails.get('useDash', False):
-                liz.setProperty('inputstreamaddon','inputstream.adaptive')
-                liz.setProperty('inputstream.adaptive.manifest_type','mpd')
-                liz.setProperty('inputstream.adaptive.stream_headers', episodeDetails['dash']['headers'])
+                logger.logInfo(episodeDetails['dash'])
+                liz.setProperty('inputstreamaddon', 'inputstream.adaptive')
+                liz.setProperty('inputstream.adaptive.manifest_type', 'mpd')
                 liz.setProperty('inputstream.adaptive.license_type', episodeDetails['dash']['type'])
-                liz.setProperty('inputstream.adaptive.license_key', episodeDetails['dash']['key'])
+                liz.setProperty('inputstream.adaptive.stream_headers', episodeDetails['dash']['headers'])
+                liz.setProperty('inputstream.adaptive.license_key', 
+                    '%s|%s|%s|%s' % (episodeDetails['dash']['key'], episodeDetails['dash']['headers'], 'R{SSM}', 'R'))
+                liz.setMimeType(episodeDetails['data']['type'])
+                # liz.setContentLookup(False)
             liz.setProperty('fanart_image', episodeDetails['data']['fanart'])
             liz.setProperty('IsPlayable', 'true')
             try: 
@@ -76,6 +81,7 @@ def playEpisode(url, name, thumbnail):
             except: 
                 control.showNotification(control.lang(57032), control.lang(50004))
         elif (not episodeDetails) or (episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] != 0):
+            logger.logNotice(episodeDetails['StatusMessage'])
             if 'StatusMessage' in episodeDetails:
                 control.showNotification(episodeDetails['StatusMessage'], control.lang(50004))
             else:
@@ -171,6 +177,7 @@ def getMediaInfoFromWebsite(episodeId):
                 'sid' : sid
                 }
             episodeDetails = callJsonApi(config.uri.get('mediaFetch'), params, callHeaders, base_url=config.websiteSecuredUrl, useCache=False, jsonData=True)
+            logger.logDebug(episodeDetails)
             if episodeDetails and 'StatusCode' in episodeDetails:
                 mediaInfo['errorCode'] = episodeDetails['StatusCode']
                 if 'media' in episodeDetails and 'source' in episodeDetails['media'] and 'src' in episodeDetails['media']['source'][0] :
@@ -181,6 +188,9 @@ def getMediaInfoFromWebsite(episodeId):
                     # episodeDetails['media']['uri'] += '&b=700-1800'
                     # prefered bitrate
                     # episodeDetails['media']['uri'] += '&_b_=1800'
+                    if 'type' in episodeDetails['media']['source'][0]:
+                        episodeDetails['media']['type'] = episodeDetails['media']['source'][0]['type']
+
                     if control.setting('streamServerModification') == 'true' and control.setting('streamServer') != '':
                         episodeDetails['media']['uri'] = episodeDetails['media']['uri'].replace('https://o2-i.', control.setting('streamServer'))                
                     
@@ -188,17 +198,21 @@ def getMediaInfoFromWebsite(episodeId):
                     if 'amssabscbn.akamaized.net' in episodeDetails['media']['uri']:
                         mediaInfo['StatusMessage'] = control.lang(57038)
                         mediaInfo['errorCode'] = 5
+
                         mediaInfo['useDash'] = True
+                        headers = 'Origin=%s&Referer=%s' % (config.websiteUrl, config.websiteUrl)
+                        if len(episodeDetails['media']['keys']['com.widevine.alpha']['httpRequestHeaders']) > 0:
+                            headers += '&' + '&'.join("%s=%s" % (key,val) for (key,val) in episodeDetails['media']['keys']['com.widevine.alpha']['httpRequestHeaders'].iteritems())
                         if 'com.widevine.alpha' in episodeDetails['media']['keys']:
                             mediaInfo['dash'] = {
                                 'type': 'com.widevine.alpha',
-                                'headers': episodeDetails['media']['keys']['com.widevine.alpha']['httpRequestHeaders']['Authorization'],
+                                'headers': headers,
                                 'key': episodeDetails['media']['keys']['com.widevine.alpha']['serverURL']
                                 }
                         elif 'com.microsoft.playready' in episodeDetails['media']['keys']:
                             mediaInfo['dash'] = {
                                 'type': 'com.microsoft.playready',
-                                'headers': episodeDetails['media']['keys']['com.microsoft.playready']['httpRequestHeaders']['Authorization'],
+                                'headers': headers,
                                 'key': episodeDetails['media']['keys']['com.microsoft.playready']['serverURL']
                                 }
                         # elif 'com.apple.fps.1_0' in episodeDetails['media']['keys']:
@@ -412,6 +426,7 @@ def getMylistCategoryItems(id):
     return extractListCategoryItems(html, id)
 
 def extractListCategoryItems(html, id):   
+    logger.logInfo('called function')
     data = []
     
     section = common.parseDOM(html, "section", attrs = { 'id' : id })
@@ -1625,9 +1640,11 @@ def loginToWebsite(quiet=False):
                     
         if quiet == False:
             if logged == True:
+                logger.logNotice('You are now logged in')
                 control.setSetting('accountJSON', json.dumps(accountJSON))
                 control.showNotification(control.lang(57009) % accountJSON.get('profile').get('firstName'), control.lang(50007))
             else:
+                logger.logError('Authentification failed')
                 control.showNotification(control.lang(57024), control.lang(50006))
             
     return logged 
@@ -1756,6 +1773,7 @@ def callServiceApi(path, params={}, headers=[], base_url=config.websiteUrl, useC
             control.showNotification(message, control.lang(50004))
             # No internet connection error
             if 'Errno 11001' in message:
+                logger.logError('Errno 11001 - No internet connection')
                 control.showNotification(control.lang(57031), control.lang(50004), time=5000)
             toCache = False
             pass

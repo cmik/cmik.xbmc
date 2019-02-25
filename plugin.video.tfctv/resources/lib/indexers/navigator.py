@@ -19,7 +19,7 @@
 '''
 
 
-import os,sys,urlparse,urllib,xbmc
+import os,sys,urlparse,urllib,xbmc,time
 from resources import config
 from resources.lib.libraries import control
 from resources.lib.libraries import cache
@@ -71,7 +71,7 @@ class navigator:
             for s in sections:
                 self.addDirectoryItem(s['name'].title(), str(s['id']), config.SECTIONCONTENT, control.addonFolderIcon(s['name'].title()), isFolder=True, **self.formatMenu())
             
-        if control.setting('displayMyAccountMenu') == 'true':    
+        if control.setting('displayMyAccountMenu') == 'true' and control.setting('emailAddress') != '':
             self.addDirectoryItem(control.lang(50202), '/', config.MYACCOUNT, control.addonFolderIcon(control.lang(50202)), isFolder=True, **self.formatMenu())
         
         if control.setting('displayTools') == 'true':
@@ -219,6 +219,7 @@ class navigator:
         self.endDirectory()
             
     def firstInstall(self):
+        control.run(config.IMPORTALLDB, 'install')
         self.addDirectoryItem(control.lang(56011) % (' ' if control.setting('showEnterCredentials') == 'true' else 'x'), config.uri.get('base'), config.ENTERCREDENTIALS, control.addonFolderIcon(control.lang(56011)))
         self.addDirectoryItem(control.lang(56012) % (' ' if control.setting('showPersonalize') == 'true' else 'x'), config.uri.get('base'), config.PERSONALIZESETTINGS, control.addonFolderIcon(control.lang(56012)))
         # self.addDirectoryItem(control.lang(56013) % (' ' if control.setting('showUpdateCatalog') == 'true' else 'x'), config.uri.get('base'), config.IMPORTALLDB, control.addonFolderIcon(control.lang(56013)))
@@ -244,7 +245,6 @@ class navigator:
         control.refresh()
         
     def endSetup(self):
-        control.run(config.IMPORTALLDB)
         control.setSetting('addonNewInstall', 'false')
         control.refresh()
         
