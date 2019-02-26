@@ -1,3 +1,6 @@
+1.0.1
+    Fixed issue when a show has no aired date
+    Force database reinstall in v1.0.1 due to download issues in v1.0.0
 1.0.0
     New reworked vesion
     Added a little wizard installation at first startup

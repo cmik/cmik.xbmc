@@ -101,8 +101,10 @@
     <string id="56016">Enjoy TFC</string>
     <string id="56017">Check library updates</string>
     <string id="56018">Reset Catalog Cache</string>
-    <string id="56019">Import shows database file</string>
-    <string id="56020">Import episodes database file</string>
+    <string id="56019">Select shows database file to import</string>
+    <string id="56020">Select episodes database file to import</string>
+    <string id="56021">Import automatically all database files</string>
+    <string id="56022">Quick setup</string>
     <!-- notifications / messages -->
     <string id="57000">Logging out in progress...</string>
     <string id="57001">Subscription is already expired or the item is not part of your subscription</string>

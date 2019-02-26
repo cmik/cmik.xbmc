@@ -209,17 +209,17 @@ class navigator:
         control.showMessage(message, control.lang(56003))
             
     def showTools(self):
-        self.addDirectoryItem(control.lang(56009), config.uri.get('base'), config.RELOADCATALOG, control.addonFolderIcon(control.lang(56009)))
-        self.addDirectoryItem(control.lang(56018), config.uri.get('base'), config.RESETCATALOG, control.addonFolderIcon(control.lang(56018)))
+        self.addDirectoryItem(control.lang(56021), config.uri.get('base'), config.IMPORTALLDB, control.addonFolderIcon(control.lang(56021)))
         self.addDirectoryItem(control.lang(56019), config.uri.get('base'), config.IMPORTSHOWDB, control.addonFolderIcon(control.lang(56019)))
         self.addDirectoryItem(control.lang(56020), config.uri.get('base'), config.IMPORTEPISODEDB, control.addonFolderIcon(control.lang(56020)))
+        self.addDirectoryItem(control.lang(56009), config.uri.get('base'), config.RELOADCATALOG, control.addonFolderIcon(control.lang(56009)))
+        self.addDirectoryItem(control.lang(56018), config.uri.get('base'), config.RESETCATALOG, control.addonFolderIcon(control.lang(56018)))
         self.addDirectoryItem(control.lang(56017), config.uri.get('base'), config.CHECKLIBRARYUPDATES, control.addonFolderIcon(control.lang(56017)))
         self.addDirectoryItem(control.lang(56010), config.uri.get('base'), config.CLEANCOOKIES, control.addonFolderIcon(control.lang(56010)))
-        self.addDirectoryItem('Quick setup', config.uri.get('base'), config.FIRSTINSTALL, control.addonFolderIcon('Quick setup'))
+        self.addDirectoryItem(control.lang(56022), config.uri.get('base'), config.FIRSTINSTALL, control.addonFolderIcon(control.lang(56022)))
         self.endDirectory()
             
     def firstInstall(self):
-        control.run(config.IMPORTALLDB, 'install')
         self.addDirectoryItem(control.lang(56011) % (' ' if control.setting('showEnterCredentials') == 'true' else 'x'), config.uri.get('base'), config.ENTERCREDENTIALS, control.addonFolderIcon(control.lang(56011)))
         self.addDirectoryItem(control.lang(56012) % (' ' if control.setting('showPersonalize') == 'true' else 'x'), config.uri.get('base'), config.PERSONALIZESETTINGS, control.addonFolderIcon(control.lang(56012)))
         # self.addDirectoryItem(control.lang(56013) % (' ' if control.setting('showUpdateCatalog') == 'true' else 'x'), config.uri.get('base'), config.IMPORTALLDB, control.addonFolderIcon(control.lang(56013)))

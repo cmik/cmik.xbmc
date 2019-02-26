@@ -735,6 +735,7 @@ def extractShows(html):
         image = common.parseDOM(show, "img", ret = 'src')[0]
         url = common.parseDOM(show, "a", ret = 'href')[0]
         id = re.compile('/([0-9]+)/').search(url).group(1)
+        year = ''
         try: year = re.compile('^([0-9]{4})').search(dateaired[i]).group(1)
         except:
             try: year = aired.replace('AIRED: ', '').split(' ')[1]

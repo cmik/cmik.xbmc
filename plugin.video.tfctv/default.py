@@ -9,6 +9,7 @@
 import sys,urllib,urlparse
 from resources import config
 from resources.lib.libraries import control
+from resources.lib.libraries import tools
 
 # Debug 
 logger = control.logger 
@@ -49,6 +50,13 @@ image = params.get('image')
 caller = params.get('caller', 'addon')
 
 thumbnail = urllib.unquote_plus(params.get('thumbnail', ''))
+
+
+if caller == 'addon' and control.setting('showWelcomeMessage') == 'false' and control.setting('lastVersion') != control.addonInfo('version'):
+    from resources import upgrade
+    control.showMessage(control.lang(57023) % control.addonInfo('version'), control.lang(50002))
+    upgrade.upgradeDB()
+    control.setSetting('lastVersion', control.addonInfo('version'))
 
 if mode == None:
     from resources.lib.indexers import navigator
@@ -122,29 +130,20 @@ elif mode == config.RELOADCATALOG:
 elif mode == config.RESETCATALOG:
     from resources.lib.sources import tfctv
     tfctv.resetCatalogCache()
-elif mode == config.CHECKLIBRARYUPDATES:
+elif mode == config.CHECKLIBRARYUPDATES and tools.isDBInstalled() == True:
     from resources.lib.sources import tfctv
     tfctv.checkLibraryUpdates()
 elif mode == config.CLEANCOOKIES:
     from resources.lib.sources import tfctv
     tfctv.cleanCookies()
 elif mode == config.IMPORTSHOWDB:
-    from resources.lib.libraries import tools
     tools.importShowDB()
 elif mode == config.IMPORTEPISODEDB:
-    from resources.lib.libraries import tools
     tools.importEpisodeDB()
 elif mode == config.IMPORTALLDB:
-    from resources.lib.libraries import tools
     tools.importDBFiles()
 elif mode == config.FIRSTINSTALL:
     from resources.lib.indexers import navigator
     navigator.navigator().firstInstall()
 # elif mode == 99:
     # cookieJar.clear()
-
-if caller == 'addon' and control.setting('lastVersion') != control.addonInfo('version'):
-    from resources import upgrade
-    control.showMessage(control.lang(57023) % control.addonInfo('version'), control.lang(50002))
-    upgrade.upgradeDB()
-    control.setSetting('lastVersion', control.addonInfo('version'))
