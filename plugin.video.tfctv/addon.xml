@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.tfctv" name="TFC.tv" version="1.0.1" provider-name="cmik">
+<addon id="plugin.video.tfctv" name="TFC.tv" version="1.1.0" provider-name="cmik">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
         <import addon="script.module.parsedom" version="0.9.1"/>
@@ -23,19 +23,10 @@
         <licence>GNU</licence>
         <forum>https://forum.kodi.tv/showthread.php?tid=317008</forum>
         <source>https://github.com/cmik/cmik.xbmc</source>
-        <news>v1.0.1 (26/02/2019)
-          [new] New reworked vesion
-          [new] Added a little wizard installation at first startup
-          [new] Added databases favourite/show/episode library for cache and better exeperience
-          [new] Added proxy streaming check and alert
-          [new] Allow to export shows to library (needed to added 'library' directory (created in addon profile directory) as video source)
-          [new] Added a service to check exported library updates
-          [new] Can now add show/episode to my List 
-          [new] Can now remove show/episode from my List 
-          [new] Alerts when a media can't be played as some AES encrypted videos
-          [fix] Fixed home sections content
-          [fix] Fixed issue when a show has no aired date
-          [fix] Force database reinstall in v1.0.1 due to download issues in v1.0.0
+        <news>v1.1.1 (XX/03/2019)
+          [new] Now can choose video resolution in context menu
+          [new] Added video duration meta data
+          [fix] Minor bug fixes
         </news>
         <assets>
             <icon>resources/icon.jpg</icon>

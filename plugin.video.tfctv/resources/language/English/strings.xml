@@ -77,9 +77,12 @@
     <string id="50201">By Category</string>
     <string id="50202">My Account</string>
     <string id="50203">Tools</string>
+    <!-- context menu -->
     <string id="50300">Add to my watchlist</string>
     <string id="50301">Remove from my watchlist</string>
     <string id="50302">Add to library</string>
+    <string id="50303">Choose resolution</string>
+
     <string id="50400">Enter your Kapamilya ID</string>
     <string id="50401">Enter your password</string>
     <string id="50402">Update catalog</string>

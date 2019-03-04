@@ -31,6 +31,9 @@ class Model():
         return []
         
     def _save(self, mixed):
+        return False        
+
+    def _replace(self, mixed):
         return False
        
     def getCursor(self):
@@ -62,6 +65,14 @@ class Model():
         return items
         
     def set(self, mixed):
+        data = mixed if isinstance(mixed, list) else [mixed]
+        try:            
+            return self._replace(data)
+        except (Exception) as e:
+            logger.logError('Exception: %s for data %s' % (str(e), repr(mixed)))
+            return False
+        
+    def update(self, mixed):
         data = mixed if isinstance(mixed, list) else [mixed]
         try:            
             return self._save(data)

@@ -29,7 +29,7 @@ class Library(model.Model):
             return {
                 'id' : int(data[0]), 
                 'name' : data[1], 
-                'parentid' : data[2],
+                'parentid' : int(data[2]),
                 'year' : data[3],
                 'date' : date,
                 'lastCheck' : lastCheck
@@ -58,22 +58,37 @@ class Library(model.Model):
             FROM LIBRARY_SHOW \
             WHERE ID IN (%s)" % ','.join(str(v) for v in mixed)))
         return logger.logDebug(dbcur.fetchall())
-        
+       
     def _save(self, mixed):
         ids = []
         for data in mixed:
             if 'id' in data:
                 ids.append(str(data.get('id')))
         if len(ids) > 0:
+            self.checkIfTableExists()
             dbcur = self.getCursor()
             dbcur.execute('PRAGMA encoding="UTF-8";')
-            dbcur.execute(logger.logDebug("CREATE TABLE IF NOT EXISTS LIBRARY_SHOW (\
-                ID INTEGER PRIMARY KEY, \
-                NAME TEXT, \
-                PARENTID INTEGER, \
-                YEAR TEXT, \
-                DATE TEXT, \
-                LASTCHECK TEXT)"))
+            dbcur.execute(logger.logDebug("DELETE FROM LIBRARY_SHOW WHERE ID in (%s)" % ','.join(ids)))
+            for data in mixed:
+                dbcur.execute(logger.logDebug("INSERT INTO LIBRARY_SHOW VALUES (%d, '%s', %d, '%s', '%s', '%s')" % (
+                    data.get('id'), 
+                    data.get('name').replace('\'', '\'\''), 
+                    data.get('parentid'),
+                    data.get('year'), 
+                    data.get('date'), 
+                    datetime.now().strftime('%Y-%m-%d %H:%M:%S'))))
+            return self._dbcon.commit()
+        return False
+
+    def _replace(self, mixed):
+        ids = []
+        for data in mixed:
+            if 'id' in data:
+                ids.append(str(data.get('id')))
+        if len(ids) > 0:
+            self.checkIfTableExists()
+            dbcur = self.getCursor()
+            dbcur.execute('PRAGMA encoding="UTF-8";')
             dbcur.execute(logger.logDebug("DELETE FROM LIBRARY_SHOW WHERE ID in (%s)" % ','.join(ids)))
             for data in mixed:
                 dbcur.execute(logger.logDebug("INSERT INTO LIBRARY_SHOW VALUES (%d, '%s', %d, '%s', '%s', '%s')" % (
@@ -93,6 +108,25 @@ class Library(model.Model):
             return self._dbcon.commit()
         except: 
             return False
+
+    def _drop(self):
+        dbcur = self.getCursor()
+        try: 
+            dbcur.execute(logger.logDebug("DROP TABLE LIBRARY_SHOW"))
+            return self._dbcon.commit()
+        except: 
+            return False
+
+    def checkIfTableExists(self):
+        dbcur = self.getCursor()
+        dbcur.execute(logger.logDebug("CREATE TABLE IF NOT EXISTS LIBRARY_SHOW (\
+            ID INTEGER PRIMARY KEY, \
+            NAME TEXT, \
+            PARENTID INTEGER, \
+            YEAR TEXT, \
+            DATE TEXT, \
+            LASTCHECK TEXT)"))
+        return self._dbcon.commit()
 
     def getStatistics(self):
         stats = {}

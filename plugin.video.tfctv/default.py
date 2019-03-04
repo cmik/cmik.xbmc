@@ -70,9 +70,12 @@ elif mode == config.SUBCATEGORYSHOWS:
 elif mode == config.SHOWEPISODES:
     from resources.lib.indexers import navigator
     navigator.navigator().showEpisodes(url, page, params.get('parentid', -1), params.get('year', ''))
+elif mode == config.CHOOSEBANDWIDTH:
+    from resources.lib.indexers import navigator
+    navigator.navigator().chooseBandwidth(url, title, thumbnail)
 elif mode == config.PLAY:
     from resources.lib.sources import tfctv
-    tfctv.playEpisode(url, name, thumbnail)
+    tfctv.playEpisode(url, title, thumbnail, params.get('bandwidth', False))
 elif mode == config.CATEGORIES:
     from resources.lib.indexers import navigator
     navigator.navigator().showCategories()

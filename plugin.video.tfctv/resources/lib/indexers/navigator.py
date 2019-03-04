@@ -96,7 +96,7 @@ class navigator:
                 self.addDirectoryItem(e.get('name'), str(e.get('id')), config.SHOWEPISODES, image, isFolder=True, query='parentid='+str(e.get('parentid'))+'&year='+e.get('year'), **self.formatShowInfo(e, addToList=False))
             elif e['type'] == 'episode':
                 title = '%s - %s' % (e.get('show'), e.get('dateaired')) # if e.get('type') == 'movie' else '%s - Ep.%s - %s' % (e.get('show'), e.get('episodenumber'), e.get('dateaired'))
-                self.addDirectoryItem(title, str(e.get('id')), config.PLAY, e.get('image'), isFolder = False, **self.formatVideoInfo(e, addToList=False))
+                self.addDirectoryItem(title, str(e.get('id')), config.PLAY, e.get('image'), isFolder = False, query='title=%s' % title, **self.formatVideoInfo(e, addToList=False))
         self.endDirectory()
             
     def showCategories(self):   
@@ -132,7 +132,7 @@ class navigator:
                 self.addDirectoryItem(e.get('name'), str(e.get('id')), config.SHOWEPISODES, image, isFolder=True, **self.formatShowInfo(e))
             elif e['type'] == 'episode':
                 title = '%s - %s' % (e.get('show'), e.get('dateaired')) # if e.get('type') == 'movie' else '%s - Ep.%s - %s' % (e.get('show'), e.get('episodenumber'), e.get('dateaired'))
-                self.addDirectoryItem(title, str(e.get('id')), config.PLAY, e.get('image'), isFolder = False, **self.formatVideoInfo(e))
+                self.addDirectoryItem(title, str(e.get('id')), config.PLAY, e.get('image'), isFolder = False, query='title=%s' % title, **self.formatVideoInfo(e))
         if len(content) == itemsPerPage:
             self.addDirectoryItem(control.lang(56008), section, config.SECTIONCONTENT, '', page + 1)
         self.endDirectory()
@@ -154,9 +154,15 @@ class navigator:
         # episodes = cache.sCacheFunction(tfctv.getEpisodesPerPage, showId, page, itemsPerPage)
         episodes = tfctv.getEpisodesPerPage(showId, parentId, year, page, itemsPerPage)
         for e in episodes:
-            self.addDirectoryItem(e.get('title'), str(e.get('id')), config.PLAY, e.get('image'), isFolder = False, **self.formatVideoInfo(e))
+            self.addDirectoryItem(e.get('title'), str(e.get('id')), config.PLAY, e.get('image'), isFolder = False, query='title=%s' % e.get('title'), **self.formatVideoInfo(e))
         if len(episodes) == itemsPerPage:
             self.addDirectoryItem(control.lang(56008), showId, config.SHOWEPISODES, '', page + 1)
+        self.endDirectory()
+
+    def chooseBandwidth(self, episodeId, title, thumbnail):
+        bandwidths = tfctv.getEpisodeBandwidthList(episodeId, title, thumbnail)
+        for e in sorted(bandwidths, key = itemgetter('bandwidth')):
+            self.addDirectoryItem('%s | %sp | BITRATE %s' % (e.get('title'), e.get('resolution').split('x')[1], e.get('bandwidth')), str(e.get('id')), config.PLAY, e.get('image'), isFolder = False, query='title=%s&bandwidth=%d' % (e.get('title'), e.get('bandwidth')), **self.formatVideoInfo(e))
         self.endDirectory()
             
     def showMyAccount(self):
@@ -257,25 +263,38 @@ class navigator:
         
     def formatShowInfo(self, info, addToList=True, options = {}):
         contextMenu = {}
+        # add to mylist / remove from mylist
         add = { control.lang(50300) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info.get('id')), config.ADDTOLIST, info.get('name'), query='ltype=%s&type=%s' % (info.get('ltype'), info.get('type'))) } 
         remove = { control.lang(50301) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info.get('id')), config.REMOVEFROMLIST, info.get('name'), query='ltype=%s&type=%s' % (info.get('ltype'), info.get('type'))) } 
         if addToList == True: 
             contextMenu.update(add)
         else:
             contextMenu.update(remove)
-        
+        # export to library
         if control.setting('exportToLibrary') == 'true':
             addToLibrary = { control.lang(50302) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info.get('id')), config.ADDTOLIBRARY, info.get('name'), query='parentid=%s&year=%s&ltype=%s&type=%s' % (str(info.get('parentid')), info.get('year'), info.get('ltype'), info.get('type'))) }
             contextMenu.update(addToLibrary)
         
         data = { 
-            'listArts' : { 'clearlogo' : info.get('logo'), 'fanart' : info.get('fanart'), 'banner' : info.get('banner') }, 
+            'listArts' : { 
+                'clearlogo' : info.get('logo'), 
+                'fanart' : info.get('fanart'), 
+                'banner' : info.get('banner'), 
+                'tvshow.poster': info.get('banner'), 
+                'season.poster': info.get('banner'), 
+                'tvshow.banner': info.get('banner'), 
+                'season.banner': info.get('banner') 
+                }, 
             'listInfos' : { 
                 'video' : { 
                     'sorttitle': info.get('name'),
                     'plot' : info.get('description'), 
                     'year' : info.get('year'),
-                    'mediatype' : 'tvshow' 
+                    'mediatype' : 'tvshow',
+                    'studio': 'ABS-CBN', 
+                    'duration': info.get('duration', 0), 
+                    'rating': info.get('rating', 0), 
+                    'votes': info.get('votes', 0), 
                     } 
                 },
             'contextMenu' : contextMenu
@@ -283,16 +302,28 @@ class navigator:
         
         if info.get('casts', False):    
             data['listCasts'] = info.get('casts')
-            
-        return data
+        
+        return logger.logDebug(data)
             
     def formatVideoInfo(self, info, addToList=True, options = {}):
-        add = { control.lang(50300) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info.get('id')), config.ADDTOLIST, info.get('title'), query='type=%s' % (info.get('ltype',))) } 
-        remove = { control.lang(50301) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info.get('id')), config.REMOVEFROMLIST, info.get('title'), query='type=%s' % (info.get('ltype'))) } 
-        contextMenu = add if addToList == True else remove
+
+        contextMenu = {}
+        if info.get('bandwidth') == None:
+            # add to mylist / remove from mylist
+            add = { control.lang(50300) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info.get('id')), config.ADDTOLIST, info.get('title'), query='type=%s' % (info.get('ltype'))) } 
+            remove = { control.lang(50301) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info.get('id')), config.REMOVEFROMLIST, info.get('title'), query='type=%s' % (info.get('ltype'))) } 
+            if addToList == True: 
+                contextMenu.update(add)
+            else:
+                contextMenu.update(remove)
+            # Choose resolution
+            contextMenu.update({ control.lang(50303) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info.get('id')), config.CHOOSEBANDWIDTH, info.get('title'), info.get('image'), query='title=%s' % info.get('title'))})
 
         data = { 
-            'listArts' : { 'fanart' : info.get('fanart'), 'banner' : info.get('fanart') }, 
+            'listArts' : { 
+                'fanart' : info.get('fanart'), 
+                'banner' : info.get('fanart')
+                }, 
             'listProperties' : { 'IsPlayable' : 'true' } , 
             'listInfos' : { 
                 'video' : { 
@@ -302,17 +333,33 @@ class navigator:
                     'tracknumber' : info.get('episodenumber'), 
                     'plot' : info.get('description'), 
                     'aired' : info.get('dateaired'), 
+                    'premiered' : info.get('dateaired'), 
                     'year' : info.get('year'), 
-                    'mediatype' : info.get('type') 
+                    'mediatype' : info.get('type'),
+                    'studio': 'ABS-CBN', 
+                    'duration': info.get('duration', 0), 
+                    'rating': info.get('rating', 0), 
+                    'votes': info.get('votes', 0)
                     } 
                 },
             'contextMenu' : contextMenu
             }
 
-        if info.get('showObj', False) and info.get('showObj').get('casts', False):    
-            data['listCasts'] = info.get('showObj').get('casts')
-
-        return data
+        if info.get('showObj', False):
+            data['listArts'].update({
+                'poster': info.get('showObj').get('banner'), 
+                'tvshow.banner': info.get('showObj').get('banner'), 
+                'season.banner': info.get('showObj').get('banner'),
+                'tvshow.poster': info.get('showObj').get('banner'), 
+                'season.poster': info.get('showObj').get('banner')
+                })
+            data['listInfos']['video'].update({
+                'genre': info.get('showObj').get('parentname'),
+                })
+            if info.get('showObj').get('casts', False):    
+                data['listCasts'] = info.get('showObj').get('casts')
+        
+        return logger.logDebug(data)
             
             
     # def addDirectoryItem(self, name, query, thumb, icon, context=None, isAction=True, isFolder=True):

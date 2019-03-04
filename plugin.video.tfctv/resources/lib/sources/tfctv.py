@@ -22,9 +22,11 @@ episodeDB = episodes.Episode(control.episodesFile)
 showDB = shows.Show(control.showsFile)
 libraryDB = library.Library(control.libraryFile)
 
+Logged = False
+
 #---------------------- FUNCTIONS ----------------------------------------                  
 
-def playEpisode(url, name, thumbnail):
+def playEpisode(url, name, thumbnail, bandwidth=False):
     logger.logInfo('called function')
     errorCode = -1
     episodeDetails = {}
@@ -43,8 +45,8 @@ def playEpisode(url, name, thumbnail):
             # else:
                 # login()
                 
-        episodeDetails = getMediaInfo(episode, name, thumbnail)
-        logger.logDebug(episodeDetails)
+        episodeDetails = getMediaInfo(episode, name, thumbnail, bandwidth)
+        logger.logInfo(episodeDetails)
         if episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] == 0 and 'data' in episodeDetails:
             if 'preview' in episodeDetails['data'] and episodeDetails['data']['preview'] == True:
                 control.infoDialog(control.lang(57025), control.lang(50002), time=5000)
@@ -64,6 +66,7 @@ def playEpisode(url, name, thumbnail):
                 'year' : episodeDetails['data']['year'],
                 'mediatype' : episodeDetails['data']['ltype'] 
                 })
+
             if episodeDetails.get('useDash', False):
                 logger.logInfo(episodeDetails['dash'])
                 liz.setProperty('inputstreamaddon', 'inputstream.adaptive')
@@ -74,6 +77,7 @@ def playEpisode(url, name, thumbnail):
                     '%s|%s|%s|%s' % (episodeDetails['dash']['key'], episodeDetails['dash']['headers'], 'R{SSM}', 'R'))
                 liz.setMimeType(episodeDetails['data']['type'])
                 # liz.setContentLookup(False)
+            
             liz.setProperty('fanart_image', episodeDetails['data']['fanart'])
             liz.setProperty('IsPlayable', 'true')
             try: 
@@ -88,9 +92,9 @@ def playEpisode(url, name, thumbnail):
                 control.showNotification(control.lang(57001), control.lang(50009))
     return False
     
-def getMediaInfo(episodeId, title, thumbnail):
+def getMediaInfo(episodeId, title, thumbnail, bandwidth=False):
     logger.logInfo('called function')
-    mediaInfo = getMediaInfoFromWebsite(episodeId)
+    mediaInfo = getMediaInfoFromWebsite(episodeId, bandwidth)
     if mediaInfo['errorCode'] == 1:
         mediaInfo['errorCode'] = 0
     
@@ -111,14 +115,54 @@ def getMediaInfo(episodeId, title, thumbnail):
             'year' : mediaInfo['data']['year'],
             'parentalAdvisory' : mediaInfo['data']['parentalAdvisory'],
             'ltype' : mediaInfo['data']['ltype'],
-            'type' : 'episode'
+            'type' : 'episode',
+            'duration' : mediaInfo['data']['duration'],
+            'views' : mediaInfo['data']['views'] + 1,
+            'rating' : mediaInfo['data']['rating'],
+            'votes' : mediaInfo['data']['votes']
             }
-        episodeDB.set(logger.logInfo(e))    
+        episodeDB.set(e)
+
+        s = mediaInfo['data']['showObj']
+        s['views'] = s.get('views', 0) + 1
+        showDB.update(s)
         
     return mediaInfo
-    
-def getMediaInfoFromWebsite(episodeId):
-    logger.logInfo('called function with param (%s)' % (str(episodeId)))
+
+def getEpisodeBandwidthList(episodeId, title, thumbnail):
+    logger.logInfo('called function')
+    mediaInfo = getMediaInfoFromWebsite(episodeId)
+    data = []
+    if mediaInfo['errorCode'] <= 1:
+        for (bandwidth, resolution) in mediaInfo['data']['bandwidth'].iteritems():
+            data.append({
+            'id' : int(episodeId),
+            'title' : title,
+            'parentid' : int(mediaInfo['data']['showid']),
+            'show' : mediaInfo['data']['show'],
+            'image' : thumbnail,
+            'fanart' : mediaInfo['data']['fanart'],
+            'episodenumber' : mediaInfo['data']['episodenumber'],
+            'url' : mediaInfo['data']['url'],
+            'description' : mediaInfo['data']['plot'],
+            'shortdescription' : mediaInfo['data']['plot'],
+            'dateaired' : mediaInfo['data']['dateaired'],
+            'date' : mediaInfo['data']['date'],
+            'year' : mediaInfo['data']['year'],
+            'parentalAdvisory' : mediaInfo['data']['parentalAdvisory'],
+            'ltype' : mediaInfo['data']['ltype'],
+            'type' : 'episode',
+            'duration' : mediaInfo['data']['duration'],
+            'views' : mediaInfo['data']['views'],
+            'rating' : mediaInfo['data']['rating'],
+            'votes' : mediaInfo['data']['votes'],
+            'showObj' : mediaInfo['data']['showObj'],
+            'bandwidth' : int(bandwidth), 
+            'resolution' : resolution})
+    return data
+
+def getMediaInfoFromWebsite(episodeId, bandwidth=False):
+    logger.logInfo('called function with param (%s, %s)' % (str(episodeId), bandwidth))
     
     mediaInfo = {}
     html = callServiceApi(config.uri.get('episodeDetails') % episodeId, base_url = config.websiteUrl, useCache=False)
@@ -132,7 +176,8 @@ def getMediaInfoFromWebsite(episodeId):
         mediaInfo['data']['url'] = common.parseDOM(html, "link", attrs = { 'rel' : 'canonical' }, ret = 'href')[0]
         
         episodeData = json.loads(re.compile('var ldj = (\{.+\})', re.IGNORECASE).search(html).group(1))
-        
+        logger.logInfo(episodeData)
+
         # Parental advisory
         mediaInfo['data']['parentalAdvisory'] = 'false'
         if re.compile('var dfp_c = ".*2900.*";', re.IGNORECASE).search(html):
@@ -222,36 +267,54 @@ def getMediaInfoFromWebsite(episodeId):
                                 # }
                     else: 
                         # choose best stream quality
-                        if (control.setting('chooseBestStream') == 'true'):
-                            m3u8 = callServiceApi(episodeDetails['media']['uri'], base_url = '', headers=[])
-                            if m3u8:
-                                lines = m3u8.split('\n')
-                                i = 0
-                                bandwidth = 0
-                                choosedStream = ''
-                                for l in lines:
-                                    match = re.compile('BANDWIDTH=([0-9]+)', re.IGNORECASE).search(lines[i])
-                                    if match :
-                                        if int(match.group(1)) > bandwidth:
-                                            bandwidth = int(match.group(1))
-                                            choosedStream = lines[i+1]
-                                        i+=2
-                                    else:
-                                        i+=1
-                                    if i >= len(lines):
+                        mediaInfo['data']['bandwidth'] = {}
+                        m3u8 = callServiceApi(episodeDetails['media']['uri'], base_url = '', headers=[])
+                        if m3u8:
+                            lines = m3u8.split('\n')
+                            i = 0
+                            bestBandwidth = 0
+                            choosedStream = ''
+                            for l in lines:
+                                bw_match = re.compile('BANDWIDTH=([0-9]+)', re.IGNORECASE).search(lines[i])
+                                if bw_match :
+                                    currentBandwidth = int(bw_match.group(1))
+                                    res_match = re.compile('RESOLUTION=([0-9]+x[0-9]+)', re.IGNORECASE).search(lines[i])
+                                    if res_match :
+                                        mediaInfo['data']['bandwidth'][str(currentBandwidth)] = res_match.group(1)
+                                    if bandwidth != False and currentBandwidth == int(bandwidth):
+                                        choosedStream = lines[i+1]
                                         break
+                                    elif currentBandwidth > bestBandwidth:
+                                        bestBandwidth = currentBandwidth
+                                        choosedStream = lines[i+1]
+                                    i+=2
+                                else:
+                                    i+=1
+
+                                if i >= len(lines):
+                                    break
+
+                            if control.setting('chooseBestStream') == 'true' or bandwidth != False: 
+                                logger.logInfo(choosedStream)
                                 episodeDetails['media']['uri'] = choosedStream
-                            else:
-                                mediaInfo['StatusMessage'] = control.lang(57032)
-                                mediaInfo['errorCode'] = 9
+                        else:
+                            mediaInfo['StatusMessage'] = control.lang(57032)
+                            mediaInfo['errorCode'] = 9
                         
                     res = showDB.get(sid)
                     show = res[0] if len(res) == 1 else {}
+
+                    res = episodeDB.get(int(episodeId))
+                    episode = res[0] if len(res) == 1 else {}
                     
                     mediaInfo['data'].update(episodeDetails['media'])
                     mediaInfo['data']['preview'] = episodeDetails['mediainfo']['preview']
                     mediaInfo['data']['show'] = show.get('name', episodeData.get('name'))
                     mediaInfo['data']['parentname'] = show.get('parentname', episodeData.get('genre', ''))
+                    mediaInfo['data']['rating'] = show.get('rating', episodeData.get('aggregateRating' , {}).get('ratingValue', 0))
+                    if mediaInfo['data']['rating'] == None: mediaInfo['data']['rating'] = 0
+                    mediaInfo['data']['votes'] = show.get('votes', episodeData.get('aggregateRating' , {}).get('reviewCount', 0))
+                    if mediaInfo['data']['votes'] == None: mediaInfo['data']['votes'] = 0
                     mediaInfo['data']['plot'] = episodeData.get('description')
                     mediaInfo['data']['image'] = episodeData.get('thumbnailUrl')
                     mediaInfo['data']['fanart'] = show.get('fanart', episodeData.get('image'))
@@ -264,12 +327,22 @@ def getMediaInfoFromWebsite(episodeId):
                     mediaInfo['data']['date'] = datePublished.strftime('%Y-%m-%d')
                     mediaInfo['data']['year'] = datePublished.strftime('%Y')
                     mediaInfo['data']['episodenumber'] = 1 if type == 'movie' else episodeData.get('episodeNumber')
-                        
+                    mediaInfo['data']['duration'] = 0
+                    duration = re.compile('^([0-9]+)h([0-9]*)[m]?|([0-9]+)m$', re.IGNORECASE).search(episodeData.get('duration', episodeData.get('timeRequired', 0)))
+                    if duration: 
+                        if duration.group(1) != None:
+                            if duration.group(2) != '': mediaInfo['data']['duration'] = int(duration.group(2))
+                            mediaInfo['data']['duration'] += int(duration.group(1)) * 60
+                        elif duration.group(3) != None: 
+                            mediaInfo['data']['duration'] = int(duration.group(3))
+                    mediaInfo['data']['views'] = episode.get('views', 0)
+                    mediaInfo['data']['showObj'] = show
+                
                 logger.logDebug(mediaInfo)
                     
                 if 'StatusMessage' in episodeDetails and episodeDetails['StatusMessage'] != '' and episodeDetails['StatusMessage'] != 'OK':
                     mediaInfo['StatusMessage'] = episodeDetails['StatusMessage']
-                
+    
     return mediaInfo
         
 def resetCatalogCache():
@@ -455,6 +528,7 @@ def extractMyListShowData(url, html):
         
         return {
             'type' : 'show',
+            'ltype' : 'show',
             'id' : int(showId),
             'parentid' : -1,
             'parentname' : '',
@@ -717,7 +791,9 @@ def getShows(subCategoryId, page = 1):
                         'url' : d['url'],
                         'description' : d['description'],
                         'shortdescription' : d['shortdescription'],
-                        'year' : d['year']
+                        'year' : d['year'],
+                        'type' : 'show',
+                        'ltype' : 'show'
                         })
                 
     return data
@@ -768,6 +844,11 @@ def getShow(showId, parentId=-1, year=''):
         show = res[0] if len(res) == 1 else {}
         showData = json.loads(re.compile('var ldj = (\{.+\})', re.IGNORECASE).search(html).group(1))
 
+        rating = showData.get('aggregateRating' , {}).get('ratingValue', show.get('rating', 0))
+        if rating == None: rating = 0
+        votes = showData.get('aggregateRating' , {}).get('reviewCount', show.get('votes', 0))
+        if votes == None: votes = 0
+
         if year == '':
             try:
                 datePublished = datetime.datetime.strptime(showData.get('datePublished'), '%Y-%m-%d')
@@ -788,15 +869,17 @@ def getShow(showId, parentId=-1, year=''):
             
         url = common.parseDOM(html, "link", attrs = { 'rel' : 'canonical' }, ret = 'href')[0]
         
-        banners = common.parseDOM(html, "div", attrs = { 'class' : 'header-hero-image topic-page' }, ret = 'style')
-        if len(banners) == 0:
-            banners = common.parseDOM(html, "div", attrs = { 'class' : 'header-hero-image' }, ret = 'style')
-        if len(banners) == 0:
-            banners = common.parseDOM(html, "div", attrs = { 'id' : 'detail-video' }, ret = 'style')
-        if banners:
-            banner = re.compile('url\((.+)\);', re.IGNORECASE).search(banners[0]).group(1)
+        fanarts = common.parseDOM(html, "div", attrs = { 'class' : 'header-hero-image topic-page' }, ret = 'style')
+        if len(fanarts) == 0:
+            fanarts = common.parseDOM(html, "div", attrs = { 'class' : 'header-hero-image' }, ret = 'style')
+        if len(fanarts) == 0:
+            fanarts = common.parseDOM(html, "div", attrs = { 'id' : 'detail-video' }, ret = 'style')
+        if fanarts:
+            fanart = re.compile('url\((.+)\);', re.IGNORECASE).search(fanarts[0]).group(1)
         else:
-            banner = image
+            fanart = image
+
+        banner = showData.get('image', fanart)
             
         name = common.parseDOM(html, "meta", attrs = { 'property' : 'og:title' }, ret = "content")[0]
         description = common.parseDOM(html, "div", attrs = { 'class' : 'celeb-desc-p' })[0]
@@ -838,7 +921,7 @@ def getShow(showId, parentId=-1, year=''):
             'parentname' : common.replaceHTMLCodes(genre),
             'logo' : logo,
             'image' : image,
-            'fanart' : banner,
+            'fanart' : fanart,
             'banner' : banner,
             'url' : url,
             'description' : common.replaceHTMLCodes(description),
@@ -847,8 +930,20 @@ def getShow(showId, parentId=-1, year=''):
             'episodes' : episodes,
             'casts' : actors,
             'ltype' : type,
+            'duration' : 0,
+            'views' : 0,
+            'rating' : rating,
+            'votes' : votes,
             'type': 'show'
             }
+        if type == 'movie':
+            duration = re.compile('^([0-9]+)h([0-9]*)[m]?|([0-9]+)m$', re.IGNORECASE).search(showData.get('duration', showData.get('timeRequired', 0)))
+            if duration: 
+                if duration.group(1) != None: 
+                    if duration.group(2) != '': data['duration'] = int(duration.group(2))
+                    data['duration'] += int(duration.group(1)) * 60
+                if duration.group(3) != None: 
+                    data['duration'] = int(duration.group(3))
         showDB.set(data)
     else:
         logger.logWarning('Error on show %s: %s' % (showId, err.get('message')))
@@ -879,29 +974,53 @@ def getEpisodesPerPage(showId, parentId, year, page=1, itemsPerPage=8):
                 html = callServiceApi(config.uri.get('showDetails') % showId, useCache=False)
                 episodeId = int(re.compile('var dfp_e = "(.+)";', re.IGNORECASE).search(html).group(1))
                 episodeData = json.loads(re.compile('var ldj = (\{.+\})', re.IGNORECASE).search(html).group(1))
-                try:
-                    datePublished = datetime.datetime.strptime(episodeData.get('datePublished'), '%Y-%m-%d')
-                except TypeError:
-                    datePublished = datetime.datetime(*(time.strptime(episodeData.get('datePublished'), '%Y-%m-%d')[0:6]))
-        
-                type = 'episode' if episodeData.get('@type' ,'episode').lower() not in ('episode','movie') else episodeData.get('@type' ,'episode').lower()
-                data.append({
-                    'id' : episodeId,
-                    'title' : episodeData.get('name'),
-                    'show' : showDetails.get('name', episodeData.get('name')),
-                    'image' : episodeData.get('thumbnailUrl',  episodeData.get('image')),
-                    'episodenumber' : 1,
-                    'description' : episodeData.get('description'),
-                    'shortdescription' : episodeData.get('description'),
-                    'dateaired' : datePublished.strftime('%b %d, %Y'),
-                    'date' : datePublished.strftime('%Y-%m-%d'),
-                    'year' : datePublished.strftime('%Y'),
-                    'fanart' : showDetails.get('fanart'),
-                    'showObj' : showDetails,
-                    'ltype' : type,
-                    'type' : 'episode'
-                    })
-                    
+
+                res = episodeDB.get(episodeId)
+                if len(res) == 1:
+                    e = res[0]
+                    # Update title value with episode number
+                    if episodeData:
+                        e['title'] = episodeData.get('name')
+                        e['episodenumber'] = episodeData.get('episodenumber')
+                        e['showObj'] = showDetails
+                    data.append(e)
+                else:
+                    try:
+                        datePublished = datetime.datetime.strptime(episodeData.get('datePublished'), '%Y-%m-%d')
+                    except TypeError:
+                        datePublished = datetime.datetime(*(time.strptime(episodeData.get('datePublished'), '%Y-%m-%d')[0:6]))
+            
+                    type = 'episode' if episodeData.get('@type' ,'episode').lower() not in ('episode','movie') else episodeData.get('@type' ,'episode').lower()
+                    edata = {
+                        'id' : episodeId,
+                        'title' : episodeData.get('name'),
+                        'show' : showDetails.get('name', episodeData.get('name')),
+                        'image' : episodeData.get('thumbnailUrl',  episodeData.get('image')),
+                        'episodenumber' : 1,
+                        'description' : episodeData.get('description'),
+                        'shortdescription' : episodeData.get('description'),
+                        'dateaired' : datePublished.strftime('%b %d, %Y'),
+                        'date' : datePublished.strftime('%Y-%m-%d'),
+                        'year' : datePublished.strftime('%Y'),
+                        'fanart' : showDetails.get('fanart'),
+                        'showObj' : showDetails,
+                        'ltype' : type,
+                        'duration' : 0,
+                        'views' : 0,
+                        'rating' : episodeData.get('aggregateRating' , {}).get('ratingValue', 0),
+                        'votes' : episodeData.get('aggregateRating' , {}).get('reviewCount', 0),
+                        'type' : 'episode'
+                        }
+                    if edata['rating'] == None: edata['rating'] = 0
+                    if edata['votes'] == None: edata['votes'] = 0
+                    duration = re.compile('^([0-9]+)h([0-9]*)[m]?|([0-9]+)m$', re.IGNORECASE).search(episodeData.get('duration', episodeData.get('timeRequired', 0)))
+                    if duration: 
+                        if duration.group(1) != None: 
+                            if duration.group(2) != '': edata['duration'] = int(duration.group(2))
+                            edata['duration'] += int(duration.group(1)) * 60
+                        elif duration.group(3) != None: 
+                            edata['duration'] = int(duration.group(3))
+                    data.append(edata)
                 break
             else:
                 i = 0
@@ -1239,7 +1358,6 @@ def generateShowNFO(info, path):
     nfoString += '<sorttitle>%s</sorttitle>' % info.get('name')
     nfoString += '<episode>%s</episode>' % max([e.get('episodenumber') for k, e in info.get('episodes').iteritems()])
     nfoString += '<plot>%s</plot>' % info.get('description')
-    nfoString += '<plot>%s</plot>' % info.get('description')
     nfoString += '<aired>%s</aired>' % info.get('dateaired')
     nfoString += '<year>%s</year>' % info.get('year')
     nfoString += '<thumb aspect="poster">%s</thumb>' % info.get('image')
@@ -1272,7 +1390,7 @@ def generateEpisodeNFO(info, path, filePath):
     nfoString += '<path>%s</path>' % path
     nfoString += '<filenameandpath>%s</filenameandpath>' % filePath
     nfoString += '<basepath>%s</basepath>' % filePath
-    nfoString += '<studio>TFC</studio>'
+    nfoString += '<studio>ABS-CBN</studio>'
     
     return u'<?xml version="1.0" encoding="UTF-8" standalone="yes"?> \
 <!-- created on %s - by TFC.tv addon --> \
@@ -1352,8 +1470,12 @@ def login(quiet=False):
     
 def isLoggedIn():
     logger.logInfo('called function')
-    html = callServiceApi(config.uri.get('profile'), headers=[('Referer', config.websiteSecuredUrl+'/')], base_url=config.websiteSecuredUrl, useCache=False)
-    return False if 'TfcTvId' not in html else True
+    global Logged
+    logger.logInfo(Logged)
+    if Logged == False:
+        html = callServiceApi(config.uri.get('profile'), headers=[('Referer', config.websiteSecuredUrl+'/')], base_url=config.websiteSecuredUrl, useCache=False)
+        Logged = False if 'TfcTvId' not in html else True
+    return Logged
     
 def loginToWebsite(quiet=False): 
     from random import randint
