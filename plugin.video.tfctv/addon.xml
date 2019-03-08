@@ -23,10 +23,10 @@
         <licence>GNU</licence>
         <forum>https://forum.kodi.tv/showthread.php?tid=317008</forum>
         <source>https://github.com/cmik/cmik.xbmc</source>
-        <news>v1.1.1 (XX/03/2019)
+        <news>v1.1.0 (08/03/2019)
           [new] Now can choose video resolution in context menu
           [new] Added video duration meta data
-          [fix] Minor bug fixes
+          [fix] some optimizations and minor bug fixes
         </news>
         <assets>
             <icon>resources/icon.jpg</icon>

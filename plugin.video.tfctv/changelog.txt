@@ -1,7 +1,7 @@
 1.1.0
     Now can choose video resolution in context menu
     Added video duration meta data
-    Minor bug fixes
+    Some optimizations and minor bug fixes
 1.0.1
     Fixed issue when a show has no aired date
     Force database reinstall in v1.0.1 due to download issues in v1.0.0
