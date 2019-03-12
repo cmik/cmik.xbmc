@@ -122,10 +122,10 @@ elif mode == config.REMOVEFROMLIBRARY:
     navigator.navigator().removeShowFromLibrary(url, name)
 elif mode == config.SEARCHMENU:
     from resources.lib.indexers import navigator
-    navigator.navigator().showSearchMenu(params.get('category', False), params.get('type', False))
+    navigator.navigator().showSearchMenu(params.get('category', False))
 elif mode == config.EXECUTESEARCH:
     from resources.lib.indexers import navigator
-    navigator.navigator().removeShowFromLibrary(url, name)
+    navigator.navigator().executeSearch(params.get('category', False), params.get('type', False))
 elif mode == config.ENTERCREDENTIALS:
     from resources.lib.indexers import navigator
     navigator.navigator().enterCredentials()
