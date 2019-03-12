@@ -38,6 +38,11 @@ def importDBFiles():
         fileSource = dBImportURL + 'episodes.db' 
         logger.logInfo('Copying %s to %s' % (fileSource, control.episodesFile))
         status = True if status is True and logger.logInfo(xbmcvfs.copy(fileSource, control.episodesFile)) != 0 else False
+
+        # Celebrities DB file
+        fileSource = dBImportURL + 'celebrities.db' 
+        logger.logInfo('Copying %s to %s' % (fileSource, control.celebritiesFile))
+        status = True if status is True and logger.logInfo(xbmcvfs.copy(fileSource, control.celebritiesFile)) != 0 else False
     except:
         status = False
         pass
@@ -51,11 +56,17 @@ def importDBFiles():
 def deleteDBFiles():
     status = True
     try:
-        logger.logInfo('Deleting %s' % control.showsFile)
-        status = True if status is True and logger.logInfo(xbmcvfs.delete(control.showsFile)) != 0 else False
+        if control.pathExists(control.showsFile):
+            logger.logInfo('Deleting %s' % control.showsFile)
+            status = True if status is True and logger.logInfo(xbmcvfs.delete(control.showsFile)) != 0 else False
 
-        logger.logInfo('Deleting %s' % control.episodesFile)
-        status = True if status is True and logger.logInfo(xbmcvfs.delete(control.episodesFile)) != 0 else False
+        if control.pathExists(control.episodesFile):
+            logger.logInfo('Deleting %s' % control.episodesFile)
+            status = True if status is True and logger.logInfo(xbmcvfs.delete(control.episodesFile)) != 0 else False
+
+        if control.pathExists(control.celebritiesFile):
+            logger.logInfo('Deleting %s' % control.celebritiesFile)
+            status = True if status is True and logger.logInfo(xbmcvfs.delete(control.celebritiesFile)) != 0 else False
     except:
         status = False
         pass

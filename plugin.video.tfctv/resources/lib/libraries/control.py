@@ -85,7 +85,11 @@ makePath = xbmcvfs.mkdirs
 
 deleteFile = xbmcvfs.delete
 
+deleteFolder = xbmcvfs.rmdir
+
 listDir = xbmcvfs.listdir
+
+pathExists = xbmcvfs.exists
 
 transPath = xbmc.translatePath
 

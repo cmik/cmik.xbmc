@@ -37,7 +37,32 @@ class Show(model.Model):
                 'type' : 'show'
                 }
         return {}
-         
+    
+    def _search(self, search, limit):
+        dbcur = self.getCursor()
+        where = ["%s LIKE '%%%s%%'" % (str(k), str(v)) for k,v in search.iteritems()]
+        first = 'LIMIT %d' % int(limit) if limit != False else ''
+        dbcur.execute(logger.logDebug("SELECT ID, \
+            TITLE, \
+            PARENTID, \
+            PARENTNAME, \
+            THUMBNAIL, \
+            IMAGE, \
+            FANART, \
+            BANNER, \
+            URL, \
+            DESCRIPTION, \
+            SHORTDESCRIPTION, \
+            YEAR, \
+            TYPE, \
+            DURATION, \
+            VIEWS, \
+            RATING, \
+            VOTES \
+            FROM SHOW \
+            WHERE %s %s" % (' AND '.join(where), first)))
+        return logger.logDebug(dbcur.fetchall())
+
     def _retrieveAll(self):
         dbcur = self.getCursor()
         dbcur.execute(logger.logDebug("SELECT ID, \
@@ -60,7 +85,7 @@ class Show(model.Model):
             FROM SHOW"))
         return logger.logDebug(dbcur.fetchall())
          
-    def _retrieve(self, mixed):
+    def _retrieve(self, mixed, key):
         dbcur = self.getCursor()
         dbcur.execute(logger.logDebug("SELECT ID, \
             TITLE, \
@@ -80,11 +105,10 @@ class Show(model.Model):
             RATING, \
             VOTES \
             FROM SHOW \
-            WHERE ID IN (%s)" % ','.join(str(v) for v in mixed)))
+            WHERE %s IN (%s)" % (key, ','.join(str(v) for v in mixed))))
         return logger.logDebug(dbcur.fetchall())
 
     def _save(self, mixed):
-        ids = []
         logger.logDebug(mixed)
         self.checkIfTableExists()
         for data in mixed:
@@ -111,14 +135,12 @@ class Show(model.Model):
                     query += "VOTES = %d " % data.get('votes') if data.get('votes', False) else "VOTES = VOTES "
                     query += "WHERE ID = %d" % data.get('id')
                     dbcur.execute(logger.logDebug(query))
-        return self._dbcon.commit()
+        self._dbcon.commit()
+        return True
 
     def _replace(self, mixed):
-        ids = []
         logger.logDebug(mixed)
-        for data in mixed:
-            if 'id' in data:
-                ids.append(str(data.get('id')))
+        ids = [str(data['id']) for data in mixed if 'id' in data]
         if len(ids) > 0:
             self.checkIfTableExists()
             dbcur = self.getCursor()
@@ -130,10 +152,10 @@ class Show(model.Model):
                     data.get('name').replace('\'', '\'\''), 
                     data.get('parentid'), 
                     data.get('parentname').replace('\'', '\'\''), 
-                    data.get('logo'), 
-                    data.get('image'), 
-                    data.get('fanart'), 
-                    data.get('banner'), 
+                    data.get('logo').replace('&#39;', '\'\''), 
+                    data.get('image').replace('&#39;', '\'\''), 
+                    data.get('fanart').replace('&#39;', '\'\''), 
+                    data.get('banner').replace('&#39;', '\'\''), 
                     data.get('url'), 
                     data.get('description').replace('\'', '\'\''), 
                     data.get('shortdescription').replace('\'', '\'\''), 
@@ -143,7 +165,8 @@ class Show(model.Model):
                     data.get('views', 0), 
                     data.get('rating', 0), 
                     data.get('votes', 0))))
-            return self._dbcon.commit()
+            self._dbcon.commit()
+            return True
         return False
 
     def _remove(self, mixed):
@@ -156,17 +179,28 @@ class Show(model.Model):
             dbcur = self.getCursor()
             try: 
                 dbcur.execute(logger.logDebug("DELETE FROM SHOW WHERE ID in (%s)" % ','.join(ids)))
-                return self._dbcon.commit()
-            except: 
-                return False
+                self._dbcon.commit()
+                return True
+            except: pass
+        return False
 
     def _drop(self):
         dbcur = self.getCursor()
         try: 
             dbcur.execute(logger.logDebug("DROP TABLE SHOW"))
-            return self._dbcon.commit()
+            self._dbcon.commit()
+            return True
         except: 
             return False
+
+    def searchByTitle(self, title, limit=100):
+        return self.search({'TITLE' : title}, limit)
+
+    def searchByCategory(self, category, limit=100):
+        return self.search({'PARENTNAME' : category}, limit)
+
+    def searchByYear(self, year, limit=100):
+        return self.search({'YEAR' : year}, limit)
 
     def checkIfTableExists(self):
         dbcur = self.getCursor()
@@ -188,7 +222,8 @@ class Show(model.Model):
             VIEWS INTEGER NOT NULL DEFAULT 0, \
             RATING INTEGER NOT NULL DEFAULT 0, \
             VOTES INTEGER NOT NULL DEFAULT 0)"))
-        return self._dbcon.commit()
+        self._dbcon.commit()
+        return True
             
     def getStatistics(self):
         stats = {}

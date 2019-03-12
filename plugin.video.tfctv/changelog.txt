@@ -1,3 +1,6 @@
+1.2.0
+    Added search menu : now can search shows, movies, episodes by category, title, cast, date, year
+    Added show cast database and now can view cast on show information
 1.1.0
     Now can choose video resolution in context menu
     Added video duration meta data

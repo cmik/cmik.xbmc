@@ -13,6 +13,7 @@ from resources.lib.libraries import cache
 from resources.lib.models import episodes
 from resources.lib.models import shows
 from resources.lib.models import library
+from resources.lib.models import showcast
 
 common = control.common
 logger = control.logger
@@ -21,6 +22,7 @@ logger = control.logger
 episodeDB = episodes.Episode(control.episodesFile)
 showDB = shows.Show(control.showsFile)
 libraryDB = library.Library(control.libraryFile)
+castDB = showcast.ShowCast(control.celebritiesFile)
 
 Logged = False
 
@@ -410,7 +412,7 @@ def updateCatalogCache(loadEpisodes=False):
             k = 0
             for s in shows:
                 try: 
-                    if loadEpisodes: episodes = getEpisodesPerPage(s['id'], sub['id'], s['year'], 1, 999)
+                    if loadEpisodes: episodes = getEpisodesPerPage(s['id'], sub['id'], s['year'], 1)
                     else: show = getShow(s['id'], sub['id'], s['year'])
                 except Exception as se: 
                     logger.logError('Can\'t update show %s : %s' % (s['id'], str(se)))
@@ -777,6 +779,7 @@ def getShows(subCategoryId, page = 1):
                     show['parentid'] = int(subCategoryId)
                     show['parentname'] = d['parentname']
                     show['year'] = d['year']
+                    show['casts'] = castDB.getByShow(int(d['id']))
                     data.append(show)
                 else:
                     data.append({
@@ -894,7 +897,8 @@ def getShow(showId, parentId=-1, year=''):
             castName = common.stripTags(cast)
             castUrl = config.websiteUrl + common.parseDOM(cast, "a", ret = "href")[0]
             castImage = common.parseDOM(cast, "img", ret = "src")[0]
-            actors.append({'id': castId, 'name': castName, 'role': '', 'thumbnail': castImage, 'order': i, 'url': castUrl})
+            actors.append({'castid': int(castId), 'showid': int(showId), 'name': castName, 'role': '', 'thumbnail': castImage, 'order': i, 'url': castUrl})
+            castDB.set(actors)
             i+=1
         
         # Check episode list
@@ -1284,6 +1288,36 @@ def removeFromMyList(id, name, ltype, type):
     else:
         control.showNotification(control.lang(57026))
     
+def showExportedShowsToLibrary():
+    data = []
+    temp = {}
+    exported = libraryDB.getAll()
+    for d in exported:
+        if 'id' in d:
+            temp[d.get('id')] = d
+    if len(temp) > 0:
+        shows = showDB.get(temp.keys())
+        for s in shows:
+            temp[s.get('id')].update(s)
+            data.append(temp.get(s.get('id')))
+    return data
+
+def removeFromLibrary(id, name):
+    data = libraryDB.get(int(id))
+    if len(data) > 0:
+        if logger.logInfo(libraryDB.delete(data[0])):
+            path = os.path.join(control.showsLibPath, name, '')
+            logger.logInfo(path)
+            if logger.logInfo(control.pathExists(path)): 
+                if control.confirm(control.lang(57041), line1=control.lang(57042), title=name) == False:
+                    control.deleteFolder(path, True)
+            control.showNotification(control.lang(57043) % name, control.lang(50010))
+        else:
+            control.showNotification(control.lang(57044), control.lang(50004))
+    else:
+        control.showNotification(control.lang(57045), control.lang(50001))
+
+
 def addToLibrary(id, name, parentId=-1, year='', updateOnly=False):
     logger.logInfo('called function with param (%s, %s, %s, %s)' % (id, name, parentId, year))
     from resources.lib.indexers import navigator
@@ -1411,6 +1445,30 @@ def checkLibraryUpdates():
             logger.logNotice('No updates for show %s' % show.get('name'))
     return True
     
+def enterSearch(category, type):
+    logger.logInfo('called function with params (%s, %s)' % (category, type))
+    data = []
+    search = control.inputText(control.lang(50204)).strip()
+    if len(search) >= 3:
+        if category == 'movieshow':
+            if type == 'title':
+                data = showDB.searchByTitle(search)
+            elif type == 'category':
+                data = showDB.searchByCategory(search)
+            elif type == 'year':
+                data = showDB.searchByYear(search)
+            elif type == 'cast':
+                cast = castDB.searchByActorName(search)
+                data = showDB.get([c.get('showid') for c in cast])
+        elif category == 'episode':
+            if type == 'title':
+                data = episodeDB.searchByTitle(search)
+            elif type == 'date':
+                data = episodeDB.searchByDate(search)
+    else:
+        control.showNotification(control.lang(57046), control.lang(50001))
+    return data
+
 def enterCredentials():
     logger.logInfo('called function')
     email = control.inputText(control.lang(50400), control.setting('emailAddress'))
@@ -1471,7 +1529,6 @@ def login(quiet=False):
 def isLoggedIn():
     logger.logInfo('called function')
     global Logged
-    logger.logInfo(Logged)
     if Logged == False:
         html = callServiceApi(config.uri.get('profile'), headers=[('Referer', config.websiteSecuredUrl+'/')], base_url=config.websiteSecuredUrl, useCache=False)
         Logged = False if 'TfcTvId' not in html else True

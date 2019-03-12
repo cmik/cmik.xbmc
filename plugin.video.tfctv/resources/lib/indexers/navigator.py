@@ -50,6 +50,8 @@ class navigator:
             self.showMainMenu()
     
     def showMainMenu(self):
+        self.addDirectoryItem(control.lang(50204), '/', config.SEARCHMENU, control.addonFolderIcon(control.lang(50204)), isFolder=True, **self.formatMenu())
+
         # if not logged in, ask to log in
         if control.setting('emailAddress') != '':
             tfctv.checkAccountChange()
@@ -73,6 +75,9 @@ class navigator:
             
         if control.setting('displayMyAccountMenu') == 'true' and control.setting('emailAddress') != '':
             self.addDirectoryItem(control.lang(50202), '/', config.MYACCOUNT, control.addonFolderIcon(control.lang(50202)), isFolder=True, **self.formatMenu())
+
+        if control.setting('exportToLibrary') == 'true':
+            self.addDirectoryItem(control.lang(56023), '/', config.EXPORTEDSHOWS, control.addonFolderIcon(control.lang(56023)), isFolder=True, **self.formatMenu())
         
         if control.setting('displayTools') == 'true':
             self.addDirectoryItem(control.lang(50203), '/', config.TOOLS, control.addonFolderIcon(control.lang(50203)))
@@ -164,6 +169,35 @@ class navigator:
         for e in sorted(bandwidths, key = itemgetter('bandwidth')):
             self.addDirectoryItem('%s | %sp | BITRATE %s' % (e.get('title'), e.get('resolution').split('x')[1], e.get('bandwidth')), str(e.get('id')), config.PLAY, e.get('image'), isFolder = False, query='title=%s&bandwidth=%d' % (e.get('title'), e.get('bandwidth')), **self.formatVideoInfo(e))
         self.endDirectory()
+
+    def showSearchMenu(self, category):    
+        if category == 'movieshow':
+            self.addDirectoryItem(control.lang(50208), '/', config.EXECUTESEARCH, control.addonFolderIcon(control.lang(50208)), isFolder=True, query='category=%s&type=%s' % (category, 'title'), **self.formatMenu())
+            self.addDirectoryItem(control.lang(50209), '/', config.EXECUTESEARCH, control.addonFolderIcon(control.lang(50209)), isFolder=True, query='category=%s&type=%s' % (category, 'category'), **self.formatMenu())
+            self.addDirectoryItem(control.lang(50210), '/', config.EXECUTESEARCH, control.addonFolderIcon(control.lang(50210)), isFolder=True, query='category=%s&type=%s' % (category, 'cast'), **self.formatMenu())
+            self.addDirectoryItem(control.lang(50212), '/', config.EXECUTESEARCH, control.addonFolderIcon(control.lang(50212)), isFolder=True, query='category=%s&type=%s' % (category, 'year'), **self.formatMenu())
+        elif category == 'episode':
+            self.addDirectoryItem(control.lang(50208), '/', config.EXECUTESEARCH, control.addonFolderIcon(control.lang(50208)), isFolder=True, query='category=%s&type=%s' % (category, 'title'), **self.formatMenu())
+            self.addDirectoryItem(control.lang(50211), '/', config.EXECUTESEARCH, control.addonFolderIcon(control.lang(50211)), isFolder=True, query='category=%s&type=%s' % (category, 'date'), **self.formatMenu())
+        elif category == 'celebrity':
+            control.showNotification(control.lang(57026), control.lang(50001))
+        else:
+             self.addDirectoryItem(control.lang(50205), '/', config.SEARCHMENU, control.addonFolderIcon(control.lang(50205)), isFolder=True, query='category=%s' % 'movieshow', **self.formatMenu())
+             self.addDirectoryItem(control.lang(50206), '/', config.SEARCHMENU, control.addonFolderIcon(control.lang(50206)), isFolder=True, query='category=%s' % 'episode', **self.formatMenu())
+             self.addDirectoryItem(control.lang(50207), '/', config.SEARCHMENU, control.addonFolderIcon(control.lang(50207)), isFolder=True, query='category=%s' % 'celebrity', **self.formatMenu())
+        self.endDirectory()
+
+    def executeSearch(self, category, type):
+        if category != False and type != False:
+            result = tfctv.enterSearch(category, type)
+            if len(result) > 0:
+                if category == 'movieshow':
+                    self.displayShows(result)
+                    return True
+                elif category == 'episode':
+                    for e in result:
+                        self.addDirectoryItem(e.get('title'), str(e.get('id')), config.PLAY, e.get('image'), isFolder = False, query='title=%s' % e.get('title'), **self.formatVideoInfo(e))
+        self.endDirectory()
             
     def showMyAccount(self):
         tfctv.checkAccountChange(False)
@@ -213,6 +247,14 @@ class navigator:
         else:
             message = control.lang(57002)
         control.showMessage(message, control.lang(56003))
+
+    def showExportedShows(self):
+        exported = tfctv.showExportedShowsToLibrary()
+        self.displayShows(exported)
+
+    def removeShowFromLibrary(self, id, name):
+        tfctv.removeFromLibrary(id, name)
+        control.refresh()
             
     def showTools(self):
         self.addDirectoryItem(control.lang(56021), config.uri.get('base'), config.IMPORTALLDB, control.addonFolderIcon(control.lang(56021)))
@@ -273,7 +315,12 @@ class navigator:
         # export to library
         if control.setting('exportToLibrary') == 'true':
             addToLibrary = { control.lang(50302) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info.get('id')), config.ADDTOLIBRARY, info.get('name'), query='parentid=%s&year=%s&ltype=%s&type=%s' % (str(info.get('parentid')), info.get('year'), info.get('ltype'), info.get('type'))) }
-            contextMenu.update(addToLibrary)
+            removeFromLibrary = { control.lang(50304) : 'XBMC.Container.Update(%s)' % self.generateActionUrl(str(info.get('id')), config.REMOVEFROMLIBRARY, info.get('name'), query='parentid=%s&year=%s&ltype=%s&type=%s' % (str(info.get('parentid')), info.get('year'), info.get('ltype'), info.get('type'))) }
+            if info.get('inLibrary', False) == True:
+                contextMenu.update(removeFromLibrary)
+            else:
+                contextMenu.update(addToLibrary)
+            
         
         data = { 
             'listArts' : { 

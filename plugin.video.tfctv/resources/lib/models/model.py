@@ -24,6 +24,9 @@ class Model():
     def _getStructure(self, data):
         return {}
         
+    def _search(self, limit):
+        return []
+
     def _retrieveAll(self):
         return []
         
@@ -39,6 +42,19 @@ class Model():
     def getCursor(self):
         return self._dbcon.cursor()
     
+    def search(self, search, limit=False):
+        items = []
+        if isinstance(search, dict):
+            try:
+                results = self._search(search, limit)
+                for d in results:
+                    items.append(self._getStructure(d))
+            except (Exception) as e:
+                logger.logError('Exception: %s for data %s' % (str(e), repr(search)))
+                pass
+
+        return items
+
     def getAll(self):
         items = []
         try:
@@ -50,12 +66,12 @@ class Model():
             pass
 
         return items
-    
-    def get(self, mixed):
+
+    def get(self, mixed, key='ID'):
         search = mixed if isinstance(mixed, list) else [mixed]
         items = []
         try:
-            results = self._retrieve(search)
+            results = self._retrieve(search, key)
             for d in results:
                 items.append(self._getStructure(d))
         except (Exception) as e:

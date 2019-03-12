@@ -6,7 +6,7 @@
 '''
 
 
-import sys,urllib,urlparse
+import sys,urllib,urlparse,time
 from resources import config
 from resources.lib.libraries import control
 from resources.lib.libraries import tools
@@ -20,6 +20,8 @@ if control.setting('debug') == 'true':
         logger.setLevel(newLevel)
     except:
         pass
+
+exec_start=time.time()
     
 logger.logInfo(sys.argv[2])
 
@@ -103,6 +105,9 @@ elif mode == config.MYLIST:
 elif mode == config.LISTCATEGORY:
     from resources.lib.indexers import navigator
     navigator.navigator().showMyListCategory(url)
+elif mode == config.EXPORTEDSHOWS:
+    from resources.lib.indexers import navigator
+    navigator.navigator().showExportedShows()
 elif mode == config.ADDTOLIST:
     from resources.lib.sources import tfctv
     tfctv.addToMyList(url, name, params.get('ltype'), params.get('type'))
@@ -112,6 +117,15 @@ elif mode == config.REMOVEFROMLIST:
 elif mode == config.ADDTOLIBRARY:
     from resources.lib.sources import tfctv
     tfctv.addToLibrary(url, name, params.get('parentid', -1), params.get('year', ''))
+elif mode == config.REMOVEFROMLIBRARY:
+    from resources.lib.indexers import navigator
+    navigator.navigator().removeShowFromLibrary(url, name)
+elif mode == config.SEARCHMENU:
+    from resources.lib.indexers import navigator
+    navigator.navigator().showSearchMenu(params.get('category', False), params.get('type', False))
+elif mode == config.EXECUTESEARCH:
+    from resources.lib.indexers import navigator
+    navigator.navigator().removeShowFromLibrary(url, name)
 elif mode == config.ENTERCREDENTIALS:
     from resources.lib.indexers import navigator
     navigator.navigator().enterCredentials()
@@ -150,3 +164,5 @@ elif mode == config.FIRSTINSTALL:
     navigator.navigator().firstInstall()
 # elif mode == 99:
     # cookieJar.clear()
+
+logger.logNotice('Finished in %s' % str(time.time()-exec_start))

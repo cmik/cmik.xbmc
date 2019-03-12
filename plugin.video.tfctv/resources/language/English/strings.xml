@@ -72,17 +72,27 @@
     <string id="50156">Databases import URL</string>
     <string id="50157">Export path</string>
     <string id="50199">Other settings</string>
-    <!-- Menu -->
+    <!-- Home menu -->
     <string id="50200">My List</string>
     <string id="50201">By Category</string>
     <string id="50202">My Account</string>
     <string id="50203">Tools</string>
+    <string id="50204">Search</string>
+    <string id="50205">Movie / Show</string>
+    <string id="50206">Episode</string>
+    <string id="50207">Celebrity</string>
+    <string id="50208">By Title</string>
+    <string id="50209">By Category</string>
+    <string id="50210">By Cast</string>
+    <string id="50211">By Date</string>
+    <string id="50212">By Year</string>
     <!-- context menu -->
     <string id="50300">Add to my watchlist</string>
     <string id="50301">Remove from my watchlist</string>
     <string id="50302">Add to library</string>
     <string id="50303">Choose resolution</string>
-
+    <string id="50304">Remove from library</string>
+    <!-- Other menu items -->
     <string id="50400">Enter your Kapamilya ID</string>
     <string id="50401">Enter your password</string>
     <string id="50402">Update catalog</string>
@@ -108,6 +118,7 @@
     <string id="56020">Select episodes database file to import</string>
     <string id="56021">Import automatically all database files</string>
     <string id="56022">Quick setup</string>
+    <string id="56023">My exported items</string>
     <!-- notifications / messages -->
     <string id="57000">Logging out in progress...</string>
     <string id="57001">Subscription is already expired or the item is not part of your subscription</string>
@@ -177,4 +188,10 @@ Please reboot your Kodi system.
     <string id="57038">This type of media is not supported</string>
     <string id="57039">Catalog cache is now empty</string>
     <string id="57040">The file was loaded successfully</string>
+    <string id="57041">Corresponding folders and files have been detected.</string>
+    <string id="57042">Do you want to keep them?</string>
+    <string id="57043">%s has been removed from your library</string>
+    <string id="57044">Can't remove from library - an error occured</string>
+    <string id="57045">Nothing to do</string>
+    <string id="57046">Please type at least 3 charaters for search</string>
 </strings>
