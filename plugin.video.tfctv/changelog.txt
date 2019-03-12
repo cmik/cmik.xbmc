@@ -1,3 +1,5 @@
+1.2.1
+    Fixed search menu
 1.2.0
     Added search menu : now can search shows, movies, episodes by category, title, cast, date, year
     Added show cast database and now can view cast on show information
