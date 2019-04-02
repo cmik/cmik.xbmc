@@ -42,14 +42,18 @@ class ExecutionCache:
 
     def setMulti(self, name, data):
         for k, v in data.iteritems():
-            self._execCache[k] = v
+            key = name + k
+            self._execCache[key] = v
         return ""
 
     def getMulti(self, name, items):
-        res = {}
+        res = []
         for k in items:
-            if k in self._execCache:
-                res[k] = self._execCache[k]
+            key = name + k
+            if key in self._execCache:
+                res.append(self._execCache[key])
+            else:
+                res.append('')
         return res
 
     def lock(self, name):
