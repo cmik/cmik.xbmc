@@ -11,9 +11,9 @@
 cookieFileName = 'tfctv.cookie'
 
 # Cache
-shortCache = {'name' : 'tfctv', 'ttl': 1/2}
+shortCache = {'name' : 'tfctv', 'ttl': 1}
 longCache = {'name' : 'tfctv_db', 'ttl': 24*7}
-urlCachePrefix = 'url_'
+urlCachePrefix = 'urlcache_'
 
 # HOSTS / URI
 webserviceUrl = 'https://tfc.tv'

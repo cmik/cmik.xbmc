@@ -32,7 +32,7 @@ def upgradeDB():
             'ALTER TABLE `SHOW` ADD COLUMN `TYPE` TEXT',
             'UPDATE `SHOW` SET TYPE = \'show\' WHERE TYPE IS NULL']))
 
-    elif control.setting('lastVersion') in ('1.0.0', '1.0.1', '1.1.0') and control.addonInfo('version') == '1.2.0':
+    elif control.setting('lastVersion') in ('1.0.0', '1.0.1', '1.1.0', '1.2.0') and control.addonInfo('version') == '1.2.1':
         # Check if installation is complete
         logger.logNotice('Checking installation')
         tools.checkInstallDB(True)
