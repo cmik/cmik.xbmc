@@ -126,8 +126,7 @@ def getMediaInfo(episodeId, title, thumbnail, bandwidth=False):
         episodeDB.set(e)
 
         s = mediaInfo['data']['showObj']
-        s['views'] = s.get('views', 0) + 1
-        showDB.update(s)
+        showDB.update({'id' : s.get('id'), 'views' : s.get('views', 0) + 1})
         
     return mediaInfo
 
@@ -1905,7 +1904,6 @@ def callServiceApi(path, params={}, headers=[], base_url=config.websiteUrl, useC
     
     if useCache == True:
         tmp = cache.shortCache.getMulti(key, ['url', 'timestamp'])
-        logger.logInfo(tmp)
         if (tmp[0] == '') or (time.time()-float(tmp[1])>int(control.setting('cacheTTL'))*60):
             toCache = True
             logger.logInfo('No cache for (%s)' % key)
