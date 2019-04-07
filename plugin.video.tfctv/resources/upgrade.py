@@ -25,10 +25,10 @@ def upgradeDB():
         libraryDB = library.Library(control.libraryFile)
 
         control.showNotification('Upgrading databases...', control.lang(50002))
-        logger.logDebug(episodeDB.upgrade([
+        logger.logDebug(episodeDB.executeUpdate([
             'ALTER TABLE `EPISODE` ADD COLUMN `TYPE` TEXT',
             'UPDATE `EPISODE` SET TYPE = \'episode\' WHERE TYPE IS NULL']))
-        logger.logDebug(showDB.upgrade([
+        logger.logDebug(showDB.executeUpdate([
             'ALTER TABLE `SHOW` ADD COLUMN `TYPE` TEXT',
             'UPDATE `SHOW` SET TYPE = \'show\' WHERE TYPE IS NULL']))
 
@@ -36,3 +36,15 @@ def upgradeDB():
         # Check if installation is complete
         logger.logNotice('Checking installation')
         tools.checkInstallDB(True)
+    elif control.addonInfo('version') == '1.2.3':
+        logger.logNotice('Updating version 1.2.3')
+        episodeDB = episodes.Episode(control.episodesFile)
+        showDB = shows.Show(control.showsFile)
+        showViews = logger.logInfo(episodeDB.execute(['select showid, sum(views) from EPISODE where views > 0 group by showid']))
+        updateQueries = []
+        for data in showViews[0]:
+            updateQueries.append('UPDATE SHOW SET VIEWS = %d WHERE ID = %d' % (int(data[1]), int(data[0])))
+        showDB.executeUpdate(logger.logInfo(updateQueries))
+
+
+        

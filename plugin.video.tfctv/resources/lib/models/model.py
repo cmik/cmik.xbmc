@@ -109,7 +109,19 @@ class Model():
         except:
             return False
 
-    def upgrade(self, mixed):
+    def execute(self, mixed):
+        queries = mixed if isinstance(mixed, list) else [mixed]
+        results = []
+        try: 
+            dbcur = self.getCursor()
+            for query in queries:
+                dbcur.execute(logger.logDebug(query))
+                results.append(dbcur.fetchall())
+            return results
+        except: 
+            return False 
+
+    def executeUpdate(self, mixed):
         queries = mixed if isinstance(mixed, list) else [mixed]
         try: 
             dbcur = self.getCursor()
@@ -117,6 +129,6 @@ class Model():
                 dbcur.execute(logger.logDebug(query))
             return self._dbcon.commit()
         except: 
-                return False 
+            return False 
 
 
