@@ -1,3 +1,5 @@
+1.2.4
+    Fixed version 1.2.3 upgrade when first or new install
 1.2.3
     Fixed show views incrementation
     Update show views in SHOW database
