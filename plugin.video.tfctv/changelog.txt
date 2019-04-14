@@ -1,3 +1,5 @@
+1.2.5
+    Fixed login process due to new gigya version string
 1.2.4
     Fixed version 1.2.3 upgrade when first or new install
 1.2.3
