@@ -1589,7 +1589,7 @@ def loginToWebsite(quiet=False):
             base_url = config.gigyaCDNUrl, 
             useCache = False
         )
-        gigyaVersion = re.compile('"version":?"([\d.]+)",').search(gigyaHtml).group(1)
+        gigyaVersion = re.compile('"version":?"([v\d.]+)",').search(gigyaHtml).group(1)
         gigyaBuild = re.compile('"number":([\d.]+),').search(gigyaHtml).group(1)
         
         # Retrieve Gigya ssoKey
