@@ -1196,10 +1196,10 @@ def getUserSubscription():
     logger.logInfo('called function')
     url = config.uri.get('profileDetails')
     subscription = callJsonApi(url, useCache=False)
-    
+    logger.logInfo(subscription)
     first_cap_re = re.compile('(.)([A-Z][a-z]+)')
         
-    subKeys = ['Type', 'SubscriptionName', 'SubscriptionStatus', 'ExpirationDate', 'ExpirationDate', 'BillingPeriod', 'AutoRenewal']
+    subKeys = ['Type', 'SubscriptionName', 'SubscriptionStatus', 'ActivationDate', 'ExpirationDate', 'BillingPeriod', 'AutoRenewal']
     details = ''
     if 'Details' in subscription:
         for d in subscription['Details']:
@@ -1545,7 +1545,12 @@ def loginToWebsite(quiet=False):
     
     emailAddress = control.setting('emailAddress')
     password = control.setting('password')
-    authData = { "loginID" : emailAddress, "password": password }
+    authData = {
+            "siteURL": config.websiteUrl,
+            "loginID": emailAddress,
+            "password": password,
+            "keepMeLogin": False
+        }
     
     # Init oauth
     params = {
@@ -1557,30 +1562,35 @@ def loginToWebsite(quiet=False):
         }
     callServiceApi(
         '/connect/authorize?' + urllib.urlencode(params),
-        base_url = config.websiteSSOUrl, 
+        base_url = config.kapamilyaAccountsSSOUrl, 
         useCache = False
     )
-    
-    # Login into kapamilya-accounts
-    data = callJsonApi(config.uri.get('login'), authData, base_url=config.websiteSSOUrl, useCache = False, jsonData=True)
-    if (not data or ('errorCode' in data and data.get('errorCode') != 0) or ('errorMessage' in data)) and quiet == False:
-        if 'errorMessage' in data:
-            control.showNotification(data.get('errorMessage'), control.lang(50006))
-        else:
-            control.showNotification(control.lang(57024), control.lang(50006))
+
+    # retrieve ocpKey
+    signin = callServiceApi(
+        config.uri.get('signin'),
+        base_url = config.kapamilyaAccountsSSOUrl, 
+        useCache = False
+    )
+    ocpKey = common.parseDOM(signin, "sso-accounts", ret = 'api-key')[0]
+
+    # Retrieve apiKey
+    data = callJsonApi(config.uri.get('apiKey') % ocpKey, base_url=config.apiSSOUrl, useCache = False, jsonData=True)
+    if (not data or ('apiKey' not in data)):
+        control.showNotification(control.lang(57024), control.lang(50006))
     else:
     
         gigyaUrl = ''
         gigyaBuild = ''
         gigyaVersion = ''
         gigyaJSON = {}
-        apikey = ''
         ssoKey = ''
         loginToken = ''
         UID = ''
         UIDSignature = ''
         
-        apikey = getFromCookieByName('app_apikey').value
+        apikey = data.get('apiKey', '')
+        if apikey == '': apikey = getFromCookieByName('app_apikey').value
         
         # Retrieve Gigya version and build
         params = {'apikey' : apikey, '_': time.time()}
@@ -1606,14 +1616,10 @@ def loginToWebsite(quiet=False):
         apiDomainCookie = 'apiDomain_' + ssoKey + '=' + dataCenter + '.' + defaultApiDomain
         apiDomain = dataCenter + '.' + defaultApiDomain
         
-        # Retrieve authorization code from cookie
-        gacCookie = getFromCookieByName('gac_', startWith=True)
-        gacToken = gacCookie.value
-
         # Retrieve needed cookies
         params = {
             'apiKey' : apikey, 
-            'pageURL' : config.websiteSSOUrl + config.uri.get('signin'), 
+            'pageURL' : config.kapamilyaAccountsSSOUrl + config.uri.get('signin'), 
             'format': 'json', 
             'context' : 'R' + str(randint(10000, 99999)**2)
             }
@@ -1641,170 +1647,178 @@ def loginToWebsite(quiet=False):
         
         cookie = getCookieContent(['hasGmid', 'gmid', 'ucid'])   
         cookie.append(apiDomainCookie)
-        
-        # Retrieve the login token
-        params = {
-            'sessionExpiration' : -2, 
-            'authCode' : gacToken, 
-            'APIKey': apikey, 
-            'sdk' : 'js_' + gigyaVersion,
-            'authMode' : 'cookie',
-            'pageURL' : config.websiteSSOUrl + config.uri.get('welcome'),
-            'format' : 'json',
-            'context' : 'R' + str(randint(10000, 99999)**2)
-            }
-        gigyaJSON = callJsonApi(
-            config.uri.get('gigyaNotifyLogin') + '?' + urllib.urlencode(params),
+
+        # Login        
+        login = callJsonApi(
+            config.uri.get('ssoLogin'),
+            params = authData,
             headers = [
-                ('Cookie', '; '.join(cookie)),
-                ('Referer', config.gigyaCDNUrl + webSdkURI)
+                ('Ocp-Apim-Subscription-Key', ocpKey),
+                ('Origin', config.kapamilyaAccountsSSOUrl),
+                ('Referer', config.kapamilyaAccountsSSOUrl + config.uri.get('signin')),
+                ('SSO-Native-Origin', config.kapamilyaAccountsSSOUrl),
+                ('Verification-Mode', 'LINK')
                 ], 
-            base_url= config.gigyaSocializeUrl, 
-            useCache = False
+            base_url = config.apiAzureUrl, 
+            useCache = False,
+            jsonData = True
             )
+        if (not login or ('data' not in login and login.get('statusCode') != 203200)) and quiet == False:
+            if 'message' in login:
+                control.showNotification(login.get('message'), control.lang(50006))
+            else:
+                control.showNotification(control.lang(57024), control.lang(50006))
+        else:
+            # Retrieve authorization code from cookie
+            sessionInfo = login.get('data').get('sessionInfo')
+            gacCookie = sessionInfo.get('cookieName')
+            gacToken = sessionInfo.get('cookieValue')
         
-        # Retrieve login token from cookie
-        if 'errorMessage' in gigyaJSON:
-            control.showNotification(gigyaJSON.get('errorMessage'), control.lang(50004))
-                
-        if 'statusCode' in gigyaJSON and gigyaJSON.get('statusCode') == 200 and 'login_token' in gigyaJSON:
-            loginToken = gigyaJSON.get('login_token').encode('utf8')
-            
-            # Retrieve UID, UIDSignature and signatureTimestamp
+            # Retrieve the login token
             params = {
-                'include' : 'profile,', 
+                'sessionExpiration' : -2, 
+                'authCode' : gacToken, 
                 'APIKey': apikey, 
                 'sdk' : 'js_' + gigyaVersion,
-                'login_token' : loginToken,
                 'authMode' : 'cookie',
-                'pageURL' : config.websiteSSOUrl + config.uri.get('checksession'),
+                'pageURL' : config.kapamilyaAccountsSSOUrl + config.uri.get('welcome'),
                 'format' : 'json',
                 'context' : 'R' + str(randint(10000, 99999)**2)
                 }
-            accountJSON = callJsonApi(
-                config.uri.get('gigyaAccountInfo') + '?' + urllib.urlencode(params), 
+            gigyaJSON = callJsonApi(
+                config.uri.get('gigyaNotifyLogin') + '?' + urllib.urlencode(params),
                 headers = [
                     ('Cookie', '; '.join(cookie)),
                     ('Referer', config.gigyaCDNUrl + webSdkURI)
                     ], 
-                base_url= config.gigyaAccountUrl, 
+                base_url= config.gigyaSocializeUrl, 
                 useCache = False
                 )
             
-            if 'errorMessage' in accountJSON:
-                control.showNotification(accountJSON.get('errorMessage'), control.lang(50004))
-            
-            if 'statusCode' in accountJSON and accountJSON.get('statusCode') == 200:
+            # Retrieve login token from cookie
+            if 'errorMessage' in gigyaJSON:
+                control.showNotification(gigyaJSON.get('errorMessage'), control.lang(50004))
+                    
+            if 'statusCode' in gigyaJSON and gigyaJSON.get('statusCode') == 200 and 'login_token' in gigyaJSON:
+                loginToken = gigyaJSON.get('login_token').encode('utf8')
                 
-                # get Gmid Ticket
-                cookieJar.set_cookie(cookielib.Cookie(version=0, name='gig_hasGmid', value='ver2', port=None, port_specified=False, domain='.tfc.tv', domain_specified=False, domain_initial_dot=False, path='/', path_specified=True, secure=False, expires=None, discard=True, comment=None, comment_url=None, rest={'HttpOnly': None}, rfc2109=False))
-                cookie = getCookieContent(['hasGmid', 'gmid', 'ucid', 'gig_hasGmid'])   
-                cookie.append(apiDomainCookie)
+                # Retrieve UID, UIDSignature and signatureTimestamp
                 params = {
-                    'apiKey': apikey,
-                    'expires' : 3600,
-                    'pageURL' : config.websiteSSOUrl + config.uri.get('welcome'),
+                    'include' : 'profile,', 
+                    'APIKey': apikey, 
+                    'sdk' : 'js_' + gigyaVersion,
+                    'login_token' : loginToken,
+                    'authMode' : 'cookie',
+                    'pageURL' : config.kapamilyaAccountsSSOUrl + config.uri.get('checksession'),
                     'format' : 'json',
                     'context' : 'R' + str(randint(10000, 99999)**2)
                     }
-                gmidJSON = callJsonApi(
-                    config.uri.get('gigyaGmidTicket') + '?' + urllib.urlencode(params),
+                accountJSON = callJsonApi(
+                    config.uri.get('gigyaAccountInfo') + '?' + urllib.urlencode(params), 
                     headers = [
                         ('Cookie', '; '.join(cookie)),
                         ('Referer', config.gigyaCDNUrl + webSdkURI)
                         ], 
-                    base_url= config.gigyaSocializeUrl, 
+                    base_url= config.gigyaAccountUrl, 
                     useCache = False
                     )
                 
-                if 'statusCode' in gmidJSON and gmidJSON.get('statusCode') == 200 and 'gmidTicket' in gmidJSON:
+                if 'errorMessage' in accountJSON:
+                    control.showNotification(accountJSON.get('errorMessage'), control.lang(50004))
+                
+                if 'statusCode' in accountJSON and accountJSON.get('statusCode') == 200:
                     
-                    UID = accountJSON.get('UID')
-                    UIDSignature = accountJSON.get('UIDSignature')
-                    signatureTimestamp = accountJSON.get('signatureTimestamp')
-                    
-                    control.setSetting('UID', UID)
-                    control.setSetting('UIDSignature', UIDSignature)
-                    control.setSetting('signatureTimestamp', signatureTimestamp)
-                    
-                    # Generate authorization
-                    redirectParams = {
-                        'client_id' : 'tfconline', 
-                        'redirect_uri': config.webserviceUrl + config.uri.get('callback'), 
-                        'response_type' : 'id_token token',
-                        'scope' : 'openid profile offline_access',
-                        'nonce' : time.time()
-                        }
-                    # SSOGateway
-                    gmidTicket = gmidJSON.get('gmidTicket').encode('utf8')
-                    redirectURL = config.websiteSSOUrl + config.uri.get('authCallback') + '?' + urllib.urlencode(redirectParams)
-                    params = {
-                        'sessionExpiration' : -2, 
-                        'apiDomain' : apiDomain, 
-                        'apiKey': apikey, 
-                        'gmidTicket' : gmidTicket,
-                        'loginToken' : loginToken,
-                        'redirectURL' : redirectURL.replace('+', '%20')
-                        }
-                    SSOGateway = callServiceApi(
-                        '/gs/SSOGateway.aspx',
-                        params,
-                        headers = [
-                            ('Cookie', '; '.join(cookie)),
-                            ('Origin', config.websiteSSOUrl),
-                            ('Referer', config.websiteSSOUrl + config.uri.get('welcome')),
-                            ('Content-Type', 'application/x-www-form-urlencoded')
-                            ], 
-                        base_url = config.gigyaSocializeUrl,
-                        useCache = False
-                        )
-                    UUID = re.compile('UUID=([a-zA-Z0-9.]+)[\'|"];').search(SSOGateway).group(1)
-                    
-                    # gltAPIToken = urllib.urlencode({ 'glt_' + apikey : loginToken + '|UUID=' + UUID })
-                    cookieJar.set_cookie(cookielib.Cookie(version=0, name='glt_' + apikey, value=loginToken + '|UUID=' + UUID, port=None, port_specified=False, domain='.tfc.tv', domain_specified=False, domain_initial_dot=False, path='/', path_specified=True, secure=False, expires=None, discard=True, comment=None, comment_url=None, rest={'HttpOnly': None}, rfc2109=False))
-                    gltSSOToken = urllib.urlencode({ 'glt_' + ssoKey : loginToken + '|UUID=' + UUID })
-                    
-                    cookie = getCookieContent(exceptFilter=[gacCookie.name]) 
+                    # get Gmid Ticket
+                    cookieJar.set_cookie(cookielib.Cookie(version=0, name='gig_hasGmid', value='ver2', port=None, port_specified=False, domain='.tfc.tv', domain_specified=False, domain_initial_dot=False, path='/', path_specified=True, secure=False, expires=None, discard=True, comment=None, comment_url=None, rest={'HttpOnly': None}, rfc2109=False))
+                    cookie = getCookieContent(['hasGmid', 'gmid', 'ucid', 'gig_hasGmid'])   
                     cookie.append(apiDomainCookie)
-                    cookie.append(gltSSOToken)
-                    
-                    # Authorize callback URL
-                    callServiceApi(
-                        config.uri.get('authCallback') + '?' + urllib.urlencode(redirectParams),
-                        headers = [
-                            ('Cookie', '; '.join(cookie))
-                        ], 
-                        base_url = config.websiteSSOUrl, 
-                        useCache = False
-                        )
-                        
-                    # Authenticate into TFC.tv
                     params = {
-                        'u' : UID, 
-                        's' : UIDSignature, 
-                        't' : signatureTimestamp,
-                        'returnUrl' : config.uri.get('base') 
+                        'apiKey': apikey,
+                        'expires' : 3600,
+                        'pageURL' : config.kapamilyaAccountsSSOUrl + config.uri.get('welcome'),
+                        'format' : 'json',
+                        'context' : 'R' + str(randint(10000, 99999)**2)
                         }
-                    html = callServiceApi(
-                        config.uri.get('authSSO') + '?' + urllib.urlencode(params), 
+                    gmidJSON = callJsonApi(
+                        config.uri.get('gigyaGmidTicket') + '?' + urllib.urlencode(params),
                         headers = [
                             ('Cookie', '; '.join(cookie)),
-                            ('Referer', config.websiteUrl + config.uri.get('base'))
-                        ], 
-                        base_url = config.websiteUrl, 
+                            ('Referer', config.gigyaCDNUrl + webSdkURI)
+                            ], 
+                        base_url= config.gigyaSocializeUrl, 
                         useCache = False
                         )
+                    
+                    if 'statusCode' in gmidJSON and gmidJSON.get('statusCode') == 200 and 'gmidTicket' in gmidJSON:
                         
-                    # If no error, check if connected
-                    if 'TFC - Error' not in html:
-                        # Check if session OK
+                        UID = accountJSON.get('UID')
+                        UIDSignature = accountJSON.get('UIDSignature')
+                        signatureTimestamp = accountJSON.get('signatureTimestamp')
+                        
+                        control.setSetting('UID', UID)
+                        control.setSetting('UIDSignature', UIDSignature)
+                        control.setSetting('signatureTimestamp', signatureTimestamp)
+                        
+                        # Generate authorization
+                        redirectParams = {
+                            'client_id' : 'tfconline', 
+                            'redirect_uri': config.webserviceUrl + config.uri.get('callback'), 
+                            'response_type' : 'id_token token',
+                            'scope' : 'openid profile offline_access',
+                            'nonce' : time.time()
+                            }
+                        # SSOGateway
+                        gmidTicket = gmidJSON.get('gmidTicket').encode('utf8')
+                        redirectURL = config.kapamilyaAccountsSSOUrl + config.uri.get('authCallback') + '?' + urllib.urlencode(redirectParams)
+                        params = {
+                            'sessionExpiration' : -2, 
+                            'apiDomain' : apiDomain, 
+                            'apiKey': apikey, 
+                            'gmidTicket' : gmidTicket,
+                            'loginToken' : loginToken,
+                            'redirectURL' : redirectURL.replace('+', '%20')
+                            }
+                        SSOGateway = callServiceApi(
+                            '/gs/SSOGateway.aspx',
+                            params,
+                            headers = [
+                                ('Cookie', '; '.join(cookie)),
+                                ('Origin', config.kapamilyaAccountsSSOUrl),
+                                ('Referer', config.kapamilyaAccountsSSOUrl + config.uri.get('welcome')),
+                                ('Content-Type', 'application/x-www-form-urlencoded')
+                                ], 
+                            base_url = config.gigyaSocializeUrl,
+                            useCache = False
+                            )
+                        UUID = re.compile('UUID=([a-zA-Z0-9.]+)[\'|"];').search(SSOGateway).group(1)
+                        
+                        # gltAPIToken = urllib.urlencode({ 'glt_' + apikey : loginToken + '|UUID=' + UUID })
+                        cookieJar.set_cookie(cookielib.Cookie(version=0, name='glt_' + apikey, value=loginToken + '|UUID=' + UUID, port=None, port_specified=False, domain='.tfc.tv', domain_specified=False, domain_initial_dot=False, path='/', path_specified=True, secure=False, expires=None, discard=True, comment=None, comment_url=None, rest={'HttpOnly': None}, rfc2109=False))
+                        gltSSOToken = urllib.urlencode({ 'glt_' + ssoKey : loginToken + '|UUID=' + UUID })
+                        
+                        cookie = getCookieContent(exceptFilter=gacCookie) 
+                        cookie.append(apiDomainCookie)
+                        cookie.append(gltSSOToken)
+                        
+                        # Authorize callback URL
+                        callServiceApi(
+                            config.uri.get('authCallback') + '?' + urllib.urlencode(redirectParams),
+                            headers = [
+                                ('Cookie', '; '.join(cookie))
+                            ], 
+                            base_url = config.kapamilyaAccountsSSOUrl, 
+                            useCache = False
+                            )
+                            
+                        # Authenticate into TFC.tv
                         params = {
                             'u' : UID, 
                             's' : UIDSignature, 
-                            't' : signatureTimestamp
+                            't' : signatureTimestamp,
+                            'returnUrl' : config.uri.get('base') 
                             }
-                        checksession = callJsonApi(
-                            config.uri.get('checkSSO') + '?' + urllib.urlencode(params), 
+                        html = callServiceApi(
+                            config.uri.get('authSSO') + '?' + urllib.urlencode(params), 
                             headers = [
                                 ('Cookie', '; '.join(cookie)),
                                 ('Referer', config.websiteUrl + config.uri.get('base'))
@@ -1812,19 +1826,37 @@ def loginToWebsite(quiet=False):
                             base_url = config.websiteUrl, 
                             useCache = False
                             )
-                    
-                    if checksession and 'StatusCode' in checksession and checksession.get('StatusCode') == 0:
-                        logged = True
-                        generateNewFingerprintID()
-                    
-        if quiet == False:
-            if logged == True:
-                logger.logNotice('You are now logged in')
-                control.setSetting('accountJSON', json.dumps(accountJSON))
-                control.showNotification(control.lang(57009) % accountJSON.get('profile').get('firstName'), control.lang(50007))
-            else:
-                logger.logError('Authentification failed')
-                control.showNotification(control.lang(57024), control.lang(50006))
+                            
+                        # If no error, check if connected
+                        if 'TFC - Error' not in html:
+                            # Check if session OK
+                            params = {
+                                'u' : UID, 
+                                's' : UIDSignature, 
+                                't' : signatureTimestamp
+                                }
+                            checksession = callJsonApi(
+                                config.uri.get('checkSSO') + '?' + urllib.urlencode(params), 
+                                headers = [
+                                    ('Cookie', '; '.join(cookie)),
+                                    ('Referer', config.websiteUrl + config.uri.get('base'))
+                                ], 
+                                base_url = config.websiteUrl, 
+                                useCache = False
+                                )
+                        
+                        if checksession and 'StatusCode' in checksession and checksession.get('StatusCode') == 0:
+                            logged = True
+                            generateNewFingerprintID()
+                        
+            if quiet == False:
+                if logged == True:
+                    logger.logNotice('You are now logged in')
+                    control.setSetting('accountJSON', json.dumps(accountJSON))
+                    control.showNotification(control.lang(57009) % accountJSON.get('profile').get('firstName'), control.lang(50007))
+                else:
+                    logger.logError('Authentification failed')
+                    control.showNotification(control.lang(57024), control.lang(50006))
             
     return logged 
     

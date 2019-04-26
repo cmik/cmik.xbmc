@@ -46,8 +46,8 @@
     <category label="50101">
         <setting type="lsep" label="50103"/>
         <setting id="requestTimeOut" type="labelenum" label="50113" default="20" values="5|10|20|30|60|120|300" visible="true"/>
-        <setting id="cacheActive" type="bool" label="50111" default="false" visible="true"/>
-        <setting id="cacheTTL" type="number" label="50158" default="120" enable="eq(-1,true)" visible="true"/>
+        <setting id="cacheActive" type="bool" label="50111" default="true" visible="true"/>
+        <setting id="cacheTTL" type="number" label="50158" default="240" enable="eq(-1,true)" visible="true"/>
         <setting id="displayTools" type="bool" label="50112" default="false" visible="true"/>
         <setting type="sep"/>
         <setting type="lsep" label="50121"/>
