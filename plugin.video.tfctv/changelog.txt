@@ -1,3 +1,7 @@
+1.2.6
+    Updated Kapamilya accounts login process
+    Fixed my subscription information display
+    Fixed fresh install error
 1.2.5
     Fixed login process due to new gigya version string
 1.2.4

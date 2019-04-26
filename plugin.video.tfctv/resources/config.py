@@ -19,7 +19,9 @@ urlCachePrefix = 'urlcache_'
 webserviceUrl = 'https://tfc.tv'
 websiteUrl = 'https://tfc.tv'
 websiteSecuredUrl = 'https://tfc.tv'
-websiteSSOUrl = 'https://kapamilya-accounts.abs-cbn.com'
+kapamilyaAccountsSSOUrl = 'https://kapamilya-accounts.abs-cbn.com'
+apiSSOUrl = 'https://sso-api.abs-cbn.com'
+apiAzureUrl = 'https://oneottprodapi.azure-api.net'
 gigyaCDNUrl = 'https://cdns.us1.gigya.com'
 gigyaAccountUrl = 'https://accounts.us1.gigya.com'
 gigyaSocializeUrl = 'https://socialize.us1.gigya.com'
@@ -29,6 +31,8 @@ uri = {
     'profile' : '/profile',
     'profileDetails' : '/profile/details',
     'logout' : "/logout",
+    'apiKey' : '/api/apikey?ocpKey=%s&siteUrl=https://tfc.tv',
+    'ssoLogin' : '/sso/api/sso.login?include=profile,loginIDs,data,password',
     'login' : '/api/spa/login',
     'callback' : '/callback',
     'authSSO' : '/sso/authenticate',
