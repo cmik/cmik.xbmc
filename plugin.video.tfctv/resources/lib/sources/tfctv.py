@@ -69,6 +69,13 @@ def playEpisode(url, name, thumbnail, bandwidth=False):
                 'mediatype' : episodeDetails['data']['ltype'] 
                 })
 
+            # Add eventual subtitles
+            if 'track' in episodeDetails['data'] and len(episodeDetails['data']['track']) and 'src' in episodeDetails['data']['track'][0]:
+                try: 
+                    liz.setSubtitles([episodeDetails['data']['track'][0]['src']])
+                    if 'srclang' in episodeDetails['data']['track'][0]: liz.addStreamInfo('subtitle', {'language' : episodeDetails['data']['track'][0]['srclang']})
+                except: pass
+
             if episodeDetails.get('useDash', False):
                 logger.logInfo(episodeDetails['dash'])
                 liz.setProperty('inputstreamaddon', 'inputstream.adaptive')

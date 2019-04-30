@@ -1,3 +1,5 @@
+1.3.0
+    Added video subtitles if available
 1.2.6
     Updated Kapamilya accounts login process
     Fixed my subscription information display
