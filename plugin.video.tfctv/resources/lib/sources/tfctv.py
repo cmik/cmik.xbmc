@@ -1606,7 +1606,7 @@ def loginToWebsite(quiet=False):
             base_url = config.gigyaCDNUrl, 
             useCache = False
         )
-        gigyaVersion = re.compile('"version":?"([v\d.]+)",').search(gigyaHtml).group(1)
+        gigyaVersion = re.compile('"version":?"(.+)",').search(gigyaHtml).group(1)
         gigyaBuild = re.compile('"number":([\d.]+),').search(gigyaHtml).group(1)
         
         # Retrieve Gigya ssoKey
@@ -1943,7 +1943,7 @@ def callServiceApi(path, params={}, headers=[], base_url=config.websiteUrl, useC
     
     if useCache == True:
         tmp = cache.shortCache.getMulti(key, ['url', 'timestamp'])
-        if (tmp[0] == '') or (time.time()-float(tmp[1])>int(control.setting('cacheTTL'))*60):
+        if (tmp == '') or (tmp[0] == '') or (time.time()-float(tmp[1])>int(control.setting('cacheTTL'))*60):
             toCache = True
             logger.logInfo('No cache for (%s)' % key)
         else:
