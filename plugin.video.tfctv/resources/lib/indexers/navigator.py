@@ -157,10 +157,11 @@ class navigator:
     def showEpisodes(self, showId, page=1, parentId=-1, year=''):
         itemsPerPage = int(control.setting('itemsPerPage'))
         # episodes = cache.sCacheFunction(tfctv.getEpisodesPerPage, showId, page, itemsPerPage)
-        episodes = tfctv.getEpisodesPerPage(showId, parentId, year, page, itemsPerPage)
+        (episodes, nextPage) = tfctv.getEpisodesPerPage(showId, parentId, year, page, itemsPerPage)
+        episodes = sorted(episodes, key=lambda item: item['episodenumber'], reverse=True if control.setting('reversePagination') == 'true' else False)
         for e in episodes:
             self.addDirectoryItem(e.get('title'), str(e.get('id')), config.PLAY, e.get('image'), isFolder = False, query='title=%s' % e.get('title'), **self.formatVideoInfo(e))
-        if len(episodes) == itemsPerPage:
+        if len(episodes) == itemsPerPage or nextPage == True:
             self.addDirectoryItem(control.lang(56008), showId, config.SHOWEPISODES, '', page + 1)
         self.endDirectory()
 

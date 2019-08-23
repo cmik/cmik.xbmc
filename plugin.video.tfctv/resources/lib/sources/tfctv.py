@@ -83,7 +83,7 @@ def playEpisode(url, name, thumbnail, bandwidth=False):
                 liz.setProperty('inputstream.adaptive.license_type', episodeDetails['dash']['type'])
                 liz.setProperty('inputstream.adaptive.stream_headers', episodeDetails['dash']['headers'])
                 liz.setProperty('inputstream.adaptive.license_key', 
-                    '%s|%s|%s|%s' % (episodeDetails['dash']['key'], episodeDetails['dash']['headers'], 'R{SSM}', 'R'))
+                    '%s|%s|%s|%s' % (episodeDetails['dash']['key'], episodeDetails['dash']['headers'], 'b{SSM}', 'R'))
                 liz.setMimeType(episodeDetails['data']['type'])
                 # liz.setContentLookup(False)
             
@@ -909,6 +909,7 @@ def getShow(showId, parentId=-1, year=''):
         
         # Check episode list
         episodes = {}
+        nbEpisodes = 0
         episodeList = common.parseDOM(html, "select", attrs = { 'id' : 'show_episode_list' })
         if episodeList:
             values = common.parseDOM(episodeList, "option", ret = 'value')
@@ -922,6 +923,8 @@ def getShow(showId, parentId=-1, year=''):
                     'url' : values[i]
                     }})
                 i+=1
+
+            nbEpisodes = int(re.compile('\(([0-9]+)\)', re.IGNORECASE).search(common.parseDOM(html, "h2", attrs = { 'class' : 'episode-list-showp' })[0]).group(1))
         
         type = 'show' if showData.get('@type' ,'show').lower() not in ('show','movie') else showData.get('@type' ,'show').lower()
         data = {
@@ -937,6 +940,7 @@ def getShow(showId, parentId=-1, year=''):
             'description' : common.replaceHTMLCodes(description),
             'shortdescription' : common.replaceHTMLCodes(description),
             'year' : year,
+            'nbEpisodes' : nbEpisodes,
             'episodes' : episodes,
             'casts' : actors,
             'ltype' : type,
@@ -968,13 +972,28 @@ def getEpisodesPerPage(showId, parentId, year, page=1, itemsPerPage=8):
     # Calculating page index and needed pages to request for building next page to display
     firstPage = 1 if page == 1 else ((itemsPerPage / websiteNbItemsPerPage) * (page - 1) + 1)
     lastPage = itemsPerPage / websiteNbItemsPerPage * page
+    hasNextPage = False
     
     paginationURL = config.uri.get('episodePagination')
     # showDetails = cache.sCacheFunction(getShow, showId)
     showDetails = getShow(showId, parentId, year)
     if showDetails:
         for page in range(firstPage, lastPage+1, 1):
-            html = callServiceApi(paginationURL % (showId, page), useCache=False if page == 1 else True)
+            # reseting value
+            hasNextPage = False
+
+            calculatedPage = page 
+            if control.setting('reversePagination') == 'true' and showDetails.get('nbEpisodes') != 0:
+                import math
+                logger.logInfo(page)
+                logger.logInfo('%s / %s' % (showDetails.get('nbEpisodes'), websiteNbItemsPerPage))
+                calculatedPage = int(math.ceil(logger.logInfo(showDetails.get('nbEpisodes') / float(websiteNbItemsPerPage))) - (page - 1))
+                logger.logInfo(calculatedPage)
+                if calculatedPage > 1: hasNextPage = True
+                logger.logInfo(hasNextPage)
+                if calculatedPage < 1: break
+
+            html = callServiceApi(paginationURL % (showId, calculatedPage), useCache=False if page == 1 else True)
         
             # if page does not exist
             if page > 1 and html == '':
@@ -1099,7 +1118,7 @@ def getEpisodesPerPage(showId, parentId, year, page=1, itemsPerPage=8):
                 else: 
                     break
     # return sorted(data, key=lambda episode: episode['title'], reverse=True)
-    return data
+    return (data, hasNextPage)
       
 # def getShowEpisodes(showId):
     # data = {}
