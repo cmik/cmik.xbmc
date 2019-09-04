@@ -1816,7 +1816,7 @@ def loginToWebsite(quiet=False):
                             base_url = config.gigyaSocializeUrl,
                             useCache = False
                             )
-                        UUID = re.compile('UUID=([a-zA-Z0-9.]+)[\'|"];').search(SSOGateway).group(1)
+                        UUID = re.compile('UUID=([a-zA-Z0-9.]*)[\'|"];').search(SSOGateway).group(1)
                         
                         # gltAPIToken = urllib.urlencode({ 'glt_' + apikey : loginToken + '|UUID=' + UUID })
                         cookieJar.set_cookie(cookielib.Cookie(version=0, name='glt_' + apikey, value=loginToken + '|UUID=' + UUID, port=None, port_specified=False, domain='.tfc.tv', domain_specified=False, domain_initial_dot=False, path='/', path_specified=True, secure=False, expires=None, discard=True, comment=None, comment_url=None, rest={'HttpOnly': None}, rfc2109=False))
