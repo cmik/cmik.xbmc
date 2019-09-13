@@ -102,6 +102,9 @@ elif mode == config.LOGOUT:
 elif mode == config.MYLIST:
     from resources.lib.indexers import navigator
     navigator.navigator().showMyList()
+elif mode == config.MYLISTSHOWLASTEPISODES:
+    from resources.lib.indexers import navigator
+    navigator.navigator().showMyListShowLastEpisodes()
 elif mode == config.LISTCATEGORY:
     from resources.lib.indexers import navigator
     navigator.navigator().showMyListCategory(url)

@@ -72,7 +72,6 @@
     <string id="50156">Databases import URL</string>
     <string id="50157">Export path</string>
     <string id="50158">Cache timeout (in minutes)</string>
-    <string id="50159">Reverse episode order</string>
     <string id="50199">Other settings</string>
     <!-- Home menu -->
     <string id="50200">My List</string>
@@ -88,6 +87,7 @@
     <string id="50210">By Cast</string>
     <string id="50211">By Date</string>
     <string id="50212">By Year</string>
+    <string id="50213">My Shows Last Episodes</string>
     <!-- context menu -->
     <string id="50300">Add to my watchlist</string>
     <string id="50301">Remove from my watchlist</string>

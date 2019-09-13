@@ -19,6 +19,7 @@ urlCachePrefix = 'urlcache_'
 webserviceUrl = 'https://tfc.tv'
 websiteUrl = 'https://tfc.tv'
 websiteSecuredUrl = 'https://tfc.tv'
+websiteCDNUrl = 'https://img.tfc.tv'
 kapamilyaAccountsSSOUrl = 'https://kapamilya-accounts.abs-cbn.com'
 apiSSOUrl = 'https://sso-api.abs-cbn.com'
 apiAzureUrl = 'https://oneottprodapi.azure-api.net'
@@ -53,6 +54,7 @@ uri = {
     'myList' : '/user/mylist',
     'categoryList' : '/category/list/%s',
     'showDetails' : '/show/details/%s',
+    'showEpisodesList' : '/prod-feed/eplist/o/feed-%s.json?v=%s',
     'episodePagination' : '/modulebuilder/getepisodes/%s/show/%s',
     'addToList' : '/method/addtolist',
     'removeFromList' : '/method/deletefromlist',
@@ -78,6 +80,7 @@ MYINFO = 13
 MYSUBSCRIPTIONS = 14
 MYTRANSACTIONS = 15
 LOGOUT = 16
+MYLISTSHOWLASTEPISODES = 19
 MYLIST = 20
 LISTCATEGORY = 21
 ADDTOLIST = 22

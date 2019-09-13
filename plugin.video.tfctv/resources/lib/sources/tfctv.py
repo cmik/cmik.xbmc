@@ -498,6 +498,7 @@ def getMyListCategories():
     logger.logInfo('called function')
     url = config.uri.get('myList')
     html = callServiceApi(url, useCache=False)
+    cache.shortCache.delete('mylistShowLastEpisodes')
     return extractListCategories(html)
     
 def getMylistCategoryItems(id):
@@ -505,6 +506,33 @@ def getMylistCategoryItems(id):
     url = config.uri.get('myList')
     html = callServiceApi(url, useCache=False)
     return extractListCategoryItems(html, id)
+
+def getMylistShowLastEpisodes():
+    logger.logInfo('called function')
+    data = []
+    key = 'mylistShowLastEpisodes'
+
+    if cache.shortCache.get(key) == '':
+        url = config.uri.get('myList')
+        html = callServiceApi(url, useCache=False)
+
+        section = common.parseDOM(html, "section", attrs = { 'id' : 'mylist-shows' })
+        content = common.parseDOM(section, "ul", attrs = { 'class' : 'og-grid tv-programs-grid' })
+        if len(content) > 0:
+            items = common.parseDOM(content, "li")
+            
+            for item in items:
+                url = common.parseDOM(item, "a", ret = 'href')[0]
+                if '/show/' in url:
+                    show = extractMyListShowData(url, item)
+                    (episodes, n) = getEpisodesPerPage(show.get('id'), show.get('parentid'), show.get('year', ''), 1, 1)
+                    data.append(episodes.pop())
+
+            cache.shortCache.set(key, json.dumps(data))
+    else:
+        data = json.loads(cache.shortCache.get(key).replace('\\\'', '\''))
+
+    return sorted(data, key=lambda item: item['title'] if 'title' in item else item['name'], reverse=False)
 
 def extractListCategoryItems(html, id):   
     logger.logInfo('called function')
@@ -907,26 +935,10 @@ def getShow(showId, parentId=-1, year=''):
             castDB.set(actors)
             i+=1
         
-        # Check episode list
-        episodes = {}
-        nbEpisodes = 0
-        episodeList = common.parseDOM(html, "select", attrs = { 'id' : 'show_episode_list' })
-        if episodeList:
-            values = common.parseDOM(episodeList, "option", ret = 'value')
-            titles = common.parseDOM(episodeList, "option")
-            i = 0
-            for t in titles:
-                id = int(re.compile('/([0-9]+)/', re.IGNORECASE).search(values[i]).group(1))
-                episodes.update({id : {
-                    'title' : common.replaceHTMLCodes(t),
-                    'episodenumber' : int(re.compile('Ep. ([0-9]+) -', re.IGNORECASE).search(t).group(1)),
-                    'url' : values[i]
-                    }})
-                i+=1
+        # retrieve episodes list
+        episodeList = getShowEpisodesList(showId)
 
-            nbEpisodes = int(re.compile('\(([0-9]+)\)', re.IGNORECASE).search(common.parseDOM(html, "h2", attrs = { 'class' : 'episode-list-showp' })[0]).group(1))
-        
-        type = 'show' if showData.get('@type' ,'show').lower() not in ('show','movie') else showData.get('@type' ,'show').lower()
+        type = 'show' if showData.get('@type' ,'show').lower() not in ('show','movie', 'episode') else showData.get('@type' ,'show').lower()
         data = {
             'id' : int(showId),
             'name' : common.replaceHTMLCodes(name),
@@ -940,8 +952,8 @@ def getShow(showId, parentId=-1, year=''):
             'description' : common.replaceHTMLCodes(description),
             'shortdescription' : common.replaceHTMLCodes(description),
             'year' : year,
-            'nbEpisodes' : nbEpisodes,
-            'episodes' : episodes,
+            'nbEpisodes' : episodeList.get('nbEpisodes', 0),
+            'episodes' : episodeList.get('episodes', []),
             'casts' : actors,
             'ltype' : type,
             'duration' : 0,
@@ -963,163 +975,163 @@ def getShow(showId, parentId=-1, year=''):
         logger.logWarning('Error on show %s: %s' % (showId, err.get('message')))
     return data
 
-def getEpisodesPerPage(showId, parentId, year, page=1, itemsPerPage=8):
+def getShowEpisodesList(showId):
+    logger.logInfo('called function with param (%s)' % (showId))
+    data = {
+        'nbEpisodes': 0,
+        'episodes': []
+        }
+    paginationURL = config.uri.get('episodePagination')
+    episodesList = callJsonApi(
+        config.uri.get('showEpisodesList') % (showId, datetime.datetime.now().strftime("%Y%m%d%H")),
+        params = {},
+        base_url = config.websiteCDNUrl, 
+        useCache = False,
+        jsonData = True
+        )
+    if episodesList:
+        data['nbEpisodes'] = episodesList.get('totalEp', 0)
+        for episode in episodesList.get('episodes', []):
+            data['episodes'].append({
+                'id' : episode.get('id'),
+                'title' : 'Ep %s - %s' % (episode.get('epnum'), common.replaceHTMLCodes(episode.get('desc'))),
+                'episodenumber' : episode.get('epnum'),
+                'description' : episode.get('blurb'),
+                'url' : episode.get('link'),
+                'img' : episode.get('img'),
+                'aired' : episode.get('aired'),
+                })
+        #     data['episodes'].update({episode.get('id') : {
+        #         'title' : 'Ep %s - %s' % (episode.get('epnum'), common.replaceHTMLCodes(episode.get('desc'))),
+        #         'episodenumber' : episode.get('epnum'),
+        #         'description' : episode.get('blurb'),
+        #         'url' : episode.get('link'),
+        #         'img' : episode.get('img'),
+        #         'aired' : episode.get('aired'),
+        #         }})
+
+    return data
+      
+def getEpisodesPerPage(showId, parentId, year, page=1, itemsPerPage=8, order='desc'):
     logger.logInfo('called function with param (%s, %s, %s, %s, %s)' % (showId, parentId, year, page, itemsPerPage))
     data = []
     
-    # max nb items per page that TFC website can provide
-    websiteNbItemsPerPage = 8
-    # Calculating page index and needed pages to request for building next page to display
-    firstPage = 1 if page == 1 else ((itemsPerPage / websiteNbItemsPerPage) * (page - 1) + 1)
-    lastPage = itemsPerPage / websiteNbItemsPerPage * page
-    hasNextPage = False
-    
-    paginationURL = config.uri.get('episodePagination')
-    # showDetails = cache.sCacheFunction(getShow, showId)
     showDetails = getShow(showId, parentId, year)
+
+    hasNextPage = False
+
     if showDetails:
-        for page in range(firstPage, lastPage+1, 1):
-            # reseting value
-            hasNextPage = False
-
-            calculatedPage = page 
-            if control.setting('reversePagination') == 'true' and showDetails.get('nbEpisodes') != 0:
-                import math
-                logger.logInfo(page)
-                logger.logInfo('%s / %s' % (showDetails.get('nbEpisodes'), websiteNbItemsPerPage))
-                calculatedPage = int(math.ceil(logger.logInfo(showDetails.get('nbEpisodes') / float(websiteNbItemsPerPage))) - (page - 1))
-                logger.logInfo(calculatedPage)
-                if calculatedPage > 1: hasNextPage = True
-                logger.logInfo(hasNextPage)
-                if calculatedPage < 1: break
-
-            html = callServiceApi(paginationURL % (showId, calculatedPage), useCache=False if page == 1 else True)
+        nbEpisodes = showDetails.get('nbEpisodes', 0)
         
-            # if page does not exist
-            if page > 1 and html == '':
-                break
-            # if no pagination, it's a movie or special
-            elif page == 1 and html == '':
-                html = callServiceApi(config.uri.get('showDetails') % showId, useCache=False)
-                episodeId = int(re.compile('var dfp_e = "(.+)";', re.IGNORECASE).search(html).group(1))
-                episodeData = json.loads(re.compile('var ldj = (\{.+\})', re.IGNORECASE).search(html).group(1))
+        # if movie or special
+        if nbEpisodes == 1 and showDetails.get('ltype', '') in ('movie', 'episode'):
+            html = callServiceApi(config.uri.get('showDetails') % showId, useCache=False)
+            episodeId = int(re.compile('var dfp_e = "(.+)";', re.IGNORECASE).search(html).group(1))
+            episodeData = json.loads(re.compile('var ldj = (\{.+\})', re.IGNORECASE).search(html).group(1))
 
+            res = episodeDB.get(episodeId)
+            if len(res) == 1:
+                e = res[0]
+                if episodeData:
+                    e['title'] = episodeData.get('name')
+                    e['episodenumber'] = episodeData.get('episodenumber')
+                    e['showObj'] = showDetails
+                data.append(e)
+            else:
+                try:
+                    datePublished = datetime.datetime.strptime(episodeData.get('datePublished'), '%Y-%m-%d')
+                except TypeError:
+                    datePublished = datetime.datetime(*(time.strptime(episodeData.get('datePublished'), '%Y-%m-%d')[0:6]))
+        
+                type = 'episode' if episodeData.get('@type' ,'episode').lower() not in ('episode','movie') else episodeData.get('@type' ,'episode').lower()
+                edata = {
+                    'id' : episodeId,
+                    'title' : episodeData.get('name'),
+                    'show' : showDetails.get('name', episodeData.get('name')),
+                    'image' : episodeData.get('thumbnailUrl',  episodeData.get('image')),
+                    'episodenumber' : 1,
+                    'description' : episodeData.get('description'),
+                    'shortdescription' : episodeData.get('description'),
+                    'dateaired' : datePublished.strftime('%b %d, %Y'),
+                    'date' : datePublished.strftime('%Y-%m-%d'),
+                    'year' : datePublished.strftime('%Y'),
+                    'fanart' : showDetails.get('fanart'),
+                    'showObj' : showDetails,
+                    'ltype' : type,
+                    'duration' : 0,
+                    'views' : 0,
+                    'rating' : episodeData.get('aggregateRating' , {}).get('ratingValue', 0),
+                    'votes' : episodeData.get('aggregateRating' , {}).get('reviewCount', 0),
+                    'type' : 'episode'
+                    }
+                if edata['rating'] == None: edata['rating'] = 0
+                if edata['votes'] == None: edata['votes'] = 0
+                duration = re.compile('^([0-9]+)h([0-9]*)[m]?|([0-9]+)m$', re.IGNORECASE).search(episodeData.get('duration', episodeData.get('timeRequired', 0)))
+                if duration: 
+                    if duration.group(1) != None: 
+                        if duration.group(2) != '': edata['duration'] = int(duration.group(2))
+                        edata['duration'] += int(duration.group(1)) * 60
+                    elif duration.group(3) != None: 
+                        edata['duration'] = int(duration.group(3))
+                data.append(edata)
+        else:
+            episodes = sorted(showDetails.get('episodes'), key=lambda item: item['episodenumber'], reverse=True if order == 'desc' else False)
+
+            # Calculating episode index according to page and items per page
+            episodeIndex = (page * 1 - 1) * itemsPerPage
+
+            for index in range(episodeIndex, episodeIndex+itemsPerPage, 1):
+                if index >= nbEpisodes:
+                    break
+
+                episodeData = episodes[index]
+                url = episodeData.get('url')
+                episodeId = episodeData.get('id')
                 res = episodeDB.get(episodeId)
                 if len(res) == 1:
                     e = res[0]
                     # Update title value with episode number
                     if episodeData:
-                        e['title'] = episodeData.get('name')
+                        e['title'] = episodeData.get('title')
                         e['episodenumber'] = episodeData.get('episodenumber')
                         e['showObj'] = showDetails
                     data.append(e)
                 else:
-                    try:
-                        datePublished = datetime.datetime.strptime(episodeData.get('datePublished'), '%Y-%m-%d')
-                    except TypeError:
-                        datePublished = datetime.datetime(*(time.strptime(episodeData.get('datePublished'), '%Y-%m-%d')[0:6]))
-            
-                    type = 'episode' if episodeData.get('@type' ,'episode').lower() not in ('episode','movie') else episodeData.get('@type' ,'episode').lower()
-                    edata = {
+                    image = episodeData.get('img')
+                    title = episodeData.get('title')
+                    dateAired = episodeData.get('aired').split('T').pop(0)
+                    showTitle = showDetails.get('name')
+                    fanart = showDetails.get('fanart')
+                    year = title.split(', ').pop()
+                    description = episodeData.get('description')
+                    shortDescription = description
+                    episodeNumber = episodeData.get('episodenumber')
+                    
+                    e = {
                         'id' : episodeId,
-                        'title' : episodeData.get('name'),
-                        'show' : showDetails.get('name', episodeData.get('name')),
-                        'image' : episodeData.get('thumbnailUrl',  episodeData.get('image')),
-                        'episodenumber' : 1,
-                        'description' : episodeData.get('description'),
-                        'shortdescription' : episodeData.get('description'),
-                        'dateaired' : datePublished.strftime('%b %d, %Y'),
-                        'date' : datePublished.strftime('%Y-%m-%d'),
-                        'year' : datePublished.strftime('%Y'),
-                        'fanart' : showDetails.get('fanart'),
+                        'title' : title,
+                        'parentid' : int(showId),
+                        'show' : showTitle,
+                        'image' : image,
+                        'fanart' : fanart,
+                        'episodenumber' : episodeNumber,
+                        'url' : image,
+                        'description' : description,
+                        'shortdescription' : shortDescription,
+                        'dateaired' : dateAired,
+                        'date' : dateAired,
+                        'year' : year,
+                        'parentalAdvisory' : '',
                         'showObj' : showDetails,
-                        'ltype' : type,
-                        'duration' : 0,
-                        'views' : 0,
-                        'rating' : episodeData.get('aggregateRating' , {}).get('ratingValue', 0),
-                        'votes' : episodeData.get('aggregateRating' , {}).get('reviewCount', 0),
+                        'ltype' : showDetails.get('ltype'),
                         'type' : 'episode'
                         }
-                    if edata['rating'] == None: edata['rating'] = 0
-                    if edata['votes'] == None: edata['votes'] = 0
-                    duration = re.compile('^([0-9]+)h([0-9]*)[m]?|([0-9]+)m$', re.IGNORECASE).search(episodeData.get('duration', episodeData.get('timeRequired', 0)))
-                    if duration: 
-                        if duration.group(1) != None: 
-                            if duration.group(2) != '': edata['duration'] = int(duration.group(2))
-                            edata['duration'] += int(duration.group(1)) * 60
-                        elif duration.group(3) != None: 
-                            edata['duration'] = int(duration.group(3))
-                    data.append(edata)
-                break
-            else:
-                i = 0
-                episodes = common.parseDOM(html, 'li', attrs = {'class' : 'og-grid-item'})
-                if len(episodes) > 0:
-                
-                    descriptions = common.parseDOM(html, 'li', attrs = {'class' : 'og-grid-item'}, ret = 'data-show-description')
-                    titles = common.parseDOM(html, 'li', attrs = {'class' : 'og-grid-item'}, ret = 'data-aired')
-                        
-                    for e in episodes:
-                        url = common.parseDOM(e, "a", ret = 'href')[0]
-                        episodeId = int(re.compile('/([0-9]+)/', re.IGNORECASE).search(url).group(1))
-                        episodeData = showDetails.get('episodes').get(episodeId)
-                        res = episodeDB.get(episodeId)
-                        if len(res) == 1:
-                            e = res[0]
-                            # Update title value with episode number
-                            if episodeData:
-                                e['title'] = episodeData.get('title')
-                                e['episodenumber'] = episodeData.get('episodenumber')
-                                e['showObj'] = showDetails
-                            data.append(e)
-                        else:
-                            image = common.parseDOM(e, "div", attrs = {'class' : 'show-cover'}, ret = 'data-src')[0]
-                            title = common.replaceHTMLCodes(titles[i])
-                            dateAired = title
-                            showTitle = showDetails.get('name')
-                            fanart = showDetails.get('fanart')
-                            year = title.split(', ').pop()
-                            description = common.replaceHTMLCodes(descriptions[i])
-                            shortDescription = description
-                            episodeNumber = 0
-                            
-                            if episodeData:
-                                title = episodeData.get('title')
-                                episodeNumber = episodeData.get('episodenumber')
-                            
-                            try:
-                                datePublished = datetime.datetime.strptime(dateAired, '%b %d, %Y')
-                            except TypeError:
-                                datePublished = datetime.datetime(*(time.strptime(dateAired, '%b %d, %Y')[0:6]))
-                            
-                            e = {
-                                'id' : episodeId,
-                                'title' : title,
-                                'parentid' : int(showId),
-                                'show' : showTitle,
-                                'image' : image,
-                                'fanart' : fanart,
-                                'episodenumber' : episodeNumber,
-                                'url' : image,
-                                'description' : description,
-                                'shortdescription' : shortDescription,
-                                'dateaired' : dateAired,
-                                'date' : datePublished.strftime('%Y-%m-%d'),
-                                'year' : year,
-                                'parentalAdvisory' : '',
-                                'showObj' : showDetails,
-                                'ltype' : showDetails.get('ltype'),
-                                'type' : 'episode'
-                                }
-                            episodeDB.set(e)
-                            data.append(e)
-                            
-                        i += 1
-                else: 
-                    break
+                    episodeDB.set(e)
+                    data.append(e)
+
     # return sorted(data, key=lambda episode: episode['title'], reverse=True)
     return (data, hasNextPage)
-      
+
 # def getShowEpisodes(showId):
     # data = {}
     # showData = cache.sCacheFunction(getShow, showId)
@@ -1349,7 +1361,7 @@ def addToLibrary(id, name, parentId=-1, year='', updateOnly=False):
     status = True
     updated = False
     nbUpdated = 0
-    episodes = getEpisodesPerPage(id, parentId, year, page=1, itemsPerPage=8)
+    (episodes, n) = getEpisodesPerPage(id, parentId, year, page=1, itemsPerPage=8)
     
     if len(episodes) > 0:
     

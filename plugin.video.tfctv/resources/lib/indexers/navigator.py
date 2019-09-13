@@ -68,7 +68,6 @@ class navigator:
             
         if control.setting('displayWebsiteSections') == 'true':
             control.showNotification(control.lang(57020), control.lang(50008))
-            # sections = cache.sCacheFunction(tfctv.getWebsiteHomeSections)
             sections = tfctv.getWebsiteHomeSections()
             for s in sections:
                 self.addDirectoryItem(s['name'].title(), str(s['id']), config.SECTIONCONTENT, control.addonFolderIcon(s['name'].title()), isFolder=True, **self.formatMenu())
@@ -88,9 +87,17 @@ class navigator:
             control.infoDialog(control.lang(57017), control.lang(50002), time=8000)
             
     def showMyList(self):   
+        self.addDirectoryItem(control.lang(50213), '/', config.MYLISTSHOWLASTEPISODES, control.addonFolderIcon(control.lang(50213)), isFolder=True, **self.formatMenu())
         categories = tfctv.getMyListCategories()
         for c in categories:
             self.addDirectoryItem(c.get('name'), str(c.get('id')), config.LISTCATEGORY, control.addonFolderIcon(c.get('name')), **self.formatMenu())
+        self.endDirectory()
+
+    def showMyListShowLastEpisodes(self):   
+        episodes = tfctv.getMylistShowLastEpisodes()
+        for e in episodes:
+            title = '%s - %s' % (e.get('show'), e.get('dateaired'))
+            self.addDirectoryItem(title, str(e.get('id')), config.PLAY, e.get('image'), isFolder = False, query='title=%s' % title, **self.formatVideoInfo(e, addToList=False))
         self.endDirectory()
 
     def showMyListCategory(self, url):   
@@ -104,8 +111,7 @@ class navigator:
                 self.addDirectoryItem(title, str(e.get('id')), config.PLAY, e.get('image'), isFolder = False, query='title=%s' % title, **self.formatVideoInfo(e, addToList=False))
         self.endDirectory()
             
-    def showCategories(self):   
-        # categories = cache.lCacheFunction(tfctv.getCategories)
+    def showCategories(self):
         categories = tfctv.getCategories()
         for c in categories:
             self.addDirectoryItem(c.get('name'), str(c.get('id')), config.SUBCATEGORIES, control.addonFolderIcon(c.get('name')), isFolder=True, **self.formatMenu())
@@ -114,14 +120,12 @@ class navigator:
             self.endDirectory()
           
     def showSubCategories(self, categoryId):
-        # subCategories = cache.lCacheFunction(tfctv.getSubCategories, categoryId)
         subCategories = tfctv.getSubCategories(categoryId)
         for s in subCategories:
             self.addDirectoryItem(s.get('name'), str(s.get('id')), config.SUBCATEGORYSHOWS, control.addonFolderIcon(s.get('name')), isFolder=True, **self.formatMenu())
         self.endDirectory()
        
     def showSubCategoryShows(self, subCategoryId):
-        # shows = cache.sCacheFunction(tfctv.getShows, subCategoryId)
         shows = tfctv.getShows(subCategoryId)
         if len(shows) > 0:
             self.displayShows(shows)
@@ -156,9 +160,8 @@ class navigator:
         
     def showEpisodes(self, showId, page=1, parentId=-1, year=''):
         itemsPerPage = int(control.setting('itemsPerPage'))
-        # episodes = cache.sCacheFunction(tfctv.getEpisodesPerPage, showId, page, itemsPerPage)
         (episodes, nextPage) = tfctv.getEpisodesPerPage(showId, parentId, year, page, itemsPerPage)
-        episodes = sorted(episodes, key=lambda item: item['episodenumber'], reverse=True if control.setting('reversePagination') == 'true' else False)
+        episodes = sorted(episodes, key=lambda item: item['episodenumber'], reverse=True)
         for e in episodes:
             self.addDirectoryItem(e.get('title'), str(e.get('id')), config.PLAY, e.get('image'), isFolder = False, query='title=%s' % e.get('title'), **self.formatVideoInfo(e))
         if len(episodes) == itemsPerPage or nextPage == True:
@@ -408,19 +411,6 @@ class navigator:
                 data['listCasts'] = info.get('showObj').get('casts')
         
         return logger.logDebug(data)
-            
-            
-    # def addDirectoryItem(self, name, query, thumb, icon, context=None, isAction=True, isFolder=True):
-        # try: name = control.lang(name).encode('utf-8')
-        # except: pass
-        # url = '%s?action=%s' % (sysaddon, query) if isAction == True else query
-        # thumb = os.path.join(artPath, thumb) if not artPath == None else icon
-        # cm = []
-        # if not context == None: cm.append((control.lang(context[0]).encode('utf-8'), 'RunPlugin(%s?action=%s)' % (sysaddon, context[1])))
-        # item = control.item(label=name, iconImage=thumb, thumbnailImage=thumb)
-        # item.addContextMenuItems(cm, replaceItems=False)
-        # if not addonFanart == None: item.setProperty('Fanart_Image', addonFanart)
-        # control.addItem(handle=int(sys.argv[1]), url=url, listitem=item, isFolder=isFolder)
             
     def addDirectoryItem(self, name, url, mode, thumbnail, page=1, isFolder=True, query='', **kwargs):
         u = self.generateActionUrl(url, mode, name, thumbnail, page, query)
