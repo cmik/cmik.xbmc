@@ -1,3 +1,6 @@
+1.4.0
+    Now can play AES encrypted medias (corresponding to previous not supported medias)
+    Override cache key for home menu and list last episodes to be renew every hour
 1.3.4
     Fixed show's episodes display error
     Fixed add to library error

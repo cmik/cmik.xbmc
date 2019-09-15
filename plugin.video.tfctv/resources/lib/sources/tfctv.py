@@ -6,6 +6,7 @@
 '''
 
 import os,sys,re,urllib,urllib2,ssl,cookielib,json,datetime,time,hashlib
+import inputstreamhelper
 from operator import itemgetter
 from resources import config
 from resources.lib.libraries import control
@@ -48,7 +49,7 @@ def playEpisode(url, name, thumbnail, bandwidth=False):
                 # login()
                 
         episodeDetails = getMediaInfo(episode, name, thumbnail, bandwidth)
-        logger.logInfo(episodeDetails)
+        logger.logDebug(episodeDetails)
         if episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] == 0 and 'data' in episodeDetails:
             if 'preview' in episodeDetails['data'] and episodeDetails['data']['preview'] == True:
                 control.infoDialog(control.lang(57025), control.lang(50002), time=5000)
@@ -77,13 +78,20 @@ def playEpisode(url, name, thumbnail, bandwidth=False):
                 except: pass
 
             if episodeDetails.get('useDash', False):
-                logger.logInfo(episodeDetails['dash'])
+                logger.logDebug(episodeDetails['dash'])
+                
+                protocol = 'mpd'
+                drm = episodeDetails['dash']['type']
+                license_server = episodeDetails['dash']['key']
+                headers = episodeDetails['dash']['headers']
+                license_key = logger.logDebug('%s|%s|%s|%s' % (license_server, headers, 'R{SSM}', ''))
+                is_helper = inputstreamhelper.Helper(protocol, drm=drm)
+                is_helper.check_inputstream()
                 liz.setProperty('inputstreamaddon', 'inputstream.adaptive')
-                liz.setProperty('inputstream.adaptive.manifest_type', 'mpd')
-                liz.setProperty('inputstream.adaptive.license_type', episodeDetails['dash']['type'])
-                liz.setProperty('inputstream.adaptive.stream_headers', episodeDetails['dash']['headers'])
-                liz.setProperty('inputstream.adaptive.license_key', 
-                    '%s|%s|%s|%s' % (episodeDetails['dash']['key'], episodeDetails['dash']['headers'], 'b{SSM}', 'R'))
+                liz.setProperty('inputstream.adaptive.manifest_type', protocol)
+                liz.setProperty('inputstream.adaptive.license_type', drm)
+                # liz.setProperty('inputstream.adaptive.stream_headers', headers)
+                liz.setProperty('inputstream.adaptive.license_key', license_key)
                 liz.setMimeType(episodeDetails['data']['type'])
                 # liz.setContentLookup(False)
             
@@ -233,7 +241,7 @@ def getMediaInfoFromWebsite(episodeId, bandwidth=False):
             logger.logDebug(episodeDetails)
             if episodeDetails and 'StatusCode' in episodeDetails:
                 mediaInfo['errorCode'] = episodeDetails['StatusCode']
-                if 'media' in episodeDetails and 'source' in episodeDetails['media'] and 'src' in episodeDetails['media']['source'][0] :
+                if mediaInfo['errorCode'] == 1 and 'media' in episodeDetails and 'source' in episodeDetails['media'] and 'src' in episodeDetails['media']['source'][0] :
                     episodeDetails['media']['uri'] = episodeDetails['media']['source'][0]['src']
                     # DVR Window 
                     # episodeDetails['media']['uri'] += '&dw=30&n10'
@@ -249,13 +257,13 @@ def getMediaInfoFromWebsite(episodeId, bandwidth=False):
                     
                     # check if amssabscbn.akamaized.net to use inputstream.adaptive
                     if 'amssabscbn.akamaized.net' in episodeDetails['media']['uri']:
-                        mediaInfo['StatusMessage'] = control.lang(57038)
-                        mediaInfo['errorCode'] = 5
+                        # mediaInfo['StatusMessage'] = control.lang(57038)
+                        # mediaInfo['errorCode'] = 5
 
                         mediaInfo['useDash'] = True
                         headers = 'Origin=%s&Referer=%s' % (config.websiteUrl, config.websiteUrl)
                         if len(episodeDetails['media']['keys']['com.widevine.alpha']['httpRequestHeaders']) > 0:
-                            headers += '&' + '&'.join("%s=%s" % (key,val) for (key,val) in episodeDetails['media']['keys']['com.widevine.alpha']['httpRequestHeaders'].iteritems())
+                            headers += '&' + '&'.join("%s=%s" % (key,val.replace('=', '%3D')) for (key,val) in episodeDetails['media']['keys']['com.widevine.alpha']['httpRequestHeaders'].iteritems())
                         if 'com.widevine.alpha' in episodeDetails['media']['keys']:
                             mediaInfo['dash'] = {
                                 'type': 'com.widevine.alpha',
@@ -350,7 +358,8 @@ def getMediaInfoFromWebsite(episodeId, bandwidth=False):
                     
                 if 'StatusMessage' in episodeDetails and episodeDetails['StatusMessage'] != '' and episodeDetails['StatusMessage'] != 'OK':
                     mediaInfo['StatusMessage'] = episodeDetails['StatusMessage']
-    
+            else:
+                mediaInfo['StatusMessage'] = episodeDetails['StatusMessage']
     return mediaInfo
 
 def resetCatalogCache():
@@ -510,7 +519,8 @@ def getMylistCategoryItems(id):
 def getMylistShowLastEpisodes():
     logger.logInfo('called function')
     data = []
-    key = 'mylistShowLastEpisodes'
+    key = 'mylistShowLastEpisodes-%s' % datetime.datetime.now().strftime('%Y%m%d%H')
+    logger.logInfo(key)
 
     if cache.shortCache.get(key) == '':
         url = config.uri.get('myList')
@@ -641,7 +651,7 @@ def extractListCategories(html):
 def getWebsiteHomeHtml(forceUpdate=False):
     logger.logInfo('called function')
     html = ''
-    key = 'homeHTML'
+    key = 'homeHTML-%s' % datetime.datetime.now().strftime('%Y%m%d%H')
     if forceUpdate:
         cache.shortCache.delete(key)
     if cache.shortCache.get(key) == '':

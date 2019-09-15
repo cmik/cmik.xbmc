@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.tfctv" name="TFC.tv" version="1.3.4" provider-name="cmik">
+<addon id="plugin.video.tfctv" name="TFC.tv" version="1.4.0" provider-name="cmik">
     <requires>
-        <import addon="xbmc.python" version="2.1.0"/>
+        <import addon="xbmc.python" version="2.25.0"/>
         <import addon="script.module.parsedom" version="0.9.1"/>
         <import addon="script.common.plugin.cache" version="2.5.5"/>
+        <import addon="script.module.pycryptodome" version="3.4.3"/>
+        <import addon="inputstream.adaptive" version="2.4.2" />
+        <import addon="script.module.inputstreamhelper" version="0.4.2" />
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
@@ -23,10 +26,9 @@
         <licence>GNU</licence>
         <forum>https://forum.kodi.tv/showthread.php?tid=317008</forum>
         <source>https://github.com/cmik/cmik.xbmc</source>
-        <news>v1.3.4 (13/09/2019)
-          [fix] Fixed show's episodes display error
-          [fix] Fixed add to library error
-          [new] Added My List's shows last episodes in My List
+        <news>v1.4.0 (15/09/2019)
+          [new] Now can play AES encrypted medias (corresponding to previous not supported medias)
+          [new] Override cache key for home menu and list last episodes to be renew every hour
         </news>
         <assets>
             <icon>resources/icon.jpg</icon>
