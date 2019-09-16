@@ -68,7 +68,7 @@ See also:
 >- Check your internet connection
 >- Check that you have enabled the Streaming Proxy in the add-on advanced settings (reboot Kodi after any modification)
 >- If you have a message "The streaming proxy is not active...". Please reboot your Kodi system.
->- Some of your new Kapamilya content use a new encryption process that is not compatible and implemented yet in your favorite add-on. A notification message will normally appear when you play this type of content.
+>- A notification message will normally appear when you play this type of content.
 
 
 ### How can I export my TFC.tv shows in my Kodi library (export .strm and .nfo files)
