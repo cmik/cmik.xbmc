@@ -207,7 +207,11 @@ def getMediaInfoFromWebsite(episodeId, bandwidth=False):
                     mediaInfo['errorCode'] = 3
                     mediaInfo['data'] = {}
                     return mediaInfo
-                
+        
+        plan = None
+        planmatch = re.compile('var __up = "(\w+)";', re.IGNORECASE).search(html)
+        if planmatch:
+            plan = planmatch.group(1)
         sid = None
         sidmatch = re.compile('(media/fetch.+sid: (\d+),)', re.IGNORECASE).search(html)
         if sidmatch:
@@ -237,6 +241,8 @@ def getMediaInfoFromWebsite(episodeId, bandwidth=False):
                 'pv': 'false', 
                 'sid' : sid
                 }
+            if plan: params['plan'] = plan
+            
             episodeDetails = callJsonApi(config.uri.get('mediaFetch'), params, callHeaders, base_url=config.websiteSecuredUrl, useCache=False, jsonData=True)
             logger.logDebug(episodeDetails)
             if episodeDetails and 'StatusCode' in episodeDetails:
@@ -946,7 +952,7 @@ def getShow(showId, parentId=-1, year=''):
             i+=1
         
         # retrieve episodes list
-        episodeList = getShowEpisodesList(showId)
+        episodeList = getShowEpisodes(showId)
 
         type = 'show' if showData.get('@type' ,'show').lower() not in ('show','movie', 'episode') else showData.get('@type' ,'show').lower()
         data = {
@@ -985,7 +991,7 @@ def getShow(showId, parentId=-1, year=''):
         logger.logWarning('Error on show %s: %s' % (showId, err.get('message')))
     return data
 
-def getShowEpisodesList(showId):
+def getShowEpisodes(showId):
     logger.logInfo('called function with param (%s)' % (showId))
     data = {
         'nbEpisodes': 0,
@@ -1007,18 +1013,11 @@ def getShowEpisodesList(showId):
                 'title' : 'Ep %s - %s' % (episode.get('epnum'), common.replaceHTMLCodes(episode.get('desc'))),
                 'episodenumber' : episode.get('epnum'),
                 'description' : episode.get('blurb'),
+                'shortdescription' : episode.get('blurb'),
                 'url' : episode.get('link'),
                 'img' : episode.get('img'),
                 'aired' : episode.get('aired'),
                 })
-        #     data['episodes'].update({episode.get('id') : {
-        #         'title' : 'Ep %s - %s' % (episode.get('epnum'), common.replaceHTMLCodes(episode.get('desc'))),
-        #         'episodenumber' : episode.get('epnum'),
-        #         'description' : episode.get('blurb'),
-        #         'url' : episode.get('link'),
-        #         'img' : episode.get('img'),
-        #         'aired' : episode.get('aired'),
-        #         }})
 
     return data
       
@@ -1142,22 +1141,6 @@ def getEpisodesPerPage(showId, parentId, year, page=1, itemsPerPage=8, order='de
     # return sorted(data, key=lambda episode: episode['title'], reverse=True)
     return (data, hasNextPage)
 
-# def getShowEpisodes(showId):
-    # data = {}
-    # showData = cache.sCacheFunction(getShow, showId)
-    # showEpisodes = callJsonApi(config.uri.get('showEpisodes') % showId)
-    # if showData and showEpisodes:
-        # for e in showEpisodes:
-            # e['show'] = showData.get('name')
-            # e['showimage'] = showData.get('image').replace(' ', '%20')
-            # e['fanart'] = showData.get('banner').replace(' ', '%20')
-            # e['image'] = e.get('ImageList')
-            # e['description'] = e.get('Synopsis')
-            # e['shortdescription'] = e.get('Description')
-            # e['episodenumber'] = e.get('EpisodeNumber')
-            # e['dateaired'] = e.get('DateAired').split('T')[0]
-            # data[e.get('EpisodeId')] = e
-    # return data
           
 def getEpisode(episodeId):
     logger.logInfo('called function with param (%s)' % episodeId)
@@ -1371,7 +1354,8 @@ def addToLibrary(id, name, parentId=-1, year='', updateOnly=False):
     status = True
     updated = False
     nbUpdated = 0
-    (episodes, n) = getEpisodesPerPage(id, parentId, year, page=1, itemsPerPage=8)
+    nbEpisodes = int(control.setting('exportLastNbEpisodes'))
+    (episodes, n) = getEpisodesPerPage(id, parentId, year, page=1, itemsPerPage=nbEpisodes)
     
     if len(episodes) > 0:
     
@@ -1437,7 +1421,7 @@ def generateShowNFO(info, path):
     nfoString = ''
     nfoString += '<title>%s</title>' % info.get('name')
     nfoString += '<sorttitle>%s</sorttitle>' % info.get('name')
-    nfoString += '<episode>%s</episode>' % max([e.get('episodenumber') for k, e in info.get('episodes').iteritems()])
+    nfoString += '<episode>%s</episode>' % info.get('nbEpisodes')
     nfoString += '<plot>%s</plot>' % info.get('description')
     nfoString += '<aired>%s</aired>' % info.get('dateaired')
     nfoString += '<year>%s</year>' % info.get('year')
