@@ -2,6 +2,7 @@
     Fixed add to library and library updates    
     Fixed add to mylist (url changed)
     Now use number of last episodes from settings for library updates
+    Fixed playback issue with 403 error 
 1.4.0
     Now can play AES encrypted medias (corresponding to previous not supported medias)
     Override cache key for home menu and list last episodes to be renew every hour

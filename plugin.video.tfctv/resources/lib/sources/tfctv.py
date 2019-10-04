@@ -267,7 +267,7 @@ def getMediaInfoFromWebsite(episodeId, bandwidth=False):
                         # mediaInfo['errorCode'] = 5
 
                         mediaInfo['useDash'] = True
-                        headers = 'Origin=%s&Referer=%s' % (config.websiteUrl, config.websiteUrl)
+                        headers = 'Origin=%s&Referer=%s&Sec-Fetch-Mode=cors' % (config.websiteUrl, config.websiteUrl)
                         if len(episodeDetails['media']['keys']['com.widevine.alpha']['httpRequestHeaders']) > 0:
                             headers += '&' + '&'.join("%s=%s" % (key,val.replace('=', '%3D')) for (key,val) in episodeDetails['media']['keys']['com.widevine.alpha']['httpRequestHeaders'].iteritems())
                         if 'com.widevine.alpha' in episodeDetails['media']['keys']:
@@ -290,7 +290,13 @@ def getMediaInfoFromWebsite(episodeId, bandwidth=False):
                     else: 
                         # choose best stream quality
                         mediaInfo['data']['bandwidth'] = {}
-                        m3u8 = callServiceApi(episodeDetails['media']['uri'], base_url = '', headers=[])
+                        m3u8 = callServiceApi(episodeDetails['media']['uri'], base_url = '', headers=[
+                                ('Accept', '*/*,akamai/media-acceleration-sdk;b=1702200;v=1.2.2;p=javascript'),
+                                ('Origin', config.websiteUrl),
+                                ('Referer', config.websiteUrl+'/'),
+                                ('Sec-Fetch-Mode', 'cors')
+                            ])
+                        logger.logDebug(m3u8)
                         if m3u8:
                             lines = m3u8.split('\n')
                             i = 0
@@ -1463,7 +1469,7 @@ def generateEpisodeNFO(info, path, filePath):
     %s \
 </episodedetails>' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), nfoString)
 
-def checkLibraryUpdates():
+def checkLibraryUpdates(quiet=False):
     logger.logInfo('called function')
     items = libraryDB.getAll()
     for show in items:
@@ -1471,7 +1477,7 @@ def checkLibraryUpdates():
         result = addToLibrary(show.get('id'), show.get('name'), show.get('parentid'), show.get('year'), updateOnly=True)
         if result.get('updated') == True:
             logger.logNotice('Updated %s episodes' % str(result.get('nb')))
-            control.showNotification(control.lang(57037) % (str(result.get('nb')), show.get('name')), control.lang(50011))
+            if not quiet: control.showNotification(control.lang(57037) % (str(result.get('nb')), show.get('name')), control.lang(50011))
         else:
             logger.logNotice('No updates for show %s' % show.get('name'))
     return True

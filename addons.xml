@@ -29,6 +29,7 @@
               [fix] Fixed add to library and library updates
               [fix] Fixed add to mylist (url changed)
               [fix] Now use number of last episodes from settings for library updates
+              [fix] Fixed playback issue with 403 error
             </news>
             <assets>
                 <icon>resources/icon.jpg</icon>
