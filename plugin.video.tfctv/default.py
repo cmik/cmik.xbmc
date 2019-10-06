@@ -152,7 +152,7 @@ elif mode == config.RESETCATALOG:
     tfctv.resetCatalogCache()
 elif mode == config.CHECKLIBRARYUPDATES and tools.isDBInstalled() == True:
     from resources.lib.sources import tfctv
-    tfctv.checkLibraryUpdates()
+    tfctv.checkLibraryUpdates(True if caller!='addon' else False)
 elif mode == config.CLEANCOOKIES:
     from resources.lib.sources import tfctv
     tfctv.cleanCookies()

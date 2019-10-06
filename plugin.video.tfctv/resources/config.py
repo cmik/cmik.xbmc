@@ -56,8 +56,8 @@ uri = {
     'showDetails' : '/show/details/%s',
     'showEpisodesList' : '/prod-feed/eplist/o/feed-%s.json?v=%s',
     'episodePagination' : '/modulebuilder/getepisodes/%s/show/%s',
-    'addToList' : '/method/addtolist',
-    'removeFromList' : '/method/deletefromlist',
+    'addToList' : '/method/addtolistcdb',
+    'removeFromList' : '/method/deletefromlistcdb',
 }
 
 # User-agent

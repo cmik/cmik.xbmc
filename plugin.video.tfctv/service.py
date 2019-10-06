@@ -18,6 +18,7 @@ class ProxyHandler(SimpleHTTPRequestHandler):
 
     _cj = cookielib.LWPCookieJar()
     _user_agent = config.userAgents['default']
+    _websiteUrl = config.websiteUrl
             
     def do_GET(self):
         xbmc.log('Requested : %s' % (self.path), level=xbmc.LOGDEBUG)
@@ -28,7 +29,11 @@ class ProxyHandler(SimpleHTTPRequestHandler):
             if ('url' in query):
             
                 requestHeaders = []
-                requestHeaders.append(('User-Agent', self._user_agent))            
+                requestHeaders.append(('User-Agent', self._user_agent))
+                requestHeaders.append(('Accept', '*/*,akamai/media-acceleration-sdk;b=1702200;v=1.2.2;p=javascript'))
+                requestHeaders.append(('Origin', self._websiteUrl))
+                requestHeaders.append(('Referer', self._websiteUrl+'/'))
+                requestHeaders.append(('Sec-Fetch-Mode', 'cors'))
                 res = self.urlopen(query.get('url'), headers=requestHeaders)
                 
                 if (res.get('status')):
