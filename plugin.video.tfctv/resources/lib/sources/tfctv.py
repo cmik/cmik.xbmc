@@ -1637,8 +1637,8 @@ def loginToWebsite(quiet=False):
             base_url = config.gigyaCDNUrl, 
             useCache = False
         )
-        gigyaVersion = re.compile('"version":?"(.+)",').search(gigyaHtml).group(1)
-        gigyaBuild = re.compile('"number":([\d.]+),').search(gigyaHtml).group(1)
+        gigyaVersion = re.compile('"version" ?: ?"(.+),?"').search(gigyaHtml).group(1)
+        gigyaBuild = re.compile('"number" ?: ?([\d.]+),?').search(gigyaHtml).group(1)
         
         # Retrieve Gigya ssoKey
         params = {'apiKey' : apikey, 'version': gigyaVersion}
@@ -1648,9 +1648,9 @@ def loginToWebsite(quiet=False):
             base_url = config.gigyaCDNUrl, 
             useCache = False
         )
-        defaultApiDomain = re.compile('gigya.defaultApiDomain=\'([a-zA-Z.]+)\';').search(gigyaHtml).group(1)
-        dataCenter = re.compile('gigya.dataCenter=\'([a-zA-Z0-9.]+)\';').search(gigyaHtml).group(1)
-        ssoKey = re.compile('"ssoKey":"([a-zA-Z0-9_-]+)",').search(gigyaHtml).group(1)       
+        defaultApiDomain = re.compile('gigya.defaultApiDomain ?= ?\'([a-zA-Z.]+)\';').search(gigyaHtml).group(1)
+        dataCenter = re.compile('gigya.dataCenter ?= ?\'([a-zA-Z0-9.]+)\';').search(gigyaHtml).group(1)
+        ssoKey = re.compile('"ssoKey" ?: ?"([a-zA-Z0-9_-]+)",').search(gigyaHtml).group(1)       
         apiDomainCookie = 'apiDomain_' + ssoKey + '=' + dataCenter + '.' + defaultApiDomain
         apiDomain = dataCenter + '.' + defaultApiDomain
         

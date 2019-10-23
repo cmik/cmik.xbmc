@@ -1,3 +1,5 @@
+1.4.2
+    Fixed gigya buid number and version regex
 1.4.1
     Fixed add to library and library updates    
     Fixed add to mylist (url changed)
