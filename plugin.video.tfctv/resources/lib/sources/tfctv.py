@@ -56,7 +56,7 @@ def playEpisode(url, name, thumbnail, bandwidth=False):
             elif 'StatusMessage' in episodeDetails and episodeDetails['StatusMessage'] != '':
                 control.showNotification(episodeDetails['StatusMessage'], control.lang(50009))
             url = control.setting('proxyStreamingUrl') % (control.setting('proxyHost'), control.setting('proxyPort'), urllib.quote(episodeDetails['data']['uri'])) if not episodeDetails.get('useDash', False) and (control.setting('useProxy') == 'true') else episodeDetails['data']['uri']
-            liz = control.item(name, path=url, thumbnailImage=thumbnail, iconImage="DefaultVideo.png")
+            liz = control.item(name, path=url+'|User-Agent=%s' % (config.userAgents['default']), thumbnailImage=thumbnail, iconImage="DefaultVideo.png")
             liz.setInfo(type='video', infoLabels={
                 'title': name, 
                 'sorttitle' : episodeDetails['data']['dateaired'],
@@ -90,10 +90,11 @@ def playEpisode(url, name, thumbnail, bandwidth=False):
                 liz.setProperty('inputstreamaddon', 'inputstream.adaptive')
                 liz.setProperty('inputstream.adaptive.manifest_type', protocol)
                 liz.setProperty('inputstream.adaptive.license_type', drm)
-                # liz.setProperty('inputstream.adaptive.stream_headers', headers)
+                liz.setProperty('inputstream.adaptive.stream_headers', 'User-Agent=%s' % (config.userAgents['default']))
+                # liz.setProperty('inputstream.adaptive.license_data', '')
                 liz.setProperty('inputstream.adaptive.license_key', license_key)
                 liz.setMimeType(episodeDetails['data']['type'])
-                # liz.setContentLookup(False)
+                liz.setContentLookup(False)
             
             liz.setProperty('fanart_image', episodeDetails['data']['fanart'])
             liz.setProperty('IsPlayable', 'true')
@@ -267,7 +268,7 @@ def getMediaInfoFromWebsite(episodeId, bandwidth=False):
                         # mediaInfo['errorCode'] = 5
 
                         mediaInfo['useDash'] = True
-                        headers = 'Origin=%s&Referer=%s&Sec-Fetch-Mode=cors' % (config.websiteUrl, config.websiteUrl)
+                        headers = 'Content-Type=&Origin=%s&Referer=%s&User-Agent=%s' % (config.websiteUrl, config.websiteUrl+'/', config.userAgents['default'])
                         if len(episodeDetails['media']['keys']['com.widevine.alpha']['httpRequestHeaders']) > 0:
                             headers += '&' + '&'.join("%s=%s" % (key,val.replace('=', '%3D')) for (key,val) in episodeDetails['media']['keys']['com.widevine.alpha']['httpRequestHeaders'].iteritems())
                         if 'com.widevine.alpha' in episodeDetails['media']['keys']:

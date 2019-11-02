@@ -38,7 +38,7 @@ class ProxyHandler(SimpleHTTPRequestHandler):
                 
                 if (res.get('status')):
                     proxyUrlFormat = control.setting('proxyStreamingUrl')
-                    content = re.sub(r'(http[^\s"]+)', lambda x: proxyUrlFormat % (control.setting('proxyHost'), control.setting('proxyPort'), urllib.quote(x.group(0))), res.get('body'))
+                    content = re.sub(r'(http[^\s"]+)', lambda x: proxyUrlFormat % (control.setting('proxyHost'), control.setting('proxyPort'), urllib.quote(x.group(0))), res.get('body')) if ('amssabscbn.akamaized.net' not in query.get('url')) else res.get('body')
                     
                     self.send_response(res.get('status'))
                     for header, value in res.get('headers').items():

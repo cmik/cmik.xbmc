@@ -54,7 +54,8 @@ caller = params.get('caller', 'addon')
 thumbnail = urllib.unquote_plus(params.get('thumbnail', ''))
 
 
-if caller == 'addon' and control.setting('addonNewInstall') == 'true' and control.setting('lastVersion') != control.addonInfo('version'):
+# if caller == 'addon' and control.setting('addonNewInstall') == 'true' and control.setting('lastVersion') != control.addonInfo('version'):
+if caller == 'addon' and control.setting('lastVersion') != control.addonInfo('version'):
     from resources import upgrade
     control.showMessage(control.lang(57023) % control.addonInfo('version'), control.lang(50002))
     upgrade.upgradeDB()

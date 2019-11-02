@@ -1,3 +1,5 @@
+1.4.3
+    Fixed AES encrypted video playback. Now you can play latest shows (iWant, etc...)
 1.4.2
     Fixed gigya buid number and version regex
 1.4.1
