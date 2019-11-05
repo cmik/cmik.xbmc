@@ -243,22 +243,22 @@ def run(mode, caller='addon'):
     return execute('RunPlugin(plugin://%s/?mode=%s&caller=%s)' % (addonInfo('id'), mode, caller))
 
 def exit():
-    return execute("XBMC.Container.Update(path,replace)")
+    return execute("XBMC.Container.Update(path,replace)", 10)
 
 def refresh():
-    return execute('Container.Refresh')
+    return execute("Container.Refresh", 10)
 
 def loading():
     return execute("ActivateWindow(busydialog)")
     
 def idle():
-    return execute('Dialog.Close(busydialog)')
+    return execute("Dialog.Close(busydialog)")
 
 def queueItem():
-    return execute('Action(Queue)')
+    return execute("Action(Queue)")
 
 def openPlaylist():
-    return execute('ActivateWindow(VideoPlaylist)')
+    return execute("ActivateWindow(VideoPlaylist)")
 
 def openSettings(query=None, id=addonInfo('id')):
     try:

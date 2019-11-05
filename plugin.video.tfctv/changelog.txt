@@ -1,3 +1,5 @@
+1.4.4
+    Fixed some bugs on quick setup at first install
 1.4.3
     Fixed AES encrypted video playback. Now you can play latest shows (iWant, etc...)
 1.4.2

@@ -1518,7 +1518,7 @@ def enterCredentials():
     logger.logNotice('%s - %s' % (email, password))
     control.setSetting('emailAddress', email)
     control.setSetting('password', password)
-    return login()
+    return login(False, email, password)
     
 def checkAccountChange(forceSignIn=False):
     logger.logInfo('called function')
@@ -1559,9 +1559,9 @@ def checkAccountChange(forceSignIn=False):
         
     return (accountChanged, loginSuccess)
     
-def login(quiet=False):
+def login(quiet=False, login=False, password=False):
     logger.logInfo('called function')
-    signedIntoWebsite = loginToWebsite(quiet)
+    signedIntoWebsite = loginToWebsite(quiet, login, password)
     return signedIntoWebsite
     
 def isLoggedIn():
@@ -1572,7 +1572,7 @@ def isLoggedIn():
         Logged = False if 'TfcTvId' not in html else True
     return Logged
     
-def loginToWebsite(quiet=False): 
+def loginToWebsite(quiet=False, login=False, password=False): 
     from random import randint
     import time
     global cookieJar
@@ -1582,8 +1582,8 @@ def loginToWebsite(quiet=False):
     if quiet == False:
         control.showNotification(control.lang(57019), control.lang(50005))
     
-    emailAddress = control.setting('emailAddress')
-    password = control.setting('password')
+    emailAddress = login if (login) else control.setting('emailAddress')
+    password = password if (password) else control.setting('password')
     authData = {
             "siteURL": config.websiteUrl,
             "loginID": emailAddress,
@@ -2055,7 +2055,7 @@ def checkProxy():
     if (control.setting('useProxy') == 'true'):
         url = control.setting('proxyCheckUrl') % (control.setting('proxyHost'), control.setting('proxyPort'))
         response = callServiceApi(url, base_url = '', useCache=False, returnMessage=False)
-        logger.logDebug(response)    
+        logger.logDebug(response)
         if response.get('status', '') != 200:
             control.alert(control.lang(57028), title=control.lang(50004))
             return False
