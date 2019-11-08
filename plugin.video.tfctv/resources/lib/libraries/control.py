@@ -25,9 +25,15 @@ from resources.lib.libraries import logger
 
 lang = xbmcaddon.Addon().getLocalizedString
 
-setting = xbmcaddon.Addon().getSetting
+settingsCache = {}
+getAddonSetting = xbmcaddon.Addon().getSetting
+setAddonSetting = xbmcaddon.Addon().setSetting
+def setting(key):
+    return settingsCache[key] if key in settingsCache else getAddonSetting(key)
 
-setSetting = xbmcaddon.Addon().setSetting
+def setSetting(key, value):
+    settingsCache[key] = value
+    return setAddonSetting(key, value)
 
 addon = xbmcaddon.Addon
 
@@ -243,10 +249,10 @@ def run(mode, caller='addon'):
     return execute('RunPlugin(plugin://%s/?mode=%s&caller=%s)' % (addonInfo('id'), mode, caller))
 
 def exit():
-    return execute("XBMC.Container.Update(path,replace)", 10)
+    return execute("XBMC.Container.Update(path,replace)")
 
 def refresh():
-    return execute("Container.Refresh", 10)
+    return execute("Container.Refresh")
 
 def loading():
     return execute("ActivateWindow(busydialog)")

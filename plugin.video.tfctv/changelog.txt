@@ -1,3 +1,5 @@
+1.4.5
+    Fixed quick setup on first install as menu refresh randomly works
 1.4.4
     Fixed some bugs on quick setup at first install
 1.4.3

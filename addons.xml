@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addons> 
-    <addon id="plugin.video.tfctv" name="TFC.tv" version="1.4.4" provider-name="cmik">
+    <addon id="plugin.video.tfctv" name="TFC.tv" version="1.4.5" provider-name="cmik">
         <requires>
             <import addon="xbmc.python" version="2.25.0"/>
             <import addon="script.module.parsedom" version="0.9.1"/>
@@ -25,8 +25,8 @@
             <licence>GNU</licence>
             <forum>https://forum.kodi.tv/showthread.php?tid=317008</forum>
             <source>https://github.com/cmik/cmik.xbmc</source>
-            <news>v1.4.4 (5/11/2019)
-              [fix] Fixed some bugs on quick setup at first install
+            <news>v1.4.5 (5/11/2019)
+              [fix] Fixed quick setup on first install as menu refresh randomly works
             </news>
             <assets>
                 <icon>resources/icon.jpg</icon>

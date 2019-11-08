@@ -12,7 +12,7 @@
         <setting id="displayMyList" type="bool" label="50130" default="true" visible="true"/>
         <setting id="displayMyAccountMenu" type="bool" label="50114" default="true" visible="true"/>
         <setting type="sep" />
-        <setting id="itemsPerPage" type="labelenum" label="50105" default="8" values="1|8|16|32|64|128" visible="true"/>
+        <setting id="itemsPerPage" type="labelenum" label="50105" default="16" values="1|8|16|32|64|128" visible="true"/>
         <setting id="useShowLogo" type="bool" label="50104" default="false" visible="true"/>
         <setting type="sep"/>
         <setting type="lsep" label="50110"/>

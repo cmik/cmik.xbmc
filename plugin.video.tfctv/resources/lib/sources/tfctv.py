@@ -1573,6 +1573,7 @@ def isLoggedIn():
     return Logged
     
 def loginToWebsite(quiet=False, login=False, password=False): 
+    logger.logInfo('called function')
     from random import randint
     import time
     global cookieJar

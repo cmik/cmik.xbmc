@@ -108,9 +108,9 @@
     <string id="56008">Next >></string>
     <string id="56009">Reload Catalog Cache</string>
     <string id="56010">Clean cookies files</string>
-    <string id="56011">[%s] Enter your credentials</string>
-    <string id="56012">[%s] Personalize your settings</string>
-    <string id="56013">[%s] Optimize your catalog cache</string>
+    <string id="56011">Enter your credentials</string>
+    <string id="56012">Personalize your settings</string>
+    <string id="56013">Optimize your catalog cache</string>
     <string id="56014">&gt; %s &lt;</string>
     <string id="56015">Skip the setup</string>
     <string id="56016">Enjoy TFC</string>

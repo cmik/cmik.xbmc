@@ -272,19 +272,23 @@ class navigator:
         self.endDirectory()
             
     def firstInstall(self):
-        self.addDirectoryItem(control.lang(56011) % (' ' if control.setting('showEnterCredentials') == 'true' else 'x'), config.uri.get('base'), config.ENTERCREDENTIALS, control.addonFolderIcon(control.lang(56011)))
-        self.addDirectoryItem(control.lang(56012) % (' ' if control.setting('showPersonalize') == 'true' else 'x'), config.uri.get('base'), config.PERSONALIZESETTINGS, control.addonFolderIcon(control.lang(56012)))
-        # self.addDirectoryItem(control.lang(56013) % (' ' if control.setting('showUpdateCatalog') == 'true' else 'x'), config.uri.get('base'), config.IMPORTALLDB, control.addonFolderIcon(control.lang(56013)))
-        self.addDirectoryItem(control.lang(56014) % (control.lang(56015) if control.setting('showEnterCredentials') == 'true' or control.setting('showPersonalize') == 'true' else control.lang(56016)), config.uri.get('base'), config.ENDSETUP, control.addonFolderIcon('Skip'))
-        self.endDirectory()
         if control.setting('showWelcomeMessage') == 'true':
             control.showMessage(control.lang(57016), control.lang(57018))
             control.setSetting('showWelcomeMessage', 'false')
+        if control.setting('emailAddress') == '':
+            if control.setting('showEnterCredentials') == 'true':
+                self.addDirectoryItem(control.lang(56011), config.uri.get('base'), config.ENTERCREDENTIALS, control.addonFolderIcon(control.lang(56011)))
+            # self.addDirectoryItem(control.lang(56012) % (' ' if control.setting('showPersonalize') == 'true' else 'x'), config.uri.get('base'), config.PERSONALIZESETTINGS, control.addonFolderIcon(control.lang(56012)))
+            # self.addDirectoryItem(control.lang(56013) % (' ' if control.setting('showUpdateCatalog') == 'true' else 'x'), config.uri.get('base'), config.IMPORTALLDB, control.addonFolderIcon(control.lang(56013)))
+            self.addDirectoryItem(control.lang(56014) % (control.lang(56015) if control.setting('showEnterCredentials') == 'true' else control.lang(56016)), config.uri.get('base'), config.ENDSETUP, control.addonFolderIcon('Skip'))
+            self.endDirectory()
+        else:
+            self.endSetup()
         
     def enterCredentials(self):
-        tfctv.enterCredentials()
-        control.setSetting('showEnterCredentials', 'false')
-        control.refresh()
+        if tfctv.enterCredentials() == True:
+            control.setSetting('showEnterCredentials', 'false')
+            self.endSetup()
         
     def optimizeLibrary(self):
         tfctv.reloadCatalogCache()
@@ -298,7 +302,8 @@ class navigator:
         
     def endSetup(self):
         control.setSetting('addonNewInstall', 'false')
-        control.refresh()
+        # control.refresh()
+        self.showMainMenu()
         
     def formatMenu(self, bgImage=''):
         if bgImage == '': bgImage = control.setting('defaultBG')
