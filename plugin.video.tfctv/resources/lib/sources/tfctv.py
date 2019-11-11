@@ -90,7 +90,7 @@ def playEpisode(url, name, thumbnail, bandwidth=False):
                 liz.setProperty('inputstreamaddon', 'inputstream.adaptive')
                 liz.setProperty('inputstream.adaptive.manifest_type', protocol)
                 liz.setProperty('inputstream.adaptive.license_type', drm)
-                liz.setProperty('inputstream.adaptive.stream_headers', 'User-Agent=%s' % (config.userAgents['default']))
+                liz.setProperty('inputstream.adaptive.stream_headers','Origin=%s&Referer=%s&User-Agent=%s&cache-control=no-cache&pragma=no-cache&sec-fetch-mode=cors&sec-fetch-site=cross-site' % (config.websiteUrl, config.websiteUrl+'/', config.userAgents['default']))
                 # liz.setProperty('inputstream.adaptive.license_data', '')
                 liz.setProperty('inputstream.adaptive.license_key', license_key)
                 liz.setMimeType(episodeDetails['data']['type'])
@@ -268,7 +268,7 @@ def getMediaInfoFromWebsite(episodeId, bandwidth=False):
                         # mediaInfo['errorCode'] = 5
 
                         mediaInfo['useDash'] = True
-                        headers = 'Content-Type=&Origin=%s&Referer=%s&User-Agent=%s' % (config.websiteUrl, config.websiteUrl+'/', config.userAgents['default'])
+                        headers = 'Content-Type=&Origin=%s&Referer=%s&User-Agent=%s&Sec-Fetch-Mode=cors&Sec-Fetch-Site=cross-site&Pragma=no-cache' % (config.websiteUrl, config.websiteUrl+'/', config.userAgents['default'])
                         if len(episodeDetails['media']['keys']['com.widevine.alpha']['httpRequestHeaders']) > 0:
                             headers += '&' + '&'.join("%s=%s" % (key,val.replace('=', '%3D')) for (key,val) in episodeDetails['media']['keys']['com.widevine.alpha']['httpRequestHeaders'].iteritems())
                         if 'com.widevine.alpha' in episodeDetails['media']['keys']:
