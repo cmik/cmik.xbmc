@@ -1,3 +1,5 @@
+1.4.7
+    Fixed login issue (HTTP 307 error)
 1.4.6
     Fixed iWant movies and shows playback (HTTP 403 error)
 1.4.5
