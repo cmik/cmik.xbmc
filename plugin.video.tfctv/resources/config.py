@@ -32,7 +32,7 @@ uri = {
     'profile' : '/profile',
     'profileDetails' : '/profile/details',
     'logout' : "/logout",
-    'apiKey' : '/api/apikey?ocpKey=%s&siteUrl=https://tfc.tv',
+    'apiKey' : '/sso/api/apikey?ocpKey=%s&siteUrl=https://tfc.tv',
     'ssoLogin' : '/sso/api/sso.login?include=profile,loginIDs,data,password',
     'login' : '/api/spa/login',
     'callback' : '/callback',

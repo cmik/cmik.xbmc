@@ -1605,7 +1605,17 @@ def loginToWebsite(quiet=False):
     ocpKey = common.parseDOM(signin, "sso-accounts", ret = 'api-key')[0]
 
     # Retrieve apiKey
-    data = callJsonApi(config.uri.get('apiKey') % ocpKey, base_url=config.apiSSOUrl, useCache = False, jsonData=True)
+    data = callJsonApi(
+        config.uri.get('apiKey') % ocpKey,
+        base_url=config.apiAzureUrl,
+        headers = [
+            ('Ocp-Apim-Subscription-Key', ocpKey),
+            ('Origin', config.kapamilyaAccountsSSOUrl),
+            ('Referer', config.kapamilyaAccountsSSOUrl + config.uri.get('signin'))
+            ], 
+        useCache = False,
+        jsonData=True
+    )
     if (not data or ('apiKey' not in data)):
         control.showNotification(control.lang(57024), control.lang(50006))
     else:
