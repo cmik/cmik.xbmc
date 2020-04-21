@@ -85,6 +85,7 @@ def playEpisode(url, name, thumbnail, bandwidth=False):
                 license_server = episodeDetails['dash']['key']
                 headers = episodeDetails['dash']['headers']
                 license_key = logger.logDebug('%s|%s|%s|%s' % (license_server, headers, 'R{SSM}', ''))
+
                 is_helper = inputstreamhelper.Helper(protocol, drm=drm)
                 is_helper.check_inputstream()
                 liz.setProperty('inputstreamaddon', 'inputstream.adaptive')
@@ -250,6 +251,8 @@ def getMediaInfoFromWebsite(episodeId, bandwidth=False):
                 mediaInfo['errorCode'] = episodeDetails['StatusCode']
                 if mediaInfo['errorCode'] == 1 and 'media' in episodeDetails and 'source' in episodeDetails['media'] and 'src' in episodeDetails['media']['source'][0] :
                     episodeDetails['media']['uri'] = episodeDetails['media']['source'][0]['src']
+                    # Remove eventual bitrate quality limitation
+                    episodeDetails['media']['uri'] = re.compile('&b=[0-9]+-[0-9]+').sub(r'', episodeDetails['media']['uri'])
                     # DVR Window 
                     # episodeDetails['media']['uri'] += '&dw=30&n10'
                     # limit by bitrate
@@ -534,7 +537,6 @@ def getMylistShowLastEpisodes():
     data = []
     key = 'mylistShowLastEpisodes-%s' % datetime.datetime.now().strftime('%Y%m%d%H')
     logger.logInfo(key)
-
     if cache.shortCache.get(key) == '':
         url = config.uri.get('myList')
         html = callServiceApi(url, useCache=False)
