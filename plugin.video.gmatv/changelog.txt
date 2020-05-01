@@ -1,0 +1,2 @@
+0.1.0
+    First pre-release version of GMA.tv add-on
