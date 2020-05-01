@@ -215,7 +215,7 @@ def getMediaInfoFromWebsite(episodeId, bandwidth=False):
                 ('X-Requested-With', 'XMLHttpRequest'),
                 ('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8'),
                 ('Cookie', '; '.join(cookie)),
-                ('Host', 'tfc.tv'),
+                ('Host', 'GMA.tv'),
                 ('Origin', config.websiteUrl),
                 ('Referer', config.websiteUrl+'/')
                 ]
@@ -1283,7 +1283,7 @@ def generateShowNFO(info, path):
         nfoString += '<actor><name>%s</name><order>%d</order><thumb>%s</thumb></actor>' % (c.get('name'), c.get('order'), c.get('thumbnail'))
     
     return u'<?xml version="1.0" encoding="UTF-8" standalone="yes"?> \
-<!-- created on %s - by TFC.tv addon --> \
+<!-- created on %s - by GMA.tv addon --> \
 <tvshow> \
     %s \
 </tvshow>' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), nfoString)
@@ -1306,7 +1306,7 @@ def generateEpisodeNFO(info, path, filePath):
     nfoString += '<studio>ABS-CBN</studio>'
     
     return u'<?xml version="1.0" encoding="UTF-8" standalone="yes"?> \
-<!-- created on %s - by TFC.tv addon --> \
+<!-- created on %s - by GMA.tv addon --> \
 <episodedetails> \
     %s \
 </episodedetails>' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), nfoString)

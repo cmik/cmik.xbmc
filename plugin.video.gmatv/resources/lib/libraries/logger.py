@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-    Tfc.tv Add-on
+    GMA.tv Add-on
     Copyright (C) 2016 cmik
 
     This program is free software: you can redistribute it and/or modify

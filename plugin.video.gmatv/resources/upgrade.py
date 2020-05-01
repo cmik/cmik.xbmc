@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 '''
-    Tfc.tv Add-on
-    Copyright (C) 2018 cmik
+    GMA.tv Add-on
+    Copyright (C) 2020 cmik
 '''
 
 from resources import config

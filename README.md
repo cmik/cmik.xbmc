@@ -121,7 +121,7 @@ Enjoy!
 
 ---
 
-If you like this add-on and want to support it, you can make a donation to show your appreciation:
+If you like my work, you can support me by making a donation:
 - [Donate with Paypal](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=Q8DETSCYJDR7E&currency_code=EUR&source=url)
 ![Donate with Paypal](https://www.cmik.me/img/donate_paypal.png)
 
