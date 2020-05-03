@@ -125,7 +125,7 @@ class navigator:
                 self.addDirectoryItem(e.get('name'), str(e.get('id')), config.SHOWEPISODES, image, isFolder=True, **self.formatShowInfo(e))
             elif e['type'] == 'episode':
                 title = '%s - %s' % (e.get('show'), e.get('dateaired')) # if e.get('type') == 'movie' else '%s - Ep.%s - %s' % (e.get('show'), e.get('episodenumber'), e.get('dateaired'))
-                self.addDirectoryItem(title, e.get('url'), config.PLAY, e.get('image'), isFolder = False, query='title=%s' % title, **self.formatVideoInfo(e))
+                self.addDirectoryItem(title, str(e.get('id')), config.PLAY, e.get('image'), isFolder = False, query='title=%s' % title, **self.formatVideoInfo(e))
         if len(content) == itemsPerPage:
             self.addDirectoryItem(control.lang(56008), section, config.SECTIONCONTENT, '', page + 1)
         self.endDirectory()
@@ -147,10 +147,9 @@ class navigator:
         (episodes, nextPage) = gmatv.getEpisodesPerPage(showId, parentId, year, page, itemsPerPage)
         episodes = sorted(episodes, key=lambda item: item['episodenumber'], reverse=True)
         for e in episodes:
-            self.addDirectoryItem(e.get('title'), e.get('url'), config.PLAY, e.get('image'), isFolder = False, query='title=%s' % e.get('title'), **self.formatVideoInfo(e))
+            self.addDirectoryItem(e.get('title'), str(e.get('id')), config.PLAY, e.get('image'), isFolder = False, query='title=%s' % e.get('title'), **self.formatVideoInfo(e))
         if len(episodes) == itemsPerPage or nextPage == True:
             self.addDirectoryItem(control.lang(56008), showId, config.SHOWEPISODES, '', page + 1)
-
         self.endDirectory()
 
     def showSearchMenu(self, category):    

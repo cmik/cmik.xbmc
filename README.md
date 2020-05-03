@@ -1,6 +1,8 @@
 # cmik.xbmc
 XBMC Repository for cmik add-ons
 
+URL : https://cmik.me/xbmc
+
 ---
 ## GMA.tv add-on
 This is not an official GMA.tv add-on. This uses GMANetwork.com website content.
@@ -15,7 +17,7 @@ The latest working version can be found here : https://cmik.me/gmatvlastzip
 
 **SOURCE CODE:**
 The source code is published on Github.
-Find the source code here: https://cmik.me/xbmc 
+Find the source code here: https://cmik.me/gmatvSourceCode 
 
 Do not hesitate to share your feedbacks (ideas for new features, bug issues, etc...) about this add-on so we can improve it together.
 
@@ -40,7 +42,7 @@ The latest working version can be found here : https://cmik.me/tfctvlastzip
 
 **SOURCE CODE:**
 The source code is published on Github.
-Find the source code here: https://cmik.me/xbmc 
+Find the source code here: https://cmik.me/tfctvSourceCode 
 
 Do not hesitate to share your feedbacks (ideas for new features, bug issues, etc...) about this add-on so we can improve it together.
 

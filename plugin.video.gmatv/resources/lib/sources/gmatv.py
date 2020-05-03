@@ -32,26 +32,31 @@ def playEpisode(id, name, thumbnail, bandwidth=False):
     logger.logInfo('called function with param (%s)' % id)
     # control.showNotification(control.lang(50005), control.lang(50008))
     # control.execute('RunPlugin(plugin://plugin.video.youtube/play/?video_id=%s)' % id)
-    liz = control.item(name, path='plugin://plugin.video.youtube/play/?video_id=%s' % id, thumbnailImage=thumbnail, iconImage="DefaultVideo.png")
-    # liz.setInfo(type='video', infoLabels={
-    #     'title': name, 
-    #     'sorttitle' : episodeDetails['data']['dateaired'],
-    #     'tvshowtitle' : episodeDetails['data']['show'],
-    #     'genre' : episodeDetails['data']['parentname'],
-    #     'episode' : episodeDetails['data']['episodenumber'],
-    #     'tracknumber' : episodeDetails['data']['episodenumber'],
-    #     'plot' : episodeDetails['data']['plot'],
-    #     'aired' : episodeDetails['data']['dateaired'],
-    #     'year' : episodeDetails['data']['year'],
-    #     'mediatype' : episodeDetails['data']['ltype'] 
-    #     })
-    
-    # liz.setProperty('fanart_image', episodeDetails['data']['fanart'])
-    liz.setProperty('IsPlayable', 'true')
-    try: 
-        return control.resolve(thisPlugin, True, liz)
-    except: 
-        control.showNotification(control.lang(57032), control.lang(50004))
+    episodeDetails = getMediaInfo(id, name, thumbnail, bandwidth)
+    logger.logDebug(episodeDetails)
+    if episodeDetails and 'errorCode' in episodeDetails and episodeDetails['errorCode'] == 0 and 'data' in episodeDetails:
+        episode = episodeDetails.get('data')
+        logger.logInfo(episode.get('plot'))
+        liz = control.item(name, path='plugin://plugin.video.youtube/play/?video_id=%s' % episode.get('videoID'), thumbnailImage=episode.get('image'), iconImage="DefaultVideo.png")
+        liz.setInfo(type='video', infoLabels={
+            'title': name, 
+            'sorttitle' : episode.get('dateaired'),
+            'tvshowtitle' : episode.get('show'),
+            'genre' : episode.get('parentname'),
+            'episode' : episode.get('episodenumber'),
+            'tracknumber' : episode.get('episodenumber'),
+            'plot' : episode.get('plot'),
+            'aired' : episode.get('dateaired'),
+            'year' : episode.get('year'),
+            'mediatype' : episode.get('ltype') 
+            })
+        
+        liz.setProperty('fanart_image', episodeDetails['data']['fanart'])
+        liz.setProperty('IsPlayable', 'true')
+        try: 
+            return control.resolve(thisPlugin, True, liz)
+        except: 
+            control.showNotification(control.lang(57032), control.lang(50004))
     return False
 
 # def playEpisode(url, name, thumbnail, bandwidth=False):
@@ -126,237 +131,58 @@ def playEpisode(id, name, thumbnail, bandwidth=False):
     
 def getMediaInfo(episodeId, title, thumbnail, bandwidth=False):
     logger.logInfo('called function')
-    mediaInfo = getMediaInfoFromWebsite(episodeId, bandwidth)
-    if mediaInfo['errorCode'] == 1:
-        mediaInfo['errorCode'] = 0
-    
-    if mediaInfo['errorCode'] == 0:
-        e = {
-            'id' : int(episodeId),
-            'title' : title,
-            'parentid' : int(mediaInfo['data']['showid']),
-            'show' : mediaInfo['data']['show'],
-            'image' : thumbnail,
-            'fanart' : mediaInfo['data']['fanart'],
-            'episodenumber' : mediaInfo['data']['episodenumber'],
-            'url' : mediaInfo['data']['url'],
-            'description' : mediaInfo['data']['plot'],
-            'shortdescription' : mediaInfo['data']['plot'],
-            'dateaired' : mediaInfo['data']['dateaired'],
-            'date' : mediaInfo['data']['date'],
-            'year' : mediaInfo['data']['year'],
-            'parentalAdvisory' : mediaInfo['data']['parentalAdvisory'],
-            'ltype' : mediaInfo['data']['ltype'],
-            'type' : 'episode',
-            'duration' : mediaInfo['data']['duration'],
-            'views' : mediaInfo['data']['views'] + 1,
-            'rating' : mediaInfo['data']['rating'],
-            'votes' : mediaInfo['data']['votes']
-            }
-        episodeDB.set(e)
+    mediaInfo = { 'errorCode' : 0 }
 
-        s = mediaInfo['data']['showObj']
-        showDB.update({'id' : s.get('id'), 'views' : s.get('views', 0) + 1})
-        
-    return mediaInfo
-
-def getMediaInfoFromWebsite(episodeId, bandwidth=False):
-    logger.logInfo('called function with param (%s, %s)' % (str(episodeId), bandwidth))
-    
-    mediaInfo = {}
-    html = callServiceApi(config.uri.get('episodeDetails') % episodeId, base_url = config.websiteUrl, useCache=False)
-
-    err = checkIfError(html)
-    if err.get('error') == True:
-        mediaInfo['StatusMessage'] = err.get('message')
-        mediaInfo['errorCode'] = 2
-    else :    
-        mediaInfo['data'] = {}
-        mediaInfo['data']['url'] = common.parseDOM(html, "link", attrs = { 'rel' : 'canonical' }, ret = 'href')[0]
-        
-        episodeData = json.loads(re.compile('var ldj = (\{.+\})', re.IGNORECASE).search(html).group(1))
-        logger.logInfo(episodeData)
+    res = episodeDB.get(int(episodeId))
+    if len(res) == 1:
+        episode = res[0] 
+        res = showDB.get(episode.get('parentid'))
+        show = res[0] if len(res) == 1 else {}
 
         # Parental advisory
-        mediaInfo['data']['parentalAdvisory'] = 'false'
-        if re.compile('var dfp_c = ".*2900.*";', re.IGNORECASE).search(html):
-            mediaInfo['data']['parentalAdvisory'] = 'true'
-            if control.setting('parentalAdvisoryCheck') == 'true':
-                control.alert(control.lang(57011),title=control.lang(50003))
-            if control.setting('parentalControl') == 'true':
-                code = control.numpad(control.lang(57021))
-                if code != control.setting('parentalCode'):
-                    mediaInfo['StatusMessage'] = control.lang(57022)
-                    mediaInfo['errorCode'] = 3
-                    mediaInfo['data'] = {}
-                    return mediaInfo
+        # mediaInfo['data']['parentalAdvisory'] = 'false'
+        # if re.compile('var dfp_c = ".*2900.*";', re.IGNORECASE).search(html):
+        #     mediaInfo['data']['parentalAdvisory'] = 'true'
+        #     if control.setting('parentalAdvisoryCheck') == 'true':
+        #         control.alert(control.lang(57011),title=control.lang(50003))
+        #     if control.setting('parentalControl') == 'true':
+        #         code = control.numpad(control.lang(57021))
+        #         if code != control.setting('parentalCode'):
+        #             mediaInfo['StatusMessage'] = control.lang(57022)
+        #             mediaInfo['errorCode'] = 3
+        #             mediaInfo['data'] = {}
+        #             return mediaInfo
         
-        plan = None
-        planmatch = re.compile('var __up = "(\w+)";', re.IGNORECASE).search(html)
-        if planmatch:
-            plan = planmatch.group(1)
-        sid = None
-        sidmatch = re.compile('(media/fetch.+sid: (\d+),)', re.IGNORECASE).search(html)
-        if sidmatch:
-            sid = sidmatch.group(2)
-                
-        if sid:
-            mediaInfo['data']['showid'] = sid
-            cookie = getCookieContent() 
-            if control.setting('generateNewFingerprintID') == 'true':
-                generateNewFingerprintID()
-            
-            cookie.append('cc_fingerprintid='+control.setting('fingerprintID'))
-            if control.setting('previousFingerprintID') != '':
-                cookie.append('cc_prevfingerprintid='+control.setting('previousFingerprintID'))
-            
-            callHeaders = [
-                ('Accept', 'application/json, text/javascript, */*; q=0.01'), 
-                ('X-Requested-With', 'XMLHttpRequest'),
-                ('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8'),
-                ('Cookie', '; '.join(cookie)),
-                ('Host', 'GMA.tv'),
-                ('Origin', config.websiteUrl),
-                ('Referer', config.websiteUrl+'/')
-                ]
-            params = {
-                'eid': episodeId, 
-                'pv': 'false', 
-                'sid' : sid
-                }
-            if plan: params['plan'] = plan
-            
-            episodeDetails = callJsonApi(config.uri.get('mediaFetch'), params, callHeaders, base_url=config.websiteSecuredUrl, useCache=False, jsonData=True)
-            logger.logDebug(episodeDetails)
-            if episodeDetails and 'StatusCode' in episodeDetails:
-                mediaInfo['errorCode'] = episodeDetails['StatusCode']
-                if mediaInfo['errorCode'] == 1 and 'media' in episodeDetails and 'source' in episodeDetails['media'] and 'src' in episodeDetails['media']['source'][0] :
-                    episodeDetails['media']['uri'] = episodeDetails['media']['source'][0]['src']
-                    # Remove eventual bitrate quality limitation
-                    episodeDetails['media']['uri'] = re.compile('&b=[0-9]+-[0-9]+').sub(r'', episodeDetails['media']['uri'])
-                    # DVR Window 
-                    # episodeDetails['media']['uri'] += '&dw=30&n10'
-                    # limit by bitrate
-                    # episodeDetails['media']['uri'] += '&b=700-1800'
-                    # prefered bitrate
-                    # episodeDetails['media']['uri'] += '&_b_=1800'
-                    if 'type' in episodeDetails['media']['source'][0]:
-                        episodeDetails['media']['type'] = episodeDetails['media']['source'][0]['type']
+        mediaInfo['data'] = {}
+        mediaInfo['data']['parentalAdvisory'] = False
+        mediaInfo['data']['preview'] = False
+        mediaInfo['data']['videoID'] = episode.get('url')
+        mediaInfo['data']['show'] = show.get('name', episode.get('show', ''))
+        mediaInfo['data']['parentname'] = show.get('parentname', '')
+        mediaInfo['data']['rating'] = show.get('rating', episode.get('rating' , 0))
+        if mediaInfo['data']['rating'] == None: mediaInfo['data']['rating'] = 0
+        mediaInfo['data']['votes'] = show.get('votes', episode.get('votes' , 0))
+        if mediaInfo['data']['votes'] == None: mediaInfo['data']['votes'] = 0
+        mediaInfo['data']['plot'] = episode.get('description')
+        mediaInfo['data']['image'] = episode.get('image', thumbnail)
+        mediaInfo['data']['fanart'] = show.get('fanart', episode.get('fanart'))
+        mediaInfo['data']['ltype'] = 'episode'
+        mediaInfo['data']['dateaired'] = episode.get('dateaired')
+        mediaInfo['data']['date'] = episode.get('dateaired')
+        mediaInfo['data']['year'] = episode.get('year')
+        mediaInfo['data']['episodenumber'] = episode.get('episodenumber')
+        mediaInfo['data']['duration'] = 0
+        mediaInfo['data']['views'] = episode.get('views', 0)
+        mediaInfo['data']['showObj'] = show
+        
+        logger.logDebug(mediaInfo)
 
-                    if control.setting('streamServerModification') == 'true' and control.setting('streamServer') != '':
-                        episodeDetails['media']['uri'] = episodeDetails['media']['uri'].replace('https://o2-i.', control.setting('streamServer'))                
-                    
-                    # check if amssabscbn.akamaized.net to use inputstream.adaptive
-                    if 'amssabscbn.akamaized.net' in episodeDetails['media']['uri']:
-                        # mediaInfo['StatusMessage'] = control.lang(57038)
-                        # mediaInfo['errorCode'] = 5
-
-                        mediaInfo['useDash'] = True
-                        headers = 'Content-Type=&Origin=%s&Referer=%s&User-Agent=%s&Sec-Fetch-Mode=cors&Sec-Fetch-Site=cross-site&Pragma=no-cache' % (config.websiteUrl, config.websiteUrl+'/', config.userAgents['default'])
-                        if len(episodeDetails['media']['keys']['com.widevine.alpha']['httpRequestHeaders']) > 0:
-                            headers += '&' + '&'.join("%s=%s" % (key,val.replace('=', '%3D')) for (key,val) in episodeDetails['media']['keys']['com.widevine.alpha']['httpRequestHeaders'].iteritems())
-                        if 'com.widevine.alpha' in episodeDetails['media']['keys']:
-                            mediaInfo['dash'] = {
-                                'type': 'com.widevine.alpha',
-                                'headers': headers,
-                                'key': episodeDetails['media']['keys']['com.widevine.alpha']['serverURL']
-                                }
-                        elif 'com.microsoft.playready' in episodeDetails['media']['keys']:
-                            mediaInfo['dash'] = {
-                                'type': 'com.microsoft.playready',
-                                'headers': headers,
-                                'key': episodeDetails['media']['keys']['com.microsoft.playready']['serverURL']
-                                }
-                        # elif 'com.apple.fps.1_0' in episodeDetails['media']['keys']:
-                            # mediaInfo['dash'] = {
-                                # 'header': episodeDetails['media']['keys']['com.widevine.alpha']['httpRequestHeaders'],
-                                # 'key': episodeDetails['media']['keys']['com.widevine.alpha']['httpRequestHeaders']
-                                # }
-                    else: 
-                        # choose best stream quality
-                        mediaInfo['data']['bandwidth'] = {}
-                        m3u8 = callServiceApi(episodeDetails['media']['uri'], base_url = '', headers=[
-                                ('Accept', '*/*,akamai/media-acceleration-sdk;b=1702200;v=1.2.2;p=javascript'),
-                                ('Origin', config.websiteUrl),
-                                ('Referer', config.websiteUrl+'/'),
-                                ('Sec-Fetch-Mode', 'cors')
-                            ])
-                        logger.logDebug(m3u8)
-                        if m3u8:
-                            lines = m3u8.split('\n')
-                            i = 0
-                            bestBandwidth = 0
-                            choosedStream = ''
-                            for l in lines:
-                                bw_match = re.compile('BANDWIDTH=([0-9]+)', re.IGNORECASE).search(lines[i])
-                                if bw_match :
-                                    currentBandwidth = int(bw_match.group(1))
-                                    res_match = re.compile('RESOLUTION=([0-9]+x[0-9]+)', re.IGNORECASE).search(lines[i])
-                                    if res_match :
-                                        mediaInfo['data']['bandwidth'][str(currentBandwidth)] = res_match.group(1)
-                                    if bandwidth != False and currentBandwidth == int(bandwidth):
-                                        choosedStream = lines[i+1]
-                                        break
-                                    elif currentBandwidth > bestBandwidth:
-                                        bestBandwidth = currentBandwidth
-                                        choosedStream = lines[i+1]
-                                    i+=2
-                                else:
-                                    i+=1
-
-                                if i >= len(lines):
-                                    break
-
-                            if control.setting('chooseBestStream') == 'true' or bandwidth != False: 
-                                logger.logInfo(choosedStream)
-                                episodeDetails['media']['uri'] = choosedStream
-                        else:
-                            mediaInfo['StatusMessage'] = control.lang(57032)
-                            mediaInfo['errorCode'] = 9
-                        
-                    res = showDB.get(sid)
-                    show = res[0] if len(res) == 1 else {}
-
-                    res = episodeDB.get(int(episodeId))
-                    episode = res[0] if len(res) == 1 else {}
-                    
-                    mediaInfo['data'].update(episodeDetails['media'])
-                    mediaInfo['data']['preview'] = episodeDetails['mediainfo']['preview']
-                    mediaInfo['data']['show'] = show.get('name', episodeData.get('name'))
-                    mediaInfo['data']['parentname'] = show.get('parentname', episodeData.get('genre', ''))
-                    mediaInfo['data']['rating'] = show.get('rating', episodeData.get('aggregateRating' , {}).get('ratingValue', 0))
-                    if mediaInfo['data']['rating'] == None: mediaInfo['data']['rating'] = 0
-                    mediaInfo['data']['votes'] = show.get('votes', episodeData.get('aggregateRating' , {}).get('reviewCount', 0))
-                    if mediaInfo['data']['votes'] == None: mediaInfo['data']['votes'] = 0
-                    mediaInfo['data']['plot'] = episodeData.get('description')
-                    mediaInfo['data']['image'] = episodeData.get('thumbnailUrl')
-                    mediaInfo['data']['fanart'] = show.get('fanart', episodeData.get('image'))
-                    mediaInfo['data']['ltype'] = 'episode' if episodeData.get('@type', 'episode').lower() not in ('episode','movie') else episodeData.get('@type', 'episode').lower()
-                    try:
-                        datePublished = datetime.datetime.strptime(episodeData.get('datePublished'), '%Y-%m-%d')
-                    except TypeError:
-                        datePublished = datetime.datetime(*(time.strptime(episodeData.get('datePublished'), '%Y-%m-%d')[0:6]))
-                    mediaInfo['data']['dateaired'] = datePublished.strftime('%b %d, %Y')
-                    mediaInfo['data']['date'] = datePublished.strftime('%Y-%m-%d')
-                    mediaInfo['data']['year'] = datePublished.strftime('%Y')
-                    mediaInfo['data']['episodenumber'] = 1 if type == 'movie' else episodeData.get('episodeNumber')
-                    mediaInfo['data']['duration'] = 0
-                    duration = re.compile('^([0-9]+)h([0-9]*)[m]?|([0-9]+)m$', re.IGNORECASE).search(episodeData.get('duration', episodeData.get('timeRequired', 0)))
-                    if duration: 
-                        if duration.group(1) != None:
-                            if duration.group(2) != '': mediaInfo['data']['duration'] = int(duration.group(2))
-                            mediaInfo['data']['duration'] += int(duration.group(1)) * 60
-                        elif duration.group(3) != None: 
-                            mediaInfo['data']['duration'] = int(duration.group(3))
-                    mediaInfo['data']['views'] = episode.get('views', 0)
-                    mediaInfo['data']['showObj'] = show
-                
-                logger.logDebug(mediaInfo)
-                    
-                if 'StatusMessage' in episodeDetails and episodeDetails['StatusMessage'] != '' and episodeDetails['StatusMessage'] != 'OK':
-                    mediaInfo['StatusMessage'] = episodeDetails['StatusMessage']
-            else:
-                mediaInfo['StatusMessage'] = episodeDetails['StatusMessage']
+        episodeDB.update({'id' : episode.get('id'), 'views' : episode.get('views', 0) + 1})
+        if 'id' in show:
+            showDB.update({'id' : show.get('id'), 'views' : show.get('views', 0) + 1})
+    else:
+        mediaInfo['StatusMessage'] = 'Episode not found'
+        mediaInfo['errorCode'] = 1
     return mediaInfo
 
 def resetCatalogCache():
