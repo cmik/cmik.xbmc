@@ -13,7 +13,7 @@ Project source can be found here: https://github.com/cmik/plugin.video.tfctv
 [![Kodi version](https://img.shields.io/badge/kodi%20versions-16+-blue)](https://kodi.tv/)
 [![GitHub release](https://img.shields.io/github/v/release/cmik/plugin.video.gmatv.svg)](https://github.com/cmik/plugin.video.gmatv/releases)
 
-Enjoy full episodes of GMA Network shows for free! This add-on uses GMANetwork.com website content accessible by anyone (no account needed). GMA official videos are free to access and hosted on Youtube. However, the access to the video content may vary according to your country (some are available only in the Philippines). This add-on requires plugin.video.youtube to work. This is not an official GMA Network add-on nor released by GMA Network.
+Enjoy full episodes of GMA Network shows for free! This add-on uses GMANetwork.com website content accessible by anyone (no account needed). GMA official videos are free to access and hosted on Youtube. However, the access to the video content may vary according to your country (some are available only in the Philippines). This add-on requires plugin.video.youtube to work. **This is not an official GMA Network add-on nor released by GMA Network.**
 Project source can be found here: https://github.com/cmik/plugin.video.gmatv
 
 ---
