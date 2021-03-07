@@ -34,7 +34,7 @@
             </assets>
         </extension>
     </addon>
-    <addon id="plugin.video.tfctv" name="TFC.tv" version="1.5.0" provider-name="cmik">
+    <addon id="plugin.video.tfctv" name="TFC.tv" version="1.6.0" provider-name="cmik">
         <requires>
             <import addon="xbmc.python" version="2.25.0"/>
             <import addon="script.module.parsedom" version="0.9.1"/>
@@ -54,9 +54,9 @@
             <licence>GNU</licence>
             <forum>https://forum.kodi.tv/showthread.php?tid=317008</forum>
             <source>https://github.com/cmik/cmik.xbmc</source>
-            <news>v1.5.0 (1/09/2020)
-              [fix] Fixed Live streams playback issue
-              [new] Repo has been removed from addon.xml to avoid multiple repo for the same add-ons. To keep your add-on up to date, install Cmik Repo from https://repo.cmik.me/repository/
+            <news>v1.6.0 (07/03/2021)
+              [fix] Fixed login detection issue
+              [new] First implementation of Facebook Login
             </news>
             <assets>
                 <icon>resources/icon.jpg</icon>
