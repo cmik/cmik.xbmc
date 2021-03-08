@@ -3,7 +3,7 @@ Repository for Cmik's Kodi add-ons
 
 ---
 ## TFC.tv add-on
-[![Kodi version](https://img.shields.io/badge/kodi%20versions-18--19-blue)](https://kodi.tv/)
+[![Kodi version](https://img.shields.io/badge/kodi%20versions-16--18.9-blue)](https://kodi.tv/)
 [![GitHub release](https://img.shields.io/github/v/release/cmik/plugin.video.tfctv.svg)](https://github.com/cmik/plugin.video.tfctv/releases)
 
 Watch your favorite online Pinoy shows, movies, news and live channels directly from your TV with the TFC.tv add-on for Kodi! This add-on works with your TFC.tv account and TFC.tv website. Media contents are all properties of TFC Online and is for personal private and domestic use only. **This is not an official TFC.tv add-on nor released by TFC / ABS-CBN.**
