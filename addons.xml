@@ -34,12 +34,14 @@
             </assets>
         </extension>
     </addon>
-    <addon id="plugin.video.tfctv" name="iWantTFC" version="1.7.0" provider-name="cmik">
+    <addon id="plugin.video.tfctv" name="iWantTFC" version="2.0.0+matrix" provider-name="cmik">
         <requires>
-            <import addon="xbmc.python" version="2.25.0"/>
-            <import addon="script.module.parsedom" version="0.9.1"/>
-            <import addon="script.common.plugin.cache" version="2.5.5"/>
-            <import addon="script.module.inputstreamhelper" version="0.4.2" />
+            <import addon="xbmc.python" version="3.0.0"/>
+            <import addon="script.module.six"/>
+            <import addon="script.module.beautifulsoup4" version="4.9.3"/>
+            <import addon="script.common.plugin.cache" version="2.6.1"/>
+            <import addon="script.module.inputstreamhelper" version="0.2.2"/>
+            <import addon="script.module.requests" version="2.22.0"/>
             <import addon="script.module.unidecode" version="1.1.1"/>
         </requires>
         <extension point="xbmc.python.pluginsource" library="default.py">
@@ -53,14 +55,15 @@
             <language>en</language>
             <platform>all</platform>
             <licence>GNU</licence>
+            <website>https://addons.cmik.me/tfc-tv/</website>
             <forum>https://forum.kodi.tv/showthread.php?tid=317008</forum>
             <source>https://github.com/cmik/cmik.xbmc</source>
-            <news>v1.7.0 (16/12/2021)
-                [new] Rework of the TFC.tv add-on after TFC.tv website moved to iWantTFC.com
+            <news>v2.0.0 (17/12/2021)
+                [new] new version for Kodi 19
             </news>
             <assets>
                 <icon>resources/icon.jpg</icon>
-                <fanart>resources/fanart.jpg</fanart>
+                <fanart>resources/fanart.jpg</fanart>   
                 <banner></banner>
                 <clearlogo></clearlogo>
                 <screenshot></screenshot>
