@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addons>
-    <addon id="plugin.video.gmatv" name="GMA.tv" version="1.0.0+matrix" provider-name="cmik">
+    <addon id="plugin.video.gmatv" name="GMA.tv" version="1.0.1+matrix" provider-name="cmik">
         <requires>
             <import addon="xbmc.python" version="3.0.0"/>
             <import addon="script.module.six"/>
@@ -22,11 +22,10 @@
             <language>en</language>
             <platform>all</platform>
             <licence>GNU</licence>
-            <website>https://addons.cmik.me/gma-tv/</website>
             <forum></forum>
-            <source>https://github.com/cmik/plugin.video.gmatv</source>
-            <news>v1.0.0 (19/12/2021)
-                [new] new version for Kodi 19
+            <source>https://github.com/cmik/cmik.xbmc</source>
+            <news>v1.0.1 (31/08/2024)
+            [fix] Fixed error when displaying show's content
             </news>
             <assets>
                 <icon>resources/icon.png</icon>
