@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addons>
-    <addon id="plugin.video.gmatv" name="GMA.tv" version="1.0.1+matrix" provider-name="cmik">
+    <addon id="plugin.video.gmatv" name="GMA.tv" version="1.0.2" provider-name="cmik">
         <requires>
             <import addon="xbmc.python" version="3.0.0"/>
             <import addon="script.module.six"/>
@@ -24,8 +24,9 @@
             <licence>GNU</licence>
             <forum></forum>
             <source>https://github.com/cmik/cmik.xbmc</source>
-            <news>v1.0.1 (31/08/2024)
-            [fix] Fixed error when displaying show's content
+            <news>v1.0.2 (27/10/2024)
+            [fix] Fixed search
+            [change] Retrieve episodes from database if episodes list from site is not available
             </news>
             <assets>
                 <icon>resources/icon.png</icon>
