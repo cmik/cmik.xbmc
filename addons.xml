@@ -37,7 +37,7 @@
             </assets>
         </extension>
     </addon>
-    <addon id="plugin.video.tfctv" name="iWantTFC" version="3.1.0" provider-name="cmik">
+    <addon id="plugin.video.tfctv" name="iWantTFC" version="3.1.1" provider-name="cmik">
         <requires>
             <import addon="xbmc.python" version="3.0.0"/>
             <import addon="script.module.six"/>
@@ -61,10 +61,8 @@
             <website>https://addons.cmik.me/tfc-tv/</website>
             <forum>https://forum.kodi.tv/showthread.php?tid=317008</forum>
             <source>https://github.com/cmik/cmik.xbmc</source>
-            <news>v3.1.0 (14/11/2026)
-              [new] Catalog seed: a new installation or a major update gets a ready-made catalog
-              [new] My List and views are kept apart from the catalog and survive its refresh, reset or replacement
-              [fix] Catalog refresh loads the episodes of all seasons and keeps My List shows up to date
+            <news>v3.1.1 (14/11/2026)
+              [fix] By Category was empty: the genres of the shows are now read (shows stored without categories are loaded again in the background)
             </news>
             <assets>
                 <icon>resources/icon.png</icon>
