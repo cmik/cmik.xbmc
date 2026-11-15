@@ -37,7 +37,7 @@
             </assets>
         </extension>
     </addon>
-    <addon id="plugin.video.tfctv" name="iWantTFC" version="3.5.0" provider-name="cmik">
+    <addon id="plugin.video.tfctv" name="iWantTFC" version="3.6.0" provider-name="cmik">
         <requires>
             <import addon="xbmc.python" version="3.0.0"/>
             <import addon="script.module.six"/>
@@ -46,6 +46,7 @@
             <import addon="script.module.inputstreamhelper" version="0.2.2"/>
             <import addon="script.module.requests" version="2.22.0"/>
             <import addon="script.module.unidecode" version="1.1.1"/>
+            <import addon="service.upnext" optional="true"/>
         </requires>
         <extension point="xbmc.python.pluginsource" library="default.py">
             <provides>video</provides>
@@ -53,7 +54,7 @@
         <extension point="xbmc.service" library="service.py"/>
         <extension point="xbmc.addon.metadata">
             <summary lang="en">TFC Pinoy TV</summary>
-            <description lang="en">Enjoy TFC's Pinoy TV shows, movies, news and live channels! This is not an official TFC.tv addon. A subscription to TFC.tv website (http://tfc.tv) is required to enjoy TFC's catalog.</description>
+            <description lang="en">Enjoy TFC's Pinoy TV shows, movies, news and live channels! This is not an official TFC.tv addon. A subscription to TFC.tv website (http://tfc.tv) is required to enjoy TFC's catalog. iWantTFC Kodi uses Trakt but is not endorsed or certified by Trakt.</description>
             <disclaimer lang="en">No warranty here</disclaimer>
             <language>en</language>
             <platform>all</platform>
@@ -61,9 +62,11 @@
             <website>https://addons.cmik.me/tfc-tv/</website>
             <forum>https://forum.kodi.tv/showthread.php?tid=317008</forum>
             <source>https://github.com/cmik/cmik.xbmc</source>
-            <news>v3.5.0 (15/11/2026)
-              [new] Go to the show in the context menu of Continue Watching and My View History (its seasons when it has several, else its episodes)
-              [fix] The choice of the season is offered again for the shows that have several seasons, whatever the list they are opened from (categories, search, My List)
+            <news>v3.6.0
+              [new] Up Next: the next episode is offered at the end of an episode (needs the Up Next add-on)
+              [new] The catalog is looked at on a schedule: new shows are loaded and the new episodes of the shows of My List are announced
+              [change] Video quality: choose how inputstream.adaptive selects the stream (its own settings, ask when playback starts, or in the player) and a maximum resolution; replaces the "Choose resolution" menu, which no longer worked
+              [new] Trakt: what is watched can be scrobbled to your Trakt account (Connect to Trakt in the settings; episodes named SxEy and movies). iWantTFC Kodi uses Trakt but is not endorsed or certified by Trakt
             </news>
             <assets>
                 <icon>resources/icon.png</icon>
