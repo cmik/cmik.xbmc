@@ -37,7 +37,7 @@
             </assets>
         </extension>
     </addon>
-    <addon id="plugin.video.tfctv" name="iWantTFC" version="3.4.0" provider-name="cmik">
+    <addon id="plugin.video.tfctv" name="iWantTFC" version="3.5.0" provider-name="cmik">
         <requires>
             <import addon="xbmc.python" version="3.0.0"/>
             <import addon="script.module.six"/>
@@ -61,10 +61,9 @@
             <website>https://addons.cmik.me/tfc-tv/</website>
             <forum>https://forum.kodi.tv/showthread.php?tid=317008</forum>
             <source>https://github.com/cmik/cmik.xbmc</source>
-            <news>v3.4.0 (14/11/2026)
-              [new] Resume playback where you stopped, Continue Watching in the root menu, Play from the beginning in the context menu
-              [new] Episodes only count as finished past 90 %; the service follows the player to keep your position
-              [new] Lists tell Kodi what they hold (tvshows, episodes, videos) so skin views and sort choices work
+            <news>v3.5.0 (15/11/2026)
+              [new] Go to the show in the context menu of Continue Watching and My View History (its seasons when it has several, else its episodes)
+              [fix] The choice of the season is offered again for the shows that have several seasons, whatever the list they are opened from (categories, search, My List)
             </news>
             <assets>
                 <icon>resources/icon.png</icon>
