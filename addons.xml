@@ -37,7 +37,7 @@
             </assets>
         </extension>
     </addon>
-    <addon id="plugin.video.tfctv" name="iWantTFC" version="3.3.0" provider-name="cmik">
+    <addon id="plugin.video.tfctv" name="iWantTFC" version="3.4.0" provider-name="cmik">
         <requires>
             <import addon="xbmc.python" version="3.0.0"/>
             <import addon="script.module.six"/>
@@ -61,9 +61,10 @@
             <website>https://addons.cmik.me/tfc-tv/</website>
             <forum>https://forum.kodi.tv/showthread.php?tid=317008</forum>
             <source>https://github.com/cmik/cmik.xbmc</source>
-            <news>v3.3.0 (14/11/2026)
-              [new] My View History in the root menu: what you played, the last viewed first (remove an entry from its context menu or clear the whole history)
-              [new] Episodes and movies already played are flagged as viewed
+            <news>v3.4.0 (14/11/2026)
+              [new] Resume playback where you stopped, Continue Watching in the root menu, Play from the beginning in the context menu
+              [new] Episodes only count as finished past 90 %; the service follows the player to keep your position
+              [new] Lists tell Kodi what they hold (tvshows, episodes, videos) so skin views and sort choices work
             </news>
             <assets>
                 <icon>resources/icon.png</icon>
