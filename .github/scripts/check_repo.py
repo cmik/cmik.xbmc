@@ -6,6 +6,7 @@
   "MD5 (file) = hash" output of the md5 command: use `md5 -q`)
 - every add-on listed in addons.xml has its zip in downloads/<id>/<id>-<version>.zip,
   the zip contains an addon.xml with the same id and version, and <id>-latest.zip is the same file
+- every asset declared in <assets> (icon, fanart...) exists in downloads/<id>/ (Kodi fetches it there)
 """
 import hashlib
 import os
@@ -74,7 +75,15 @@ for addon in addons:
     if inner.get('id') != addonId or inner.get('version') != version:
         fail('%s contains %s %s but addons.xml lists %s %s' % (
             zipPath, inner.get('id'), inner.get('version'), addonId, version))
+    # Kodi downloads the icon and the fanart from <datadir>/<id>/<path of the asset>
+    assets = addon.find('./extension/assets')
+    for asset in (list(assets) if assets is not None else []):
+        if asset.text and asset.text.strip():
+            assetPath = os.path.join('downloads', addonId, asset.text.strip())
+            if not os.path.isfile(assetPath):
+                fail('%s declares <%s>%s</%s> but %s does not exist' % (
+                    addonId, asset.tag, asset.text.strip(), asset.tag, assetPath))
 
 if errors:
     sys.exit(1)
-print('OK: %d add-ons, md5, zips and latest zips are consistent' % len(addons))
+print('OK: %d add-ons, md5, zips, latest zips and assets are consistent' % len(addons))
