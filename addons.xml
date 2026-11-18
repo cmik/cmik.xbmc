@@ -37,7 +37,7 @@
             </assets>
         </extension>
     </addon>
-    <addon id="plugin.video.tfctv" name="iWantTFC" version="3.8.0" provider-name="cmik">
+    <addon id="plugin.video.tfctv" name="iWantTFC" version="3.9.0" provider-name="cmik">
         <requires>
             <import addon="xbmc.python" version="3.0.0"/>
             <import addon="script.module.six"/>
@@ -62,7 +62,14 @@
             <website>https://addons.cmik.me/tfc-tv/</website>
             <forum>https://forum.kodi.tv/showthread.php?tid=317008</forum>
             <source>https://github.com/cmik/cmik.xbmc</source>
-            <news>v3.8.0
+            <news>v3.9.0
+              [new] Live TV in the main menu: the live channels, then the live events, of your country
+              [fix] The log no longer holds your tokens, cookies or passwords
+              [fix] A title iWant refuses (GMA ones) stays in My List of Kodi only, with a message
+              [fix] Actions started from a menu entry (Tools, login) end properly: no more error in the Kodi log
+              [fix] An expired login is renewed for every call to the website: no more empty lists after a few days without signing in again
+
+              v3.8.0
               [new] My List can be synchronized with your iWant watchlist (Tools > Synchronize My List with iWant): merge, or replace one by the other; then what you add or remove in Kodi follows on iWant
               [new] Search > Search the website (online): finds anything the website has, live channels and events included, and adds the shows and movies a catalog reload does not bring
               [new] Top Picks Near You! in the main menu: the picks of the website for your country
@@ -70,11 +77,6 @@
               [fix] Home: the Live Streams rail and the one-off videos were empty
               [change] My View History moved under My Account; old live stream code and history.db removed
 
-              v3.7.0
-              [fix] Live channels can be played again: the catalog is read for your country, as the website does
-              [change] The settings use the Kodi 18+ format (same settings and values)
-              [new] Location: the country is detected again at each start of Kodi (VPN, trip); it can be set by hand (Advanced > Location)
-              [fix] The geo location service refused the request (403): the country was not detected on some devices
             </news>
             <assets>
                 <icon>resources/icon.png</icon>
