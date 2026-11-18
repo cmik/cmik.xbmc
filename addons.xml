@@ -37,7 +37,7 @@
             </assets>
         </extension>
     </addon>
-    <addon id="plugin.video.tfctv" name="iWantTFC" version="3.7.0" provider-name="cmik">
+    <addon id="plugin.video.tfctv" name="iWantTFC" version="3.8.0" provider-name="cmik">
         <requires>
             <import addon="xbmc.python" version="3.0.0"/>
             <import addon="script.module.six"/>
@@ -62,17 +62,19 @@
             <website>https://addons.cmik.me/tfc-tv/</website>
             <forum>https://forum.kodi.tv/showthread.php?tid=317008</forum>
             <source>https://github.com/cmik/cmik.xbmc</source>
-            <news>v3.7.0
-              [fix] Live channels can be played again: the catalog is read for your country, as the website does (the channels of the Philippines were listed and refused elsewhere)
-              [change] The settings use the Kodi 18+ format (same settings and values)
-              [new] Location: the country, which decides the catalog and the live channels, is detected again at each start of Kodi (VPN, trip); this can be turned off and a country can be set by hand (Advanced > Location)
-              [fix] The geo location service refused the request of the add-on (403), so the country was not detected on some devices
+            <news>v3.8.0
+              [new] My List can be synchronized with your iWant watchlist (Tools > Synchronize My List with iWant): merge, or replace one by the other; then what you add or remove in Kodi follows on iWant
+              [new] Search > Search the website (online): finds anything the website has, live channels and events included, and adds the shows and movies a catalog reload does not bring
+              [new] Top Picks Near You! in the main menu: the picks of the website for your country
+              [new] Trakt: a show is also searched without the name of its star (Coco Martin's Sigabo is Sigabo on Trakt); when Trakt can't tell which show it is, choose it with the context menu (Choose the show on Trakt)
+              [fix] Home: the Live Streams rail and the one-off videos were empty
+              [change] My View History moved under My Account; old live stream code and history.db removed
 
-              v3.6.0
-              [new] Up Next: the next episode is offered at the end of an episode (needs the Up Next add-on)
-              [new] The catalog is looked at on a schedule: new shows are loaded and the new episodes of the shows of My List are announced
-              [change] Video quality: choose how inputstream.adaptive selects the stream (its own settings, ask when playback starts, or in the player) and a maximum resolution; replaces the "Choose resolution" menu, which no longer worked
-              [new] Trakt: what is watched can be scrobbled to your Trakt account (Connect to Trakt in the settings; episodes named SxEy and movies). iWantTFC Kodi uses Trakt but is not endorsed or certified by Trakt
+              v3.7.0
+              [fix] Live channels can be played again: the catalog is read for your country, as the website does
+              [change] The settings use the Kodi 18+ format (same settings and values)
+              [new] Location: the country is detected again at each start of Kodi (VPN, trip); it can be set by hand (Advanced > Location)
+              [fix] The geo location service refused the request (403): the country was not detected on some devices
             </news>
             <assets>
                 <icon>resources/icon.png</icon>
