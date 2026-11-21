@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addons>
-    <addon id="plugin.video.gmatv" name="GMA.tv" version="2.0.1" provider-name="cmik">
+    <addon id="plugin.video.gmatv" name="GMA.tv" version="2.1.0" provider-name="cmik">
         <requires>
             <import addon="xbmc.python" version="3.0.0"/>
             <import addon="script.module.beautifulsoup4" version="4.9.3"/>
@@ -21,8 +21,9 @@
             <license>GPL-3.0-or-later</license>
             <forum></forum>
             <source>https://github.com/cmik/plugin.video.gmatv</source>
-            <news>v2.0.1 (21/11/2026)
-              [fix] Ready-made catalog not installed on a first installation (profile folder not created yet)
+            <news>v2.1.0 (21/11/2026)
+              [new] My List: add a show from its context menu, then My Shows and the last episode of each of them (kept when the catalog is reset)
+              [change] The old Add to my watchlist entry of the episodes, which no longer worked, is removed
             </news>
             <assets>
                 <icon>resources/icon.png</icon>
