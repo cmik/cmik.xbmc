@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addons>
-    <addon id="plugin.video.gmatv" name="GMA.tv" version="2.0.0" provider-name="cmik">
+    <addon id="plugin.video.gmatv" name="GMA.tv" version="2.0.1" provider-name="cmik">
         <requires>
             <import addon="xbmc.python" version="3.0.0"/>
             <import addon="script.module.beautifulsoup4" version="4.9.3"/>
@@ -21,18 +21,8 @@
             <license>GPL-3.0-or-later</license>
             <forum></forum>
             <source>https://github.com/cmik/plugin.video.gmatv</source>
-            <news>v2.0.0 (21/11/2026)
-              [new] Menus read from GMA Play (gmanetwork.com moved its full episodes to GMA Play)
-              [new] Movies and public affairs shows
-              [new] GMA Play Home sub menu and By Category menu
-              [new] My View History menu, watched flags, Go to the show
-              [new] Ready-made catalog installed on a first installation or an update from 1.x
-              [change] Update Catalog loads only the new shows (about a minute instead of hours)
-              [change] Views and history kept apart from the catalog (not lost when it is reset)
-              [change] Faster menus: lists kept in cache, sort methods and content types
-              [change] Dependencies six, requests and inputstreamhelper no longer needed
-              [fix] Episode thumbnails, empty images and views not saved
-              [fix] Search with an apostrophe, Reload Catalog and the Tools actions
+            <news>v2.0.1 (21/11/2026)
+              [fix] Ready-made catalog not installed on a first installation (profile folder not created yet)
             </news>
             <assets>
                 <icon>resources/icon.png</icon>
