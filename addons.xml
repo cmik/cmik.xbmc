@@ -31,7 +31,7 @@
             </assets>
         </extension>
     </addon>
-    <addon id="plugin.video.tfctv" name="iWantTFC" version="3.10.0" provider-name="cmik">
+    <addon id="plugin.video.tfctv" name="iWantTFC" version="3.11.0" provider-name="cmik">
         <requires>
             <import addon="xbmc.python" version="3.0.0"/>
             <import addon="script.module.six"/>
@@ -56,7 +56,12 @@
             <website>https://addons.cmik.me/tfc-tv/</website>
             <forum>https://forum.kodi.tv/showthread.php?tid=317008</forum>
             <source>https://github.com/cmik/cmik.xbmc</source>
-            <news>v3.10.0
+            <news>v3.11.0
+              [new] With Skip automatically, an episode starts right after its intro and its recap (not when you can resume it: Kodi asks where to resume)
+              [fix] Skip Intro / Skip Recap and Up Next follow a change of the settings at once (they needed a restart of Kodi)
+              [fix] My List > My Shows Last Episodes: the last episode of a show with several seasons is the one of the latest season
+
+              v3.10.0
               [new] Skip Intro and Skip Recap: when iWant marks the intro or the recap of an episode, a button appears on the video (or the add-on skips it by itself, see the Playback settings)
               [change] Up Next offers the next episode when the credits start
               [change] Live TV is kept 5 minutes (an event can start any time), the menu of the website a few hours, Top Picks 30 minutes: faster menus
